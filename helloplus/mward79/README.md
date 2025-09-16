@@ -8,7 +8,7 @@
   - Run ``npm install``
   - Run ``npm start`` or ``npm expo start``
   - You can load the app in a browser or scan the QR code that pops up and run it on EXPO GO app.
-  - Error about ``node_modules`` → ``delete node_modules/`` and run ``npm install`` again.
+  - In case you get error about node modules ``node_modules`` → ``delete node_modules/`` and run ``npm install`` again.
 # How it might Help
   This basic project adds buttons that will eventually lead to different tabs and functionalities.
   It is also essential that I know how to compile my code into an app format.
