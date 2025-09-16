@@ -1,4 +1,4 @@
-HelloFitnessSimple — Push-Up Counter (Expo)
+# HelloFitnessSimple — Push-Up Counter (Expo)
 
 A simple Expo React Native app that lets you track push-ups with one tap. Built for Part 2 of the assignment.
 
@@ -51,4 +51,8 @@ Install Expo Go from the App Store
 
 In Expo Go, tap Scan QR Code and scan the QR from your terminal (or the browser Dev Tools page)
 
-You should now see the Push-Up Counter app. Every tap on the button adds a rep!
+You should now see the Push-Up Counter app. Every tap on the button adds a rep.
+
+How this will be used
+
+Good practice building and running a mobile app environment, testing changes live on your phone, and forming the base for future fitness features (sets, timers, history, etc.).
