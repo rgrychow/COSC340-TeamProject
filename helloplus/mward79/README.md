@@ -12,3 +12,6 @@
 # How it might Help
   This basic project adds buttons that will eventually lead to different tabs and functionalities.
   It is also essential that I know how to compile my code into an app format.
+# AI
+  The AI I decided to use was ChatGPT in VSCode. I could not get my application for CoPilot to work.
+  The Screenshot is code ChatGPT helped me write.
