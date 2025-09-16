@@ -1,4 +1,4 @@
-# Fitness Tracker
+# Fitness Tracker (React Native + Expo)
   This app is very basic. It has two buttons - "Log Workout" and "View Progress" that when you click on, they 
   give you a little pop-up notification.
 # How to run
