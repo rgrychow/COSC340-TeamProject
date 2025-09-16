@@ -1,3 +1,7 @@
+# Copilot
+
+I was unable to get the github copilot because I got denied three seperate times. I used chat gpt to make a simple program and provided a picture.
+
 # HelloFitnessSimple — Push-Up Counter (Expo)
 
 A simple Expo React Native app that lets you track push-ups with one tap. Built for Part 2 of the assignment.
