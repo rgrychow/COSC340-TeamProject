@@ -18,7 +18,7 @@ type Workout = { id: string; dateISO: string; exercises: Exercise[] };
 export default function Fitness() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
 
-  const addWorkout = () => {
+  const addWorkout = (): void => {
     const w: Workout = {
       id: String(Date.now()),
       dateISO: new Date().toISOString(),
@@ -27,7 +27,7 @@ export default function Fitness() {
     setWorkouts((prev) => [w, ...prev]);
   };
 
-  const addExercise = (workoutId: string, name: string) => {
+  const addExercise = (workoutId: string, name: string): void => {
     setWorkouts((prev) =>
       prev.map((w) =>
         w.id === workoutId
@@ -48,7 +48,7 @@ export default function Fitness() {
     exerciseId: string,
     reps: number,
     weight: number
-  ) => {
+  ): void => {
     setWorkouts((prev) =>
       prev.map((w) =>
         w.id === workoutId
@@ -60,11 +60,7 @@ export default function Fitness() {
                       ...ex,
                       sets: [
                         ...ex.sets,
-                        {
-                          id: `${exerciseId}-${Date.now()}`,
-                          reps,
-                          weight,
-                        },
+                        { id: `${exerciseId}-${Date.now()}`, reps, weight },
                       ],
                     }
                   : ex
@@ -120,8 +116,8 @@ function WorkoutCard({
     weight: number
   ) => void;
 }) {
-  const [showExerciseForm, setShowExerciseForm] = useState(false);
-  const [exerciseName, setExerciseName] = useState("Push Ups"); // default
+  const [showExerciseForm, setShowExerciseForm] = useState<boolean>(false);
+  const [exerciseName, setExerciseName] = useState<string>("Push Ups");
 
   const dt = new Date(workout.dateISO);
   const dateLabel = `${dt.toLocaleDateString(undefined, {
@@ -133,7 +129,7 @@ function WorkoutCard({
     minute: "2-digit",
   })}`;
 
-  const handleAddExercise = () => {
+  const handleAddExercise = (): void => {
     const name = exerciseName.trim() || "Exercise";
     onAddExercise(workout.id, name);
     setExerciseName("Push Ups");
@@ -142,7 +138,7 @@ function WorkoutCard({
 
   return (
     <View style={styles.card}>
-      {/* Title and date stacked left; button below (so it won't overflow on iPhone) */}
+      {/* Title and date stacked left; button below so it never overflows */}
       <Text style={styles.cardTitle}>Workout</Text>
       <Text style={styles.cardSubtitle}>{dateLabel}</Text>
 
@@ -201,11 +197,11 @@ function ExerciseBlock({
     weight: number
   ) => void;
 }) {
-  const [showSetForm, setShowSetForm] = useState(false);
-  const [reps, setReps] = useState("12");
-  const [weight, setWeight] = useState("45");
+  const [showSetForm, setShowSetForm] = useState<boolean>(false);
+  const [reps, setReps] = useState<string>("12");
+  const [weight, setWeight] = useState<string>("45");
 
-  const handleSaveSet = () => {
+  const handleSaveSet = (): void => {
     const r = parseInt(reps, 10);
     const w = parseFloat(weight);
     onAddSet(workoutId, exercise.id, isNaN(r) ? 0 : r, isNaN(w) ? 0 : w);
@@ -233,13 +229,10 @@ function ExerciseBlock({
       ) : (
         exercise.sets.map((s, idx) => (
           <View key={s.id} style={styles.setRow}>
+            <Text style={styles.setText}>Set {idx + 1}</Text>
             <Text style={styles.setText}>
-              Set {idx + 1}
-            </Text>
-            <Text style={styles.setText}>
-              Reps: <Text style={styles.white}>{s.reps}</Text>
-              {"  "}•{"  "}
-              Wt: <Text style={styles.white}>{s.weight}</Text> lb
+              Reps: <Text style={styles.white}>{s.reps}</Text> • Wt:{" "}
+              <Text style={styles.white}>{s.weight}</Text> lb
             </Text>
           </View>
         ))
@@ -269,7 +262,10 @@ function ExerciseBlock({
               style={styles.input}
             />
           </View>
-          <TouchableOpacity style={[styles.primaryBtn, { marginTop: 18 }]} onPress={handleSaveSet}>
+          <TouchableOpacity
+            style={[styles.primaryBtn, { marginTop: 18 }]}
+            onPress={handleSaveSet}
+          >
             <Text style={styles.primaryBtnText}>Save Set</Text>
           </TouchableOpacity>
         </View>
@@ -358,8 +354,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 10,
   },
-  outlineBtnText: { color: ORANGE, fontWeight: "700" },;
-});
-
-  outlineBtnText: { color: ORANGE, fontWeight: "700" },;
+  outlineBtnText: { color: ORANGE, fontWeight: "700" },
 });
