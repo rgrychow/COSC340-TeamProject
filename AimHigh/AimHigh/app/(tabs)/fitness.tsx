@@ -358,8 +358,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 10,
   },
-  outlineBtnText: { color: ORANGE, fontWeight: "700" },
+  outlineBtnText: { color: ORANGE, fontWeight: "700" },;
 });
 
-  outlineBtnText: { color: ORANGE, fontWeight: "700" },
+  outlineBtnText: { color: ORANGE, fontWeight: "700" },;
 });
