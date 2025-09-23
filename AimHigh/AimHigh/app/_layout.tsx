@@ -1,24 +1,34 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+// app/_layout.tsx
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import { Platform } from "react-native";
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  // Recommended for react-native-screens on Android
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      try {
+        // noop; react-native-screens is auto-initialized in Expo
+      } catch {}
+    }
+  }, []);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+    <>
+      <StatusBar style="light" />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: "#000" },
+          headerTintColor: "#fff",
+          contentStyle: { backgroundColor: "#000" },
+        }}
+      >
+        {/* index.tsx is the Login screen */}
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        {/* (tabs) contains the 4 main pages */}
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    </>
   );
 }
