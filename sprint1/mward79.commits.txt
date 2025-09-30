@@ -1,1 +1,2 @@
-
+I only ended up having one commit. The only file I ended up working with was index.tsx, which is the first thing you see when
+you boot up AimHigh. I coded everything in index.tsx. 
