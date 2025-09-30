@@ -1,0 +1,18 @@
+blame-tracker.py: info: searching for blame in:
+blame-tracker.py: info:    3. /Users/ompatel/Desktop/College/Senior Semester 1/COSC 340/COSC340-TeamProject/AimHigh/AimHigh/app/(tabs)/home.tsx
+blame-tracker.py: info:    4. /Users/ompatel/Desktop/College/Senior Semester 1/COSC 340/COSC340-TeamProject/AimHigh/AimHigh/app/(tabs)/_layout.tsx
+blame-tracker.py: info: mward79:
+blame-tracker.py: info:     44 characters
+blame-tracker.py: info:     4 lines
+blame-tracker.py: info:     4 non-whitespace lines
+blame-tracker.py: info:     4 two-or-more-char lines
+blame-tracker.py: info:     36 non-whitespace characters
+blame-tracker.py: info:     Composes  0% of changes since 09/29/2025
+blame-tracker.py: info: om patel:
+blame-tracker.py: info:     13830 characters
+blame-tracker.py: info:     476 lines
+blame-tracker.py: info:     468 non-whitespace lines
+blame-tracker.py: info:     458 two-or-more-char lines
+blame-tracker.py: info:     9923 non-whitespace characters
+blame-tracker.py: info:     Composes 100% of changes since 09/29/2025
+blame-tracker.py: info: Accusations written to commits.txt.
