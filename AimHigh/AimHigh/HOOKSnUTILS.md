@@ -1,5 +1,5 @@
 # Hooks
-useWorkouts.ts
+**useWorkouts.ts**
 
 Manages workout state (workouts → exercises → sets).
 
@@ -19,7 +19,7 @@ import { useWorkouts } from "../hooks/useWorkouts";
 
 const { workouts, addWorkout, addExercise, addSet } = useWorkouts();
 
-useNutrition.ts
+**useNutrition.ts**
 
 Manages nutrition targets and meals.
 
@@ -37,7 +37,7 @@ import { useNutrition } from "../hooks/useNutrition";
 
 const { targets, meals, addMeal, updateTargets } = useNutrition();
 
-useProgress.ts
+**useProgress.ts**
 
 Calculates progress stats using workouts + meals.
 
@@ -57,7 +57,7 @@ const { workouts } = useWorkouts();
 const { meals } = useNutrition();
 const { weeklyWorkouts, avgCalories } = useProgress(workouts, meals);
 
-useNow.ts (optional)
+**useNow.ts**
 
 Keeps track of the current time, updating every second (default).
 
@@ -71,7 +71,7 @@ const now = useNow();
 <Text>{now.toLocaleTimeString()}</Text>
 
 # Utils
-date.ts
+**date.ts**
 
 - formatDateTime(dateISO) – returns "Jan 10, 2025 6:30 PM".
 
@@ -83,7 +83,7 @@ import { formatDateTime } from "../utils/date";
 
 <Text>{formatDateTime(workout.dateISO)}</Text>
 
-calc.ts
+**calc.ts**
 
 - average(numbers) – returns the average of an array.
 
