@@ -2,6 +2,7 @@ Sprint 1
 Hogan O'Hara -- hohara29 -- AimHigh
 
 What you planned to do
+
   Stand up a minimal CLI to fetch calories/macros for a given food using USDA FoodData
   Central (search + detail).
   Add .env-based configuration and keep secrets out of Git; gives access to APIs.
@@ -10,6 +11,7 @@ What you planned to do
   Support additional sources (Open Food Facts barcode; Nutritionix NLP). 
 
 What you did not do
+
   Did not finish optional Nutritionix NLP route or key management.
   Did not create an HTTP API (Express) for the app to call—currently CLI only.
 
