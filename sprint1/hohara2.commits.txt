@@ -1,1 +1,182 @@
-NutritionAPITemp/macro.cjs
+NutritionAPITemp macro.cjs
+
+(hohara29          2025-09-29 23:42:41 -0400  1) // macro.cjs (CommonJS)
+12c782f7b AimHi(hohara29          2025-09-29 23:42:41 -0400  2) const path = require('node:path');
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400  3) const fs = require('node:fs');
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400  4) require('dotenv').config({ path: path.join(__dirname, '.env') });
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400  5) 
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400  7) const envPath = path.join(__dirname, '.env');
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400  8) if (!fs.existsSync(envPath)) {
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400  9)   console.error('Did not find .env at:', envPath);
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 10)   process.exit(1);
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 11) }
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 12) 
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 13) const USDA_KEY = process.env.USDA_API_KEY;
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 14) if (!USDA_KEY) {
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 15)   console.error('USDA_API_KEY not found in .env at:', envPath);
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 16)   console.error('Example line (no quotes, no spaces):');
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 17)   console.error('USDA_API_KEY=YOUR_REAL_FDC_KEY');
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 18)   process.exit(1);
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 19) }
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 20) 
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 21) 
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 22) // USDA nutrient numbers we care about
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 23) const NUM = { kcal: '208', protein: '203', carbs: '205', fat: '204' };
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 24) 
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 25) function pickUSDA(nutrients) {
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 26)   const out = { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 27)   for (const n of nutrients || []) {
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 28)     const number = n?.nutrient?.number || n?.number;
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 29)     const amount = n?.amount ?? n?.value ?? 0;
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 30)     if (number === NUM.kcal) out.kcal = amount;
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 31)     if (number === NUM.protein) out.protein_g = amount;
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 32)     if (number === NUM.carbs) out.carbs_g = amount;
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 33)     if (number === NUM.fat) out.fat_g = amount;
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 34)   }
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 35)   return out;
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 36) }
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 37) 
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 38) function r1(x) { return Math.round(x * 10) / 10; }
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 39) 
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 40) async function run() {
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 41)   const query = process.argv.slice(2).join(' ').trim();
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 42)   if (!query) {
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 43)     console.log('Usage: node macro.js "chicken breast"');
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 44)     process.exit(0);
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 45)   }
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 46) 
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 47)   // 1) Search for the top match
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 48)   const s = new URL('https://api.nal.usda.gov/fdc/v1/foods/search');
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 49)   s.searchParams.set('query', query);
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 50)   s.searchParams.set('pageSize', '1');
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 51)   s.searchParams.set('api_key', USDA_KEY);
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 52) 
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 53)   const rs = await fetch(s);
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 54)   if (!rs.ok) throw new Error(`USDA search ${rs.status}`);
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 55)   const js = await rs.json();
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 56)   if (!js.foods?.length) throw new Error('No USDA results');
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 57) 
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 58)   const first = js.foods[0];
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 59) 
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 60)   // 2) Get detail → nutrients + serving options
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 61)   const rd = await fetch(`https://api.nal.usda.gov/fdc/v1/food/${first.fdcId}?api_key=${USDA_KEY}`);
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 62)   if (!rd.ok) throw new Error(`USDA detail ${rd.status}`);
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 63)   const detail = await rd.json();
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 64) 
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 65)   // Base macros per 100 g
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 66)   const per100 = pickUSDA(detail.foodNutrients);
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 67) 
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 68)   // Prefer a real serving if USDA provides gramWeight; otherwise use 100 g
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 69)   let label = 'per 100 g';
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 70)   let macros = per100;
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 71)   if (detail.foodPortions?.length) {
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 72)     const p = detail.foodPortions.find(x => x.gramWeight) || detail.foodPortions[0];
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 73)     if (p?.gramWeight) {
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 74)       const g = p.gramWeight;
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 75)       label = `per serving (${p.portionDescription || p.modifier || 'serving'} = ${g} g)`;
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 76)       macros = {
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 77)         kcal: (per100.kcal * g) / 100,
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 78)         protein_g: (per100.protein_g * g) / 100,
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 79)         carbs_g: (per100.carbs_g * g) / 100,
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 80)         fat_g: (per100.fat_g * g) / 100,
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 81)       };
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 82)     }
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 83)   }
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 84) 
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 85)   const title = `${detail.description}${detail.brandOwner ? ' — ' + detail.brandOwner : ''}`;
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 86)   console.log(`\n${title}\n  ${label}`);
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 87)   console.log(`  kcal: ${r1(macros.kcal)} | P: ${r1(macros.protein_g)}g | C: ${r1(macros.carbs_g)}g | F: ${r1(macros.fat_g)}g\n`);
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 88) }
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 89) 
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 90) run().catch(e => {
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 91)   console.error('Error:', e.message);
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 92)   process.exit(2);
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 93) });
+12c782f7b AimHigh/AimHigh/macro.cjs                  (hohara29          2025-09-29 23:42:41 -0400 94) 
+
+NutritionAPITemp/macro.js
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400  1) // macro.js  — Node 18+ (has global fetch)
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400  2) const path = require('node:path');
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400  3) 
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400  4) // Load .env that sits next to this file, regardless of where you run Node from
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400  5) require('dotenv').config({ path: path.join(__dirname, '.env') });
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400  6) 
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400  7) const USDA_KEY = process.env.USDA_API_KEY;
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400  8) if (!USDA_KEY) {
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400  9)   console.error('USDA_API_KEY not found. Create .env with:\nUSDA_API_KEY=YOUR_REAL_FDC_KEY');
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 10)   process.exit(1);
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 11) }
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 12) 
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 13) // USDA nutrient numbers we care about
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 14) const NUM = { kcal: '208', protein: '203', carbs: '205', fat: '204' };
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 15) 
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 16) function pickUSDA(nutrients) {
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 17)   const out = { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 18)   for (const n of nutrients || []) {
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 19)     const number = n?.nutrient?.number || n?.number;
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 20)     const amount = n?.amount ?? n?.value ?? 0;
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 21)     if (number === NUM.kcal) out.kcal = amount;
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 22)     if (number === NUM.protein) out.protein_g = amount;
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 23)     if (number === NUM.carbs) out.carbs_g = amount;
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 24)     if (number === NUM.fat) out.fat_g = amount;
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 25)   }
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 26)   return out;
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 27) }
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 28) 
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 29) function r1(x) { return Math.round(x * 10) / 10; }
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 30) 
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 31) async function run() {
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 32)   const query = process.argv.slice(2).join(' ').trim();
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 33)   if (!query) {
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 34)     console.log('Usage: node macro.js "chicken breast"');
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 35)     process.exit(0);
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 36)   }
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 37) 
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 38)   // 1) Search for the top match
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 39)   const s = new URL('https://api.nal.usda.gov/fdc/v1/foods/search');
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 40)   s.searchParams.set('query', query);
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 41)   s.searchParams.set('pageSize', '1');
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 42)   s.searchParams.set('api_key', USDA_KEY);
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 43) 
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 44)   const rs = await fetch(s);
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 45)   if (!rs.ok) throw new Error(`USDA search ${rs.status}`);
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 46)   const js = await rs.json();
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 47)   if (!js.foods?.length) throw new Error('No USDA results');
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 48) 
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 49)   const first = js.foods[0];
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 50) 
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 51)   // 2) Get detail → nutrients + serving options
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 52)   const rd = await fetch(`https://api.nal.usda.gov/fdc/v1/food/${first.fdcId}?api_key=${USDA_KEY}`);
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 53)   if (!rd.ok) throw new Error(`USDA detail ${rd.status}`);
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 54)   const detail = await rd.json();
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 55) 
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 56)   // Base macros per 100 g
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 57)   const per100 = pickUSDA(detail.foodNutrients);
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 58) 
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 59)   // Prefer a real serving if USDA provides gramWeight; otherwise use 100 g
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 60)   let label = 'per 100 g';
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 61)   let macros = per100;
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 62)   if (detail.foodPortions?.length) {
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 63)     const p = detail.foodPortions.find(x => x.gramWeight) || detail.foodPortions[0];
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 64)     if (p?.gramWeight) {
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 65)       const g = p.gramWeight;
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 66)       label = `per serving (${p.portionDescription || p.modifier || 'serving'} = ${g} g)`;
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 67)       macros = {
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 68)         kcal: (per100.kcal * g) / 100,
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 69)         protein_g: (per100.protein_g * g) / 100,
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 70)         carbs_g: (per100.carbs_g * g) / 100,
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 71)         fat_g: (per100.fat_g * g) / 100,
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 72)       };
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 73)     }
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 74)   }
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 75) 
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 76)   const title = `${detail.description}${detail.brandOwner ? ' — ' + detail.brandOwner : ''}`;
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 77)   console.log(`\n${title}\n  ${label}`);
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 78)   console.log(`  kcal: ${r1(macros.kcal)} | P: ${r1(macros.protein_g)}g | C: ${r1(macros.carbs_g)}g | F: ${r1(macros.fat_g)}g\n`);
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 79) }
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 80) 
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 81) run().catch(e => {
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 82)   console.error('Error:', e.message);
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 83)   process.exit(2);
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 84) });
+12c782f7b AimHigh/AimHigh/macro.js (hohara29 2025-09-29 23:42:41 -0400 85) 

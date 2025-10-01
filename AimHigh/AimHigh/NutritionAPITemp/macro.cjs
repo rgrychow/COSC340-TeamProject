@@ -3,7 +3,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-// quick sanity print (you can keep or delete later)
+// quick sanity print
 const envPath = path.join(__dirname, '.env');
 if (!fs.existsSync(envPath)) {
   console.error('Did not find .env at:', envPath);
