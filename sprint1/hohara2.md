@@ -26,15 +26,21 @@ Hogan O'Hara -- hohara29 -- AimHigh
 **Issues you worked on**
 
   #4 Access API
+  
   #5 Food Data Storage
+  
   #6 User Input
 
 **Files you worked on**
 
   NutritionAPITemp/
+  
     .env.example
+    
     README.md
+    
     macro.cjs
+    
     macro.js
 
 **Use of AI and/or 3rd party software**
