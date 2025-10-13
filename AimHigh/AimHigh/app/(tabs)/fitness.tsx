@@ -217,7 +217,6 @@ function ExerciseBlock({
   );
 }
 
-const ORANGE = "#FF6A00";
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000", padding: 20 },
   header: { color: "#fff", fontSize: 28, fontWeight: "800", marginBottom: 12 },
