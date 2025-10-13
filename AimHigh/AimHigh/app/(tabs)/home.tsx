@@ -4,7 +4,7 @@ import Slider from "@react-native-community/slider";
 import { useNavigation } from "@react-navigation/native";
 import { useRef, useState } from "react";
 import { Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"; // Import necessary components
-import SettingsModal from "./settings_modal"; // Import the Settings Modal
+import SettingsModal from "../settings_modal"; // Import the Settings Modal
 
 const ORANGE = "#FF6A00";
 

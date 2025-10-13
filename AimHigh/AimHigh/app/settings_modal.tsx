@@ -9,6 +9,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import EditProfileModal from './edit_profile_modal';
+
+const ORANGE = "#FF6A00";
 
 interface SettingsModalProps {
   visible: boolean;
@@ -19,6 +22,7 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [editProfileVisible, setEditProfileVisible] = useState(false);
 
   return (
     <Modal
@@ -33,7 +37,7 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Settings</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={28} color="#333" />
+              <Ionicons name="close" size={28} color="#fff" />
             </TouchableOpacity>
           </View>
 
@@ -42,14 +46,17 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Account</Text>
               
-              <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="person-outline" size={24} color="#666" />
+              <TouchableOpacity 
+                style={styles.settingItem}
+                onPress={() => setEditProfileVisible(true)}
+              >
+                <Ionicons name="person-outline" size={24} color="#fff" />
                 <Text style={styles.settingText}>Edit Profile</Text>
                 <Ionicons name="chevron-forward" size={20} color="#999" />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="lock-closed-outline" size={24} color="#666" />
+                <Ionicons name="lock-closed-outline" size={24} color="#fff" />
                 <Text style={styles.settingText}>Change Password</Text>
                 <Ionicons name="chevron-forward" size={20} color="#999" />
               </TouchableOpacity>
@@ -60,40 +67,40 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
               <Text style={styles.sectionTitle}>Preferences</Text>
               
               <View style={styles.settingItem}>
-                <Ionicons name="notifications-outline" size={24} color="#666" />
+                <Ionicons name="notifications-outline" size={24} color="#fff" />
                 <Text style={styles.settingText}>Notifications</Text>
                 <Switch
                   value={notificationsEnabled}
                   onValueChange={setNotificationsEnabled}
-                  trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
+                  trackColor={{ false: '#333', true: ORANGE }}
                   thumbColor="#fff"
                 />
               </View>
 
               <View style={styles.settingItem}>
-                <Ionicons name="moon-outline" size={24} color="#666" />
+                <Ionicons name="moon-outline" size={24} color="#fff" />
                 <Text style={styles.settingText}>Dark Mode</Text>
                 <Switch
                   value={darkModeEnabled}
                   onValueChange={setDarkModeEnabled}
-                  trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
+                  trackColor={{ false: '#333', true: ORANGE }}
                   thumbColor="#fff"
                 />
               </View>
 
               <View style={styles.settingItem}>
-                <Ionicons name="volume-high-outline" size={24} color="#666" />
+                <Ionicons name="volume-high-outline" size={24} color="#fff" />
                 <Text style={styles.settingText}>Sound Effects</Text>
                 <Switch
                   value={soundEnabled}
                   onValueChange={setSoundEnabled}
-                  trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
+                  trackColor={{ false: '#333', true: ORANGE }}
                   thumbColor="#fff"
                 />
               </View>
 
               <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="language-outline" size={24} color="#666" />
+                <Ionicons name="language-outline" size={24} color="#fff" />
                 <Text style={styles.settingText}>Language</Text>
                 <Text style={styles.settingValue}>English</Text>
                 <Ionicons name="chevron-forward" size={20} color="#999" />
@@ -105,14 +112,14 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
               <Text style={styles.sectionTitle}>Fitness</Text>
               
               <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="fitness-outline" size={24} color="#666" />
+                <Ionicons name="fitness-outline" size={24} color="#fff" />
                 <Text style={styles.settingText}>Units</Text>
                 <Text style={styles.settingValue}>Metric</Text>
                 <Ionicons name="chevron-forward" size={20} color="#999" />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="calendar-outline" size={24} color="#666" />
+                <Ionicons name="calendar-outline" size={24} color="#fff" />
                 <Text style={styles.settingText}>Weekly Goal</Text>
                 <Text style={styles.settingValue}>5 days</Text>
                 <Ionicons name="chevron-forward" size={20} color="#999" />
@@ -124,19 +131,19 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
               <Text style={styles.sectionTitle}>About</Text>
               
               <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="information-circle-outline" size={24} color="#666" />
+                <Ionicons name="information-circle-outline" size={24} color="#fff" />
                 <Text style={styles.settingText}>App Version</Text>
                 <Text style={styles.settingValue}>1.0.0</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="document-text-outline" size={24} color="#666" />
+                <Ionicons name="document-text-outline" size={24} color="#fff" />
                 <Text style={styles.settingText}>Terms of Service</Text>
                 <Ionicons name="chevron-forward" size={20} color="#999" />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="shield-checkmark-outline" size={24} color="#666" />
+                <Ionicons name="shield-checkmark-outline" size={24} color="#fff" />
                 <Text style={styles.settingText}>Privacy Policy</Text>
                 <Ionicons name="chevron-forward" size={20} color="#999" />
               </TouchableOpacity>
@@ -150,6 +157,12 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
           </ScrollView>
         </View>
       </View>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal 
+        visible={editProfileVisible} 
+        onClose={() => setEditProfileVisible(false)} 
+      />
     </Modal>
   );
 }
@@ -157,11 +170,11 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: '#111',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: '90%',
@@ -174,12 +187,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: '#333',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#111',
+    color: '#fff',
   },
   closeButton: {
     padding: 4,
@@ -194,7 +207,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: '#999',
     paddingHorizontal: 20,
     paddingBottom: 10,
     textTransform: 'uppercase',
@@ -205,14 +218,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 15,
     paddingHorizontal: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#111',
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#222',
   },
   settingText: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: '#fff',
     marginLeft: 15,
   },
   settingValue: {
@@ -228,10 +241,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 20,
     marginBottom: 40,
-    backgroundColor: '#fef2f2',
+    backgroundColor: '#1a0a0a',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: '#ef4444',
   },
   logoutText: {
     fontSize: 16,
