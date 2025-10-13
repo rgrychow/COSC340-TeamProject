@@ -1,13 +1,14 @@
 // app/(tabs)/fitness.tsx
 import React, { useState } from "react";
 import {
-  FlatList,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
   View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  FlatList,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 const ORANGE = "#FF6A00";
 
@@ -27,6 +28,10 @@ export default function Fitness() {
     setWorkouts((prev) => [w, ...prev]);
   };
 
+  const deleteWorkout = (workoutId: string): void => {
+    setWorkouts((prev) => prev.filter((w) => w.id !== workoutId));
+  };
+
   const addExercise = (workoutId: string, name: string): void => {
     setWorkouts((prev) =>
       prev.map((w) =>
@@ -37,6 +42,19 @@ export default function Fitness() {
                 ...w.exercises,
                 { id: `${workoutId}-${Date.now()}`, name, sets: [] },
               ],
+            }
+          : w
+      )
+    );
+  };
+
+  const deleteExercise = (workoutId: string, exerciseId: string): void => {
+    setWorkouts((prev) =>
+      prev.map((w) =>
+        w.id === workoutId
+          ? {
+              ...w,
+              exercises: w.exercises.filter((ex) => ex.id !== exerciseId),
             }
           : w
       )
@@ -71,6 +89,27 @@ export default function Fitness() {
     );
   };
 
+  const deleteSet = (
+    workoutId: string,
+    exerciseId: string,
+    setId: string
+  ): void => {
+    setWorkouts((prev) =>
+      prev.map((w) =>
+        w.id === workoutId
+          ? {
+              ...w,
+              exercises: w.exercises.map((ex) =>
+                ex.id === exerciseId
+                  ? { ...ex, sets: ex.sets.filter((s) => s.id !== setId) }
+                  : ex
+              ),
+            }
+          : w
+      )
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Fitness</Text>
@@ -94,6 +133,9 @@ export default function Fitness() {
               workout={item}
               onAddExercise={addExercise}
               onAddSet={addSet}
+              onDeleteWorkout={deleteWorkout}
+              onDeleteExercise={deleteExercise}
+              onDeleteSet={deleteSet}
             />
           )}
         />
@@ -106,6 +148,9 @@ function WorkoutCard({
   workout,
   onAddExercise,
   onAddSet,
+  onDeleteWorkout,
+  onDeleteExercise,
+  onDeleteSet,
 }: {
   workout: Workout;
   onAddExercise: (workoutId: string, name: string) => void;
@@ -115,6 +160,9 @@ function WorkoutCard({
     reps: number,
     weight: number
   ) => void;
+  onDeleteWorkout: (workoutId: string) => void;
+  onDeleteExercise: (workoutId: string, exerciseId: string) => void;
+  onDeleteSet: (workoutId: string, exerciseId: string, setId: string) => void;
 }) {
   const [showExerciseForm, setShowExerciseForm] = useState<boolean>(false);
   const [exerciseName, setExerciseName] = useState<string>("Push Ups");
@@ -138,10 +186,20 @@ function WorkoutCard({
 
   return (
     <View style={styles.card}>
-      {/* Title and date stacked left; button below so it never overflows */}
+      {/* DELETE WORKOUT (top-right corner) */}
+      <TouchableOpacity
+        accessibilityLabel="Delete workout"
+        style={styles.iconTopRight}
+        onPress={() => onDeleteWorkout(workout.id)}
+      >
+        <Ionicons name="trash-outline" size={20} color={ORANGE} />
+      </TouchableOpacity>
+
+      {/* Title + date */}
       <Text style={styles.cardTitle}>Workout</Text>
       <Text style={styles.cardSubtitle}>{dateLabel}</Text>
 
+      {/* Add Exercise button (left aligned so it doesn't overflow) */}
       <TouchableOpacity
         style={[styles.outlineBtn, { alignSelf: "flex-start", marginTop: 6 }]}
         onPress={() => setShowExerciseForm((s) => !s)}
@@ -176,6 +234,8 @@ function WorkoutCard({
             workoutId={workout.id}
             exercise={ex}
             onAddSet={onAddSet}
+            onDeleteExercise={onDeleteExercise}
+            onDeleteSet={onDeleteSet}
           />
         ))
       )}
@@ -187,6 +247,8 @@ function ExerciseBlock({
   workoutId,
   exercise,
   onAddSet,
+  onDeleteExercise,
+  onDeleteSet,
 }: {
   workoutId: string;
   exercise: Exercise;
@@ -196,6 +258,8 @@ function ExerciseBlock({
     reps: number,
     weight: number
   ) => void;
+  onDeleteExercise: (workoutId: string, exerciseId: string) => void;
+  onDeleteSet: (workoutId: string, exerciseId: string, setId: string) => void;
 }) {
   const [showSetForm, setShowSetForm] = useState<boolean>(false);
   const [reps, setReps] = useState<string>("12");
@@ -212,16 +276,29 @@ function ExerciseBlock({
 
   return (
     <View style={styles.exerciseBlock}>
+      {/* Header row: name left, actions right */}
       <View style={styles.exerciseHeaderRow}>
         <Text style={styles.exerciseName}>{exercise.name}</Text>
-        <TouchableOpacity
-          style={styles.smallOutlineBtn}
-          onPress={() => setShowSetForm((s) => !s)}
-        >
-          <Text style={styles.outlineBtnText}>
-            {showSetForm ? "Cancel" : "Add Set"}
-          </Text>
-        </TouchableOpacity>
+
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            style={styles.smallOutlineBtn}
+            onPress={() => setShowSetForm((s) => !s)}
+          >
+            <Text style={styles.outlineBtnText}>
+              {showSetForm ? "Cancel" : "Add Set"}
+            </Text>
+          </TouchableOpacity>
+
+          {/* DELETE EXERCISE (top-right of exercise block) */}
+          <TouchableOpacity
+            accessibilityLabel="Delete exercise"
+            style={styles.iconBtn}
+            onPress={() => onDeleteExercise(workoutId, exercise.id)}
+          >
+            <Ionicons name="trash-outline" size={18} color={ORANGE} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {exercise.sets.length === 0 ? (
@@ -230,10 +307,22 @@ function ExerciseBlock({
         exercise.sets.map((s, idx) => (
           <View key={s.id} style={styles.setRow}>
             <Text style={styles.setText}>Set {idx + 1}</Text>
-            <Text style={styles.setText}>
-              Reps: <Text style={styles.white}>{s.reps}</Text> • Wt:{" "}
-              <Text style={styles.white}>{s.weight}</Text> lb
-            </Text>
+
+            <View style={styles.setRightRow}>
+              <Text style={styles.setText}>
+                Reps: <Text style={styles.white}>{s.reps}</Text> • Wt:{" "}
+                <Text style={styles.white}>{s.weight}</Text> lb
+              </Text>
+
+              {/* DELETE SET (right side of the row) */}
+              <TouchableOpacity
+                accessibilityLabel="Delete set"
+                style={styles.iconBtn}
+                onPress={() => onDeleteSet(workoutId, exercise.id, s.id)}
+              >
+                <Ionicons name="trash-outline" size={18} color={ORANGE} />
+              </TouchableOpacity>
+            </View>
           </View>
         ))
       )}
@@ -287,6 +376,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#1f1f1f",
     marginTop: 16,
+    position: "relative",
+  },
+  iconTopRight: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    padding: 6,
   },
   cardTitle: { color: ORANGE, fontWeight: "800", fontSize: 18 },
   cardSubtitle: { color: "#bbb", marginTop: 2, marginBottom: 8 },
@@ -305,15 +401,20 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 8,
   },
+  actionsRow: { flexDirection: "row", alignItems: "center" },
+  iconBtn: { padding: 8, marginLeft: 8 },
+
   exerciseName: { color: "#fff", fontWeight: "700", fontSize: 16 },
 
   setRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#1f1f1f",
   },
+  setRightRow: { flexDirection: "row", alignItems: "center" },
   setText: { color: "#ddd" },
   white: { color: "#fff", fontWeight: "700" },
 
