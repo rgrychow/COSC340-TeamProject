@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons"; // For icons
 import Slider from "@react-native-community/slider";
 import { useNavigation } from "@react-navigation/native";
 import { useRef, useState } from "react";
-import { Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"; // Import necessary components
+import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"; // Import necessary components
 import SettingsModal from "./settings_modal"; // Import the Settings Modal
 
 const ORANGE = "#FF6A00";
@@ -21,6 +21,9 @@ export default function Home() {
   const [workoutModalVisible, setWorkoutModalVisible] = useState(false);
   const [macroModalVisible, setMacroModalVisible] = useState(false);
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+  const [searchModalVisible, setSearchModalVisible] = useState(false); // State for search modal
+  const [searchInput, setSearchInput] = useState(""); // State for search input
+  const [recentSearches, setRecentSearches] = useState<string[]>([]); // State for recent searches
   const [completedWorkouts, setCompletedWorkouts] = useState(0); // Tracks completed workouts
   const [workoutGoal, setWorkoutGoal] = useState(5); // Default workout goal set to 5
   const [macros, setMacros] = useState({
@@ -36,12 +39,19 @@ export default function Home() {
     setCurrentIndex(index);
   };
 
+  const handleSearchSubmit = () => {
+    if (searchInput.trim() !== "") {
+      setRecentSearches((prev) => [searchInput, ...prev.filter((item) => item !== searchInput)]); // Add to recent searches, avoiding duplicates
+      setSearchInput(""); // Clear the search input
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.headerRow}>
         <Text style={styles.header}>Welcome Jackson</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity onPress={() => console.log("Search button pressed")}>
+          <TouchableOpacity onPress={() => setSearchModalVisible(true)}>
             <Ionicons name="search" size={24} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setSettingsModalVisible(true)}>
@@ -243,6 +253,48 @@ export default function Home() {
         </View>
       </Modal>
 
+      {/* Search Modal */}
+      <Modal
+        visible={searchModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setSearchModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalContainer}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={styles.threeQuarterModalContent}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search..."
+              placeholderTextColor="#888"
+              value={searchInput}
+              onChangeText={setSearchInput}
+              onSubmitEditing={handleSearchSubmit} // Handle search submission
+            />
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setSearchModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+            <View style={styles.recentSearchesContainer}>
+              <Text style={styles.sectionTitle}>Recent Searches</Text>
+              {recentSearches.length > 0 ? (
+                recentSearches.map((search, index) => (
+                  <Text key={index} style={styles.recentSearchItem}>
+                    {search}
+                  </Text>
+                ))
+              ) : (
+                <Text style={styles.noRecentSearches}>No recent searches</Text>
+              )}
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       {/* Settings Modal */}
       <SettingsModal 
         visible={settingsModalVisible} 
@@ -431,8 +483,8 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end", // Aligns the modal at the bottom
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent background
   },
   modalContent: {
     backgroundColor: "#111",
@@ -506,5 +558,44 @@ const styles = StyleSheet.create({
   },
   macroColumn: {
     width: "35%", // Fixed width for the completed and goal columns
+  },
+  searchInput: {
+    backgroundColor: "#222",
+    color: "#fff",
+    fontSize: 16,
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  recentSearchesContainer: {
+    marginTop: 16,
+  },
+  recentSearchItem: {
+    color: "#fff",
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  noRecentSearches: {
+    color: "#888",
+    fontSize: 14,
+    fontStyle: "italic",
+  },
+  fullScreenModalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.9)", // Dark background with slight transparency
+  },
+  fullScreenModalContent: {
+    flex: 1,
+    backgroundColor: "#111", // Full-screen modal background
+    padding: 20,
+    borderTopLeftRadius: 0, // No rounded corners for full-screen
+    borderTopRightRadius: 0,
+  },
+  threeQuarterModalContent: {
+    height: "75%", // Takes up 3/4 of the screen height
+    backgroundColor: "#111", // Modal background color
+    padding: 20,
+    borderTopLeftRadius: 20, // Rounded top corners
+    borderTopRightRadius: 20,
   },
 });
