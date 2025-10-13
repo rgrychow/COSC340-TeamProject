@@ -4,6 +4,7 @@ import Slider from "@react-native-community/slider";
 import { useNavigation } from "@react-navigation/native";
 import { useRef, useState } from "react";
 import { Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"; // Import necessary components
+import SettingsModal from "./settings_modal"; // Import the Settings Modal
 
 const ORANGE = "#FF6A00";
 
@@ -19,6 +20,7 @@ export default function Home() {
   const scrollViewRef = useRef<ScrollView>(null);
   const [workoutModalVisible, setWorkoutModalVisible] = useState(false);
   const [macroModalVisible, setMacroModalVisible] = useState(false);
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [completedWorkouts, setCompletedWorkouts] = useState(0); // Tracks completed workouts
   const [workoutGoal, setWorkoutGoal] = useState(5); // Default workout goal set to 5
   const [macros, setMacros] = useState({
@@ -41,6 +43,9 @@ export default function Home() {
         <View style={styles.headerButtons}>
           <TouchableOpacity onPress={() => console.log("Search button pressed")}>
             <Ionicons name="search" size={24} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setSettingsModalVisible(true)}>
+            <Ionicons name="settings-outline" size={24} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
             <Ionicons name="person-circle" size={28} color="#fff" />
@@ -237,6 +242,12 @@ export default function Home() {
           </View>
         </View>
       </Modal>
+
+      {/* Settings Modal */}
+      <SettingsModal 
+        visible={settingsModalVisible} 
+        onClose={() => setSettingsModalVisible(false)} 
+      />
     </ScrollView>
   );
 }
