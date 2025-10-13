@@ -110,5 +110,4 @@ export function useWorkouts() {
   return ctx;
 }
 
-}
 
