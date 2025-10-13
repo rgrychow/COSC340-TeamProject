@@ -1,4 +1,5 @@
 // app/(tabs)/fitness.tsx
+// app/(tabs)/fitness.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -8,7 +9,6 @@ import {
   TextInput,
   FlatList,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 
 const ORANGE = "#FF6A00";
 
@@ -52,10 +52,7 @@ export default function Fitness() {
     setWorkouts((prev) =>
       prev.map((w) =>
         w.id === workoutId
-          ? {
-              ...w,
-              exercises: w.exercises.filter((ex) => ex.id !== exerciseId),
-            }
+          ? { ...w, exercises: w.exercises.filter((ex) => ex.id !== exerciseId) }
           : w
       )
     );
@@ -189,17 +186,17 @@ function WorkoutCard({
       {/* DELETE WORKOUT (top-right corner) */}
       <TouchableOpacity
         accessibilityLabel="Delete workout"
-        style={styles.iconTopRight}
+        style={styles.deletePillTopRight}
         onPress={() => onDeleteWorkout(workout.id)}
       >
-        <Ionicons name="trash-outline" size={20} color={ORANGE} />
+        <Text style={styles.deletePillText}>Delete</Text>
       </TouchableOpacity>
 
       {/* Title + date */}
       <Text style={styles.cardTitle}>Workout</Text>
       <Text style={styles.cardSubtitle}>{dateLabel}</Text>
 
-      {/* Add Exercise button (left aligned so it doesn't overflow) */}
+      {/* Add Exercise button */}
       <TouchableOpacity
         style={[styles.outlineBtn, { alignSelf: "flex-start", marginTop: 6 }]}
         onPress={() => setShowExerciseForm((s) => !s)}
@@ -293,10 +290,10 @@ function ExerciseBlock({
           {/* DELETE EXERCISE (top-right of exercise block) */}
           <TouchableOpacity
             accessibilityLabel="Delete exercise"
-            style={styles.iconBtn}
+            style={styles.smallDeleteBtn}
             onPress={() => onDeleteExercise(workoutId, exercise.id)}
           >
-            <Ionicons name="trash-outline" size={18} color={ORANGE} />
+            <Text style={styles.deletePillText}>Delete</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -317,10 +314,10 @@ function ExerciseBlock({
               {/* DELETE SET (right side of the row) */}
               <TouchableOpacity
                 accessibilityLabel="Delete set"
-                style={styles.iconBtn}
+                style={styles.smallDeleteBtn}
                 onPress={() => onDeleteSet(workoutId, exercise.id, s.id)}
               >
-                <Ionicons name="trash-outline" size={18} color={ORANGE} />
+                <Text style={styles.deletePillText}>Delete</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -378,12 +375,19 @@ const styles = StyleSheet.create({
     marginTop: 16,
     position: "relative",
   },
-  iconTopRight: {
+  // Workout delete pill (top-right)
+  deletePillTopRight: {
     position: "absolute",
     top: 10,
     right: 10,
-    padding: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: ORANGE,
+    borderRadius: 10,
   },
+  deletePillText: { color: ORANGE, fontWeight: "700" },
+
   cardTitle: { color: ORANGE, fontWeight: "800", fontSize: 18 },
   cardSubtitle: { color: "#bbb", marginTop: 2, marginBottom: 8 },
 
@@ -402,7 +406,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   actionsRow: { flexDirection: "row", alignItems: "center" },
-  iconBtn: { padding: 8, marginLeft: 8 },
 
   exerciseName: { color: "#fff", fontWeight: "700", fontSize: 16 },
 
@@ -454,6 +457,14 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 10,
+  },
+  smallDeleteBtn: {
+    borderWidth: 1,
+    borderColor: ORANGE,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    marginLeft: 8,
   },
   outlineBtnText: { color: ORANGE, fontWeight: "700" },
 });
