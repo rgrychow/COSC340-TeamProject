@@ -1,0 +1,528 @@
+home.tsx     (om patel on 10/13/2025 at 17:09): import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"; // Import necessary components
+home.tsx     (om patel on 10/13/2025 at 17:09):   const [searchModalVisible, setSearchModalVisible] = useState(false); // State for search modal
+home.tsx     (om patel on 10/14/2025 at 17:21):   const [searchInput, setSearchInput] = useState(""); // State for search input for search modal
+home.tsx     (om patel on 10/13/2025 at 17:09):   const [recentSearches, setRecentSearches] = useState<string[]>([]); // State for recent searches
+home.tsx     (om patel on 10/14/2025 at 17:21):   const [runModalVisible, setRunModalVisible] = useState(false);
+home.tsx     (om patel on 10/14/2025 at 17:21):   const [mealModalVisible, setMealModalVisible] = useState(false);
+home.tsx     (om patel on 10/14/2025 at 17:21):   const [goalTime, setGoalTime] = useState(""); // For the "Start Run" goal time input
+home.tsx     (om patel on 10/14/2025 at 17:21):   const [countdown, setCountdown] = useState<number | null>(null); // For the countdown timer
+home.tsx     (om patel on 10/14/2025 at 17:21):   const [meals, setMeals] = useState([]); // State for meals
+home.tsx     (om patel on 10/14/2025 at 17:21):   const [mealNameModalVisible, setMealNameModalVisible] = useState(false); // State for showing the modal
+home.tsx     (om patel on 10/14/2025 at 17:21):   const [newMealName, setNewMealName] = useState(""); // State for the new meal name
+home.tsx     (om patel on 10/14/2025 at 17:21):   // State for Step Count and Water Intake
+home.tsx     (om patel on 10/14/2025 at 17:21):   const [stepCount, setStepCount] = useState(5000); // Current step count
+home.tsx     (om patel on 10/14/2025 at 17:21):   const [waterIntake, setWaterIntake] = useState(1.5); // Current water intake in liters
+home.tsx     (om patel on 10/14/2025 at 17:21):   const [waterModalVisible, setWaterModalVisible] = useState(false); // State for water intake modal
+home.tsx     (om patel on 10/14/2025 at 17:21):   const [waterGoal, setWaterGoal] = useState(3); // Water intake goal in liters
+home.tsx     (om patel on 10/14/2025 at 17:21):   const handleSearchSubmit = () => {
+home.tsx     (om patel on 10/14/2025 at 17:21):     if (searchInput.trim() !== "") {
+home.tsx     (om patel on 10/14/2025 at 17:21):       setRecentSearches((prev) => [
+home.tsx     (om patel on 10/14/2025 at 17:21):         searchInput,
+home.tsx     (om patel on 10/14/2025 at 17:21):         ...prev.filter((item) => item !== searchInput),
+home.tsx     (om patel on 10/14/2025 at 17:21):       ]); // Add to recent searches, avoiding duplicates
+home.tsx     (om patel on 10/14/2025 at 17:21):       setSearchInput(""); // Clear the search input
+home.tsx     (om patel on 10/14/2025 at 17:21):     }
+home.tsx     (om patel on 10/14/2025 at 17:21):   };
+home.tsx     (om patel on 10/14/2025 at 17:21):   const handleScroll = (event) => {
+home.tsx     (om patel on 10/14/2025 at 17:21):   const updateMealMacro = (mealId, macro, value) => {
+home.tsx     (om patel on 10/14/2025 at 17:21):     setMeals((prevMeals) =>
+home.tsx     (om patel on 10/14/2025 at 17:21):       prevMeals.map((meal) =>
+home.tsx     (om patel on 10/14/2025 at 17:21):         meal.id === mealId ? { ...meal, macros: { ...meal.macros, [macro]: value } } : meal
+home.tsx     (om patel on 10/14/2025 at 17:21):       )
+home.tsx     (om patel on 10/14/2025 at 17:21):     );
+home.tsx     (om patel on 10/13/2025 at 17:09):   };
+home.tsx     (om patel on 10/13/2025 at 17:09):           <TouchableOpacity onPress={() => setSearchModalVisible(true)}>
+home.tsx     (om patel on 10/14/2025 at 17:21):               setRunModalVisible(true); // Open Start Run modal
+home.tsx     (om patel on 10/14/2025 at 17:21):               setWorkoutModalVisible(true); // Open Start Workout modal
+home.tsx     (om patel on 10/14/2025 at 17:21):               setMealModalVisible(true); // Open Track Meals modal
+home.tsx     (om patel on 10/14/2025 at 17:21):             {completedWorkouts}/{workoutGoal}
+home.tsx     (om patel on 10/13/2025 at 17:09):       {/* Search Modal */}
+home.tsx     (om patel on 10/13/2025 at 17:09):       <Modal
+home.tsx     (om patel on 10/13/2025 at 17:09):         visible={searchModalVisible}
+home.tsx     (om patel on 10/13/2025 at 17:09):         transparent={true}
+home.tsx     (om patel on 10/13/2025 at 17:09):         animationType="slide"
+home.tsx     (om patel on 10/13/2025 at 17:09):         onRequestClose={() => setSearchModalVisible(false)}
+home.tsx     (om patel on 10/13/2025 at 17:09):       >
+home.tsx     (om patel on 10/13/2025 at 17:09):         <KeyboardAvoidingView
+home.tsx     (om patel on 10/13/2025 at 17:09):           style={styles.modalContainer}
+home.tsx     (om patel on 10/13/2025 at 17:09):           behavior={Platform.OS === "ios" ? "padding" : undefined}
+home.tsx     (om patel on 10/13/2025 at 17:09):         >
+home.tsx     (om patel on 10/13/2025 at 17:09):           <View style={styles.threeQuarterModalContent}>
+home.tsx     (om patel on 10/13/2025 at 17:09):             <TextInput
+home.tsx     (om patel on 10/13/2025 at 17:09):               style={styles.searchInput}
+home.tsx     (om patel on 10/13/2025 at 17:09):               placeholder="Search..."
+home.tsx     (om patel on 10/13/2025 at 17:09):               placeholderTextColor="#888"
+home.tsx     (om patel on 10/13/2025 at 17:09):               value={searchInput}
+home.tsx     (om patel on 10/13/2025 at 17:09):               onChangeText={setSearchInput}
+home.tsx     (om patel on 10/13/2025 at 17:09):               onSubmitEditing={handleSearchSubmit} // Handle search submission
+home.tsx     (om patel on 10/13/2025 at 17:09):             />
+home.tsx     (om patel on 10/13/2025 at 17:09):             <TouchableOpacity
+home.tsx     (om patel on 10/13/2025 at 17:09):               style={styles.closeButton}
+home.tsx     (om patel on 10/13/2025 at 17:09):               onPress={() => setSearchModalVisible(false)}
+home.tsx     (om patel on 10/13/2025 at 17:09):             >
+home.tsx     (om patel on 10/13/2025 at 17:09):               <Text style={styles.closeButtonText}>Close</Text>
+home.tsx     (om patel on 10/13/2025 at 17:09):             </TouchableOpacity>
+home.tsx     (om patel on 10/13/2025 at 17:09):             <View style={styles.recentSearchesContainer}>
+home.tsx     (om patel on 10/13/2025 at 17:09):               <Text style={styles.sectionTitle}>Recent Searches</Text>
+home.tsx     (om patel on 10/13/2025 at 17:09):               {recentSearches.length > 0 ? (
+home.tsx     (om patel on 10/13/2025 at 17:09):                 recentSearches.map((search, index) => (
+home.tsx     (om patel on 10/13/2025 at 17:09):                   <Text key={index} style={styles.recentSearchItem}>
+home.tsx     (om patel on 10/13/2025 at 17:09):                     {search}
+home.tsx     (om patel on 10/13/2025 at 17:09):                   </Text>
+home.tsx     (om patel on 10/13/2025 at 17:09):                 ))
+home.tsx     (om patel on 10/13/2025 at 17:09):               ) : (
+home.tsx     (om patel on 10/13/2025 at 17:09):                 <Text style={styles.noRecentSearches}>No recent searches</Text>
+home.tsx     (om patel on 10/13/2025 at 17:09):               )}
+home.tsx     (om patel on 10/13/2025 at 17:09):             </View>
+home.tsx     (om patel on 10/13/2025 at 17:09):           </View>
+home.tsx     (om patel on 10/13/2025 at 17:09):         </KeyboardAvoidingView>
+home.tsx     (om patel on 10/13/2025 at 17:09):       </Modal>
+home.tsx     (om patel on 10/14/2025 at 17:21):       {/* Start Run Modal */}
+home.tsx     (om patel on 10/14/2025 at 17:21):       <Modal
+home.tsx     (om patel on 10/14/2025 at 17:21):         visible={runModalVisible}
+home.tsx     (om patel on 10/14/2025 at 17:21):         transparent={true}
+home.tsx     (om patel on 10/14/2025 at 17:21):         animationType="slide"
+home.tsx     (om patel on 10/14/2025 at 17:21):         onRequestClose={() => setRunModalVisible(false)}
+home.tsx     (om patel on 10/14/2025 at 17:21):       >
+home.tsx     (om patel on 10/14/2025 at 17:21):         <View style={styles.modalContainer}>
+home.tsx     (om patel on 10/14/2025 at 17:21):           <View style={styles.halfModalContent}>
+home.tsx     (om patel on 10/14/2025 at 17:21):             {/* Modal Header */}
+home.tsx     (om patel on 10/14/2025 at 17:21):             <View style={styles.modalHeader}>
+home.tsx     (om patel on 10/14/2025 at 17:21):               <Text style={styles.modalTitle}>Start Run</Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):               <TouchableOpacity onPress={() => setRunModalVisible(false)}>
+home.tsx     (om patel on 10/14/2025 at 17:21):                 <Ionicons name="close" size={24} color="#fff" />
+home.tsx     (om patel on 10/14/2025 at 17:21):               </TouchableOpacity>
+home.tsx     (om patel on 10/14/2025 at 17:21):             </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):             {/* Goal Time Input */}
+home.tsx     (om patel on 10/14/2025 at 17:21):             <View style={styles.goalTimeContainer}>
+home.tsx     (om patel on 10/14/2025 at 17:21):               <Text style={styles.modalSubtitle}>Set a goal run time</Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):               <View style={styles.goalTimeInputContainer}>
+home.tsx     (om patel on 10/14/2025 at 17:21):                 <TextInput
+home.tsx     (om patel on 10/14/2025 at 17:21):                   style={styles.smallInput}
+home.tsx     (om patel on 10/14/2025 at 17:21):                   placeholder="0"
+home.tsx     (om patel on 10/14/2025 at 17:21):                   placeholderTextColor="#888"
+home.tsx     (om patel on 10/14/2025 at 17:21):                   keyboardType="numeric"
+home.tsx     (om patel on 10/14/2025 at 17:21):                   value={goalTime}
+home.tsx     (om patel on 10/14/2025 at 17:21):                   onChangeText={setGoalTime}
+home.tsx     (om patel on 10/14/2025 at 17:21):                 />
+home.tsx     (om patel on 10/14/2025 at 17:21):                 <Text style={styles.goalTimeUnit}>min</Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):               </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):             </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):             {/* Countdown or Start Button */}
+home.tsx     (om patel on 10/14/2025 at 17:21):             {countdown === null ? (
+home.tsx     (om patel on 10/14/2025 at 17:21):               <TouchableOpacity
+home.tsx     (om patel on 10/14/2025 at 17:21):                 style={styles.startButton}
+home.tsx     (om patel on 10/14/2025 at 17:21):                 onPress={() => {
+home.tsx     (om patel on 10/14/2025 at 17:21):                   if (!goalTime || isNaN(Number(goalTime)) || Number(goalTime) <= 0) {
+home.tsx     (om patel on 10/14/2025 at 17:21):                     alert("Please enter a valid goal time.");
+home.tsx     (om patel on 10/14/2025 at 17:21):                     return;
+home.tsx     (om patel on 10/14/2025 at 17:21):                   }
+home.tsx     (om patel on 10/14/2025 at 17:21):                   let count = 3;
+home.tsx     (om patel on 10/14/2025 at 17:21):                   setCountdown(count);
+home.tsx     (om patel on 10/14/2025 at 17:21):                   const interval = setInterval(() => {
+home.tsx     (om patel on 10/14/2025 at 17:21):                     count -= 1;
+home.tsx     (om patel on 10/14/2025 at 17:21):                     if (count === 0) {
+home.tsx     (om patel on 10/14/2025 at 17:21):                       clearInterval(interval);
+home.tsx     (om patel on 10/14/2025 at 17:21):                       setCountdown(Number(goalTime) * 60); // Convert minutes to seconds
+home.tsx     (om patel on 10/14/2025 at 17:21):                       const goalInterval = setInterval(() => {
+home.tsx     (om patel on 10/14/2025 at 17:21):                         setCountdown((prev) => {
+home.tsx     (om patel on 10/14/2025 at 17:21):                           if (prev === 1) {
+home.tsx     (om patel on 10/14/2025 at 17:21):                             clearInterval(goalInterval);
+home.tsx     (om patel on 10/14/2025 at 17:21):                             setCountdown(null);
+home.tsx     (om patel on 10/14/2025 at 17:21):                             console.log("Run completed!");
+home.tsx     (om patel on 10/14/2025 at 17:21):                             return null;
+home.tsx     (om patel on 10/14/2025 at 17:21):                           }
+home.tsx     (om patel on 10/14/2025 at 17:21):                           return prev - 1;
+home.tsx     (om patel on 10/14/2025 at 17:21):                         });
+home.tsx     (om patel on 10/14/2025 at 17:21):                       }, 1000);
+home.tsx     (om patel on 10/14/2025 at 17:21):                     } else {
+home.tsx     (om patel on 10/14/2025 at 17:21):                       setCountdown(count);
+home.tsx     (om patel on 10/14/2025 at 17:21):                     }
+home.tsx     (om patel on 10/14/2025 at 17:21):                   }, 1000);
+home.tsx     (om patel on 10/14/2025 at 17:21):                 }}
+home.tsx     (om patel on 10/14/2025 at 17:21):               >
+home.tsx     (om patel on 10/14/2025 at 17:21):                 <Text style={styles.startButtonText}>Start Run</Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):               </TouchableOpacity>
+home.tsx     (om patel on 10/14/2025 at 17:21):             ) : (
+home.tsx     (om patel on 10/14/2025 at 17:21):               <Text style={styles.countdownText}>
+home.tsx     (om patel on 10/14/2025 at 17:21):                 {countdown > 3
+home.tsx     (om patel on 10/14/2025 at 17:21):                   ? `${Math.floor(countdown / 60)}:${String(countdown % 60).padStart(2, "0")}`
+home.tsx     (om patel on 10/14/2025 at 17:21):                   : countdown === 1
+home.tsx     (om patel on 10/14/2025 at 17:21):                   ? "Start"
+home.tsx     (om patel on 10/14/2025 at 17:21):                   : countdown}
+home.tsx     (om patel on 10/14/2025 at 17:21):               </Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):             )}
+home.tsx     (om patel on 10/14/2025 at 17:21):           </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):         </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):       </Modal>
+home.tsx     (om patel on 10/14/2025 at 17:21):       {/* Start Workout Modal */}
+home.tsx     (om patel on 10/14/2025 at 17:21):       <Modal
+home.tsx     (om patel on 10/14/2025 at 17:21):         visible={workoutModalVisible}
+home.tsx     (om patel on 10/14/2025 at 17:21):         transparent={true}
+home.tsx     (om patel on 10/14/2025 at 17:21):         animationType="slide"
+home.tsx     (om patel on 10/14/2025 at 17:21):         onRequestClose={() => setWorkoutModalVisible(false)}
+home.tsx     (om patel on 10/14/2025 at 17:21):       >
+home.tsx     (om patel on 10/14/2025 at 17:21):         <View style={styles.modalContainer}>
+home.tsx     (om patel on 10/14/2025 at 17:21):           <View style={styles.modalContent}>
+home.tsx     (om patel on 10/14/2025 at 17:21):             <Text style={styles.modalTitle}>Start Workout</Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):             <TouchableOpacity onPress={() => setWorkoutModalVisible(false)}>
+home.tsx     (om patel on 10/14/2025 at 17:21):               <Ionicons name="close" size={24} color="#fff" />
+home.tsx     (om patel on 10/14/2025 at 17:21):             </TouchableOpacity>
+home.tsx     (om patel on 10/14/2025 at 17:21):             <Text style={styles.text}>Workout details will go here.</Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):             <TouchableOpacity
+home.tsx     (om patel on 10/14/2025 at 17:21):               style={styles.startButton}
+home.tsx     (om patel on 10/14/2025 at 17:21):               onPress={() => {
+home.tsx     (om patel on 10/14/2025 at 17:21):                 console.log("Workout started");
+home.tsx     (om patel on 10/14/2025 at 17:21):                 setWorkoutModalVisible(false);
+home.tsx     (om patel on 10/14/2025 at 17:21):               }}
+home.tsx     (om patel on 10/14/2025 at 17:21):             >
+home.tsx     (om patel on 10/14/2025 at 17:21):               <Text style={styles.startButtonText}>Start Workout</Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):             </TouchableOpacity>
+home.tsx     (om patel on 10/14/2025 at 17:21):           </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):         </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):       </Modal>
+home.tsx     (om patel on 10/14/2025 at 17:21):       {/* Track Meals Modal */}
+home.tsx     (om patel on 10/14/2025 at 17:21):       <Modal
+home.tsx     (om patel on 10/14/2025 at 17:21):         visible={mealModalVisible}
+home.tsx     (om patel on 10/14/2025 at 17:21):         transparent={true}
+home.tsx     (om patel on 10/14/2025 at 17:21):         animationType="slide"
+home.tsx     (om patel on 10/14/2025 at 17:21):         onRequestClose={() => setMealModalVisible(false)}
+home.tsx     (om patel on 10/14/2025 at 17:21):       >
+home.tsx     (om patel on 10/14/2025 at 17:21):         <View style={styles.modalContainer}>
+home.tsx     (om patel on 10/14/2025 at 17:21):           <View style={styles.halfModalContent}>
+home.tsx     (om patel on 10/14/2025 at 17:21):             {/* Modal Header */}
+home.tsx     (om patel on 10/14/2025 at 17:21):             <View style={styles.modalHeader}>
+home.tsx     (om patel on 10/14/2025 at 17:21):               <Text style={styles.modalTitle}>Track Meals</Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):               <TouchableOpacity onPress={() => setMealModalVisible(false)}>
+home.tsx     (om patel on 10/14/2025 at 17:21):                 <Ionicons name="close" size={24} color="#fff" />
+home.tsx     (om patel on 10/14/2025 at 17:21):               </TouchableOpacity>
+home.tsx     (om patel on 10/14/2025 at 17:21):             </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):             {/* Add Meal Button */}
+home.tsx     (om patel on 10/14/2025 at 17:21):             <TouchableOpacity
+home.tsx     (om patel on 10/14/2025 at 17:21):               style={styles.addMealButton}
+home.tsx     (om patel on 10/14/2025 at 17:21):               onPress={() => {
+home.tsx     (om patel on 10/14/2025 at 17:21):                 setMeals((prevMeals) => [
+home.tsx     (om patel on 10/14/2025 at 17:21):                   ...prevMeals,
+home.tsx     (om patel on 10/14/2025 at 17:21):                   {
+home.tsx     (om patel on 10/14/2025 at 17:21):                     id: Date.now(),
+home.tsx     (om patel on 10/14/2025 at 17:21):                     name: "",
+home.tsx     (om patel on 10/14/2025 at 17:21):                     macros: { calories: 0, protein: 0, carbs: 0, fats: 0 },
+home.tsx     (om patel on 10/14/2025 at 17:21):                   },
+home.tsx     (om patel on 10/14/2025 at 17:21):                 ]);
+home.tsx     (om patel on 10/14/2025 at 17:21):               }}
+home.tsx     (om patel on 10/14/2025 at 17:21):             >
+home.tsx     (om patel on 10/14/2025 at 17:21):               <Text style={styles.addMealButtonText}>Add Meal</Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):             </TouchableOpacity>
+home.tsx     (om patel on 10/14/2025 at 17:21):             {/* Meal List */}
+home.tsx     (om patel on 10/14/2025 at 17:21):             <ScrollView style={styles.mealList}>
+home.tsx     (om patel on 10/14/2025 at 17:21):               {meals.map((meal) => (
+home.tsx     (om patel on 10/14/2025 at 17:21):                 <View key={meal.id} style={styles.mealItem}>
+home.tsx     (om patel on 10/14/2025 at 17:21):                   {/* Input for Meal Name */}
+home.tsx     (om patel on 10/14/2025 at 17:21):                   <TextInput
+home.tsx     (om patel on 10/14/2025 at 17:21):                     style={styles.mealNameInput}
+home.tsx     (om patel on 10/14/2025 at 17:21):                     placeholder="Enter meal name"
+home.tsx     (om patel on 10/14/2025 at 17:21):                     placeholderTextColor="#888"
+home.tsx     (om patel on 10/14/2025 at 17:21):                     value={meal.name}
+home.tsx     (om patel on 10/14/2025 at 17:21):                     onChangeText={(value) =>
+home.tsx     (om patel on 10/14/2025 at 17:21):                       setMeals((prevMeals) =>
+home.tsx     (om patel on 10/14/2025 at 17:21):                         prevMeals.map((m) =>
+home.tsx     (om patel on 10/14/2025 at 17:21):                           m.id === meal.id ? { ...m, name: value } : m
+home.tsx     (om patel on 10/14/2025 at 17:21):                         )
+home.tsx     (om patel on 10/14/2025 at 17:21):                       )
+home.tsx     (om patel on 10/14/2025 at 17:21):                     }
+home.tsx     (om patel on 10/14/2025 at 17:21):                   />
+home.tsx     (om patel on 10/14/2025 at 17:21):                   {/* Macros */}
+home.tsx     (om patel on 10/14/2025 at 17:21):                   <View style={styles.macroRow}>
+home.tsx     (om patel on 10/14/2025 at 17:21):                     <Text style={styles.macroLabel}>Calories:</Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):                     <TextInput
+home.tsx     (om patel on 10/14/2025 at 17:21):                       style={styles.macroInput}
+home.tsx     (om patel on 10/14/2025 at 17:21):                       keyboardType="numeric"
+home.tsx     (om patel on 10/14/2025 at 17:21):                       value={String(meal.macros.calories)}
+home.tsx     (om patel on 10/14/2025 at 17:21):                       onChangeText={(value) =>
+home.tsx     (om patel on 10/14/2025 at 17:21):                         updateMealMacro(meal.id, "calories", parseInt(value) || 0)
+home.tsx     (om patel on 10/14/2025 at 17:21):                       }
+home.tsx     (om patel on 10/14/2025 at 17:21):                     />
+home.tsx     (om patel on 10/14/2025 at 17:21):                   </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):                   <View style={styles.macroRow}>
+home.tsx     (om patel on 10/14/2025 at 17:21):                     <Text style={styles.macroLabel}>Protein:</Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):                     <TextInput
+home.tsx     (om patel on 10/14/2025 at 17:21):                       style={styles.macroInput}
+home.tsx     (om patel on 10/14/2025 at 17:21):                       keyboardType="numeric"
+home.tsx     (om patel on 10/14/2025 at 17:21):                       value={String(meal.macros.protein)}
+home.tsx     (om patel on 10/14/2025 at 17:21):                       onChangeText={(value) =>
+home.tsx     (om patel on 10/14/2025 at 17:21):                         updateMealMacro(meal.id, "protein", parseInt(value) || 0)
+home.tsx     (om patel on 10/14/2025 at 17:21):                       }
+home.tsx     (om patel on 10/14/2025 at 17:21):                     />
+home.tsx     (om patel on 10/14/2025 at 17:21):                   </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):                   <View style={styles.macroRow}>
+home.tsx     (om patel on 10/14/2025 at 17:21):                     <Text style={styles.macroLabel}>Carbs:</Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):                     <TextInput
+home.tsx     (om patel on 10/14/2025 at 17:21):                       style={styles.macroInput}
+home.tsx     (om patel on 10/14/2025 at 17:21):                       keyboardType="numeric"
+home.tsx     (om patel on 10/14/2025 at 17:21):                       value={String(meal.macros.carbs)}
+home.tsx     (om patel on 10/14/2025 at 17:21):                       onChangeText={(value) =>
+home.tsx     (om patel on 10/14/2025 at 17:21):                         updateMealMacro(meal.id, "carbs", parseInt(value) || 0)
+home.tsx     (om patel on 10/14/2025 at 17:21):                       }
+home.tsx     (om patel on 10/14/2025 at 17:21):                     />
+home.tsx     (om patel on 10/14/2025 at 17:21):                   </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):                   <View style={styles.macroRow}>
+home.tsx     (om patel on 10/14/2025 at 17:21):                     <Text style={styles.macroLabel}>Fats:</Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):                     <TextInput
+home.tsx     (om patel on 10/14/2025 at 17:21):                       style={styles.macroInput}
+home.tsx     (om patel on 10/14/2025 at 17:21):                       keyboardType="numeric"
+home.tsx     (om patel on 10/14/2025 at 17:21):                       value={String(meal.macros.fats)}
+home.tsx     (om patel on 10/14/2025 at 17:21):                       onChangeText={(value) =>
+home.tsx     (om patel on 10/14/2025 at 17:21):                         updateMealMacro(meal.id, "fats", parseInt(value) || 0)
+home.tsx     (om patel on 10/14/2025 at 17:21):                       }
+home.tsx     (om patel on 10/14/2025 at 17:21):                     />
+home.tsx     (om patel on 10/14/2025 at 17:21):                   </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):                 </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):               ))}
+home.tsx     (om patel on 10/14/2025 at 17:21):             </ScrollView>
+home.tsx     (om patel on 10/14/2025 at 17:21):           </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):         </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):       </Modal>
+home.tsx     (om patel on 10/14/2025 at 17:21):       {/* Meal Name Input Modal */}
+home.tsx     (om patel on 10/14/2025 at 17:21):       <Modal
+home.tsx     (om patel on 10/14/2025 at 17:21):         visible={mealNameModalVisible}
+home.tsx     (om patel on 10/14/2025 at 17:21):         transparent={true}
+home.tsx     (om patel on 10/14/2025 at 17:21):         animationType="slide"
+home.tsx     (om patel on 10/14/2025 at 17:21):         onRequestClose={() => setMealNameModalVisible(false)} // Close the modal
+home.tsx     (om patel on 10/14/2025 at 17:21):       >
+home.tsx     (om patel on 10/14/2025 at 17:21):         <View style={styles.modalContainer}>
+home.tsx     (om patel on 10/14/2025 at 17:21):           <View style={styles.modalContent}>
+home.tsx     (om patel on 10/14/2025 at 17:21):             <Text style={styles.modalTitle}>Enter Meal Name</Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):             <TextInput
+home.tsx     (om patel on 10/14/2025 at 17:21):               style={styles.searchInput}
+home.tsx     (om patel on 10/14/2025 at 17:21):               placeholder="Meal Name"
+home.tsx     (om patel on 10/14/2025 at 17:21):               placeholderTextColor="#888"
+home.tsx     (om patel on 10/14/2025 at 17:21):               value={newMealName}
+home.tsx     (om patel on 10/14/2025 at 17:21):               onChangeText={setNewMealName} // Update the meal name
+home.tsx     (om patel on 10/14/2025 at 17:21):             />
+home.tsx     (om patel on 10/14/2025 at 17:21):             <TouchableOpacity
+home.tsx     (om patel on 10/14/2025 at 17:21):               style={styles.addMealButton}
+home.tsx     (om patel on 10/14/2025 at 17:21):               onPress={() => {
+home.tsx     (om patel on 10/14/2025 at 17:21):                 if (newMealName.trim() !== "") {
+home.tsx     (om patel on 10/14/2025 at 17:21):                   setMeals((prevMeals) => [
+home.tsx     (om patel on 10/14/2025 at 17:21):                     ...prevMeals,
+home.tsx     (om patel on 10/14/2025 at 17:21):                     {
+home.tsx     (om patel on 10/14/2025 at 17:21):                       id: Date.now(),
+home.tsx     (om patel on 10/14/2025 at 17:21):                       name: newMealName.trim(),
+home.tsx     (om patel on 10/14/2025 at 17:21):                       macros: { calories: 0, protein: 0, carbs: 0, fats: 0 },
+home.tsx     (om patel on 10/14/2025 at 17:21):                     },
+home.tsx     (om patel on 10/14/2025 at 17:21):                   ]);
+home.tsx     (om patel on 10/14/2025 at 17:21):                   setNewMealName(""); // Clear the input
+home.tsx     (om patel on 10/14/2025 at 17:21):                   setMealNameModalVisible(false); // Close the modal
+home.tsx     (om patel on 10/14/2025 at 17:21):                 } else {
+home.tsx     (om patel on 10/14/2025 at 17:21):                   alert("Please enter a valid meal name.");
+home.tsx     (om patel on 10/14/2025 at 17:21):                 }
+home.tsx     (om patel on 10/14/2025 at 17:21):               }}
+home.tsx     (om patel on 10/14/2025 at 17:21):             >
+home.tsx     (om patel on 10/14/2025 at 17:21):               <Text style={styles.addMealButtonText}>Add</Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):             </TouchableOpacity>
+home.tsx     (om patel on 10/14/2025 at 17:21):             <TouchableOpacity
+home.tsx     (om patel on 10/14/2025 at 17:21):               style={styles.closeButton}
+home.tsx     (om patel on 10/14/2025 at 17:21):               onPress={() => setMealNameModalVisible(false)} // Close the modal
+home.tsx     (om patel on 10/14/2025 at 17:21):             >
+home.tsx     (om patel on 10/14/2025 at 17:21):               <Text style={styles.closeButtonText}>Cancel</Text>
+home.tsx     (om patel on 10/14/2025 at 17:21):             </TouchableOpacity>
+home.tsx     (om patel on 10/14/2025 at 17:21):           </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):         </View>
+home.tsx     (om patel on 10/14/2025 at 17:21):       </Modal>
+home.tsx     (om patel on 10/14/2025 at 17:21):       <SettingsModal
+home.tsx     (om patel on 10/14/2025 at 17:21):         visible={settingsModalVisible}
+home.tsx     (om patel on 10/14/2025 at 17:21):         onClose={() => setSettingsModalVisible(false)}
+home.tsx     (om patel on 10/14/2025 at 17:21):     width: 365,
+home.tsx     (om patel on 10/14/2025 at 17:21):     height: 250, // Matches the height of the image
+home.tsx     (om patel on 10/14/2025 at 17:21):     borderRadius: 14,
+home.tsx     (om patel on 10/14/2025 at 17:21):     elevation: 4, // For Android shadow
+home.tsx     (om patel on 10/14/2025 at 17:21):     color: ORANGE,
+home.tsx     (om patel on 10/14/2025 at 17:21):     gap: 4,
+home.tsx     (om patel on 10/14/2025 at 17:21):     backgroundColor: "#ccc",
+home.tsx     (om patel on 10/14/2025 at 17:21):     height: 10, // Gray background for the progress bar
+home.tsx     (om patel on 10/14/2025 at 17:21):     backgroundColor: "#333",
+home.tsx     (om patel on 10/14/2025 at 17:21):     borderRadius: 5,
+home.tsx     (om patel on 10/14/2025 at 17:21):     overflow: "hidden",
+home.tsx     (om patel on 10/14/2025 at 17:21):     flexDirection: "row",
+home.tsx     (om patel on 10/14/2025 at 17:21):     justifyContent: "center",
+home.tsx     (om patel on 10/14/2025 at 17:21):     alignItems: "center",
+home.tsx     (om patel on 10/13/2025 at 17:09):     backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent background
+home.tsx     (om patel on 10/14/2025 at 17:21):     flexDirection: "row", // Align items in a row
+home.tsx     (om patel on 10/14/2025 at 17:21):     justifyContent: "space-between", // Space between labels and inputs
+home.tsx     (om patel on 10/14/2025 at 17:21):     alignItems: "center", // Vertically align items
+home.tsx     (om patel on 10/14/2025 at 17:21):     marginBottom: 12, // Add spacing between rows
+home.tsx     (om patel on 10/14/2025 at 17:21):     flexDirection: "row", // Align inputs in a row
+home.tsx     (om patel on 10/14/2025 at 17:21):     justifyContent: "space-between", // Space between inputs
+home.tsx     (om patel on 10/14/2025 at 17:21):     backgroundColor: "#222", // Dark background for input
+home.tsx     (om patel on 10/14/2025 at 17:21):     color: "#fff", // White text
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontSize: 14, // Font size for input text
+home.tsx     (om patel on 10/14/2025 at 17:21):     padding: 8, // Padding inside the input
+home.tsx     (om patel on 10/14/2025 at 17:21):     borderRadius: 8, // Rounded corners
+home.tsx     (om patel on 10/14/2025 at 17:21):     textAlign: "center", // Center text
+home.tsx     (om patel on 10/14/2025 at 17:21):     width: 80, // Fixed width for input
+home.tsx     (om patel on 10/13/2025 at 17:09):   searchInput: {
+home.tsx     (om patel on 10/13/2025 at 17:09):     backgroundColor: "#222",
+home.tsx     (om patel on 10/13/2025 at 17:09):     color: "#fff",
+home.tsx     (om patel on 10/13/2025 at 17:09):     fontSize: 16,
+home.tsx     (om patel on 10/13/2025 at 17:09):     padding: 12,
+home.tsx     (om patel on 10/13/2025 at 17:09):     borderRadius: 8,
+home.tsx     (om patel on 10/13/2025 at 17:09):     marginBottom: 16,
+home.tsx     (om patel on 10/13/2025 at 17:09):   },
+home.tsx     (om patel on 10/13/2025 at 17:09):   recentSearchesContainer: {
+home.tsx     (om patel on 10/13/2025 at 17:09):     marginTop: 16,
+home.tsx     (om patel on 10/13/2025 at 17:09):   },
+home.tsx     (om patel on 10/13/2025 at 17:09):   recentSearchItem: {
+home.tsx     (om patel on 10/13/2025 at 17:09):     color: "#fff",
+home.tsx     (om patel on 10/13/2025 at 17:09):     fontSize: 14,
+home.tsx     (om patel on 10/13/2025 at 17:09):     marginBottom: 8,
+home.tsx     (om patel on 10/13/2025 at 17:09):   },
+home.tsx     (om patel on 10/13/2025 at 17:09):   noRecentSearches: {
+home.tsx     (om patel on 10/13/2025 at 17:09):     color: "#888",
+home.tsx     (om patel on 10/13/2025 at 17:09):     fontSize: 14,
+home.tsx     (om patel on 10/13/2025 at 17:09):     fontStyle: "italic",
+home.tsx     (om patel on 10/13/2025 at 17:09):   },
+home.tsx     (om patel on 10/13/2025 at 17:09):   fullScreenModalContainer: {
+home.tsx     (om patel on 10/13/2025 at 17:09):     flex: 1,
+home.tsx     (om patel on 10/13/2025 at 17:09):     backgroundColor: "rgba(0, 0, 0, 0.9)", // Dark background with slight transparency
+home.tsx     (om patel on 10/13/2025 at 17:09):   },
+home.tsx     (om patel on 10/13/2025 at 17:09):   fullScreenModalContent: {
+home.tsx     (om patel on 10/13/2025 at 17:09):     flex: 1,
+home.tsx     (om patel on 10/13/2025 at 17:09):     backgroundColor: "#111", // Full-screen modal background
+home.tsx     (om patel on 10/13/2025 at 17:09):     padding: 20,
+home.tsx     (om patel on 10/13/2025 at 17:09):     borderTopLeftRadius: 0, // No rounded corners for full-screen
+home.tsx     (om patel on 10/13/2025 at 17:09):     borderTopRightRadius: 0,
+home.tsx     (om patel on 10/13/2025 at 17:09):   },
+home.tsx     (om patel on 10/13/2025 at 17:09):   threeQuarterModalContent: {
+home.tsx     (om patel on 10/13/2025 at 17:09):     height: "75%", // Takes up 3/4 of the screen height
+home.tsx     (om patel on 10/13/2025 at 17:09):     backgroundColor: "#111", // Modal background color
+home.tsx     (om patel on 10/13/2025 at 17:09):     padding: 20,
+home.tsx     (om patel on 10/13/2025 at 17:09):     borderTopLeftRadius: 20, // Rounded top corners
+home.tsx     (om patel on 10/13/2025 at 17:09):     borderTopRightRadius: 20,
+home.tsx     (om patel on 10/13/2025 at 17:09):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   modalHeader: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     flexDirection: "row",
+home.tsx     (om patel on 10/14/2025 at 17:21):     justifyContent: "space-between",
+home.tsx     (om patel on 10/14/2025 at 17:21):     alignItems: "center",
+home.tsx     (om patel on 10/14/2025 at 17:21):     marginBottom: 16,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   goalTimeContainer: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     width: "100%",
+home.tsx     (om patel on 10/14/2025 at 17:21):     marginBottom: 16,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   goalTimeInputContainer: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     flexDirection: "row", // Align input and "min" text in a row
+home.tsx     (om patel on 10/14/2025 at 17:21):     alignItems: "center",
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   smallInput: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     backgroundColor: "#222",
+home.tsx     (om patel on 10/14/2025 at 17:21):     color: "#fff",
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontSize: 16,
+home.tsx     (om patel on 10/14/2025 at 17:21):     padding: 8,
+home.tsx     (om patel on 10/14/2025 at 17:21):     borderRadius: 8,
+home.tsx     (om patel on 10/14/2025 at 17:21):     textAlign: "center",
+home.tsx     (om patel on 10/14/2025 at 17:21):     width: 80, // Fixed width for the input box
+home.tsx     (om patel on 10/14/2025 at 17:21):     marginRight: 8,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   goalTimeUnit: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     color: "#fff",
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontSize: 16,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   startButton: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     backgroundColor: ORANGE,
+home.tsx     (om patel on 10/14/2025 at 17:21):     paddingVertical: 12,
+home.tsx     (om patel on 10/14/2025 at 17:21):     borderRadius: 8,
+home.tsx     (om patel on 10/14/2025 at 17:21):     alignItems: "center",
+home.tsx     (om patel on 10/14/2025 at 17:21):     marginTop: 16,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   startButtonText: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     color: "#000", // Black text for the button
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontWeight: "bold",
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontSize: 16,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   countdownText: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     color: "#fff",
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontSize: 48,
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontWeight: "bold",
+home.tsx     (om patel on 10/14/2025 at 17:21):     textAlign: "center",
+home.tsx     (om patel on 10/14/2025 at 17:21):     marginTop: 16,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   halfModalContent: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     height: "50%", // Takes up half the screen height
+home.tsx     (om patel on 10/14/2025 at 17:21):     backgroundColor: "#111", // Modal background color
+home.tsx     (om patel on 10/14/2025 at 17:21):     padding: 20,
+home.tsx     (om patel on 10/14/2025 at 17:21):     borderTopLeftRadius: 20, // Rounded top corners
+home.tsx     (om patel on 10/14/2025 at 17:21):     borderTopRightRadius: 20,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   modalSubtitle: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     color: "#fff", // White text for "Set a goal run time"
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontSize: 16,
+home.tsx     (om patel on 10/14/2025 at 17:21):     marginBottom: 16,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   addMealButton: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     backgroundColor: ORANGE,
+home.tsx     (om patel on 10/14/2025 at 17:21):     paddingVertical: 12,
+home.tsx     (om patel on 10/14/2025 at 17:21):     borderRadius: 8,
+home.tsx     (om patel on 10/14/2025 at 17:21):     alignItems: "center",
+home.tsx     (om patel on 10/14/2025 at 17:21):     marginBottom: 16,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   addMealButtonText: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     color: "#000",
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontWeight: "bold",
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontSize: 16,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   mealList: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     flex: 1,
+home.tsx     (om patel on 10/14/2025 at 17:21):     marginTop: 8,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   mealNameInput: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     backgroundColor: "#222",
+home.tsx     (om patel on 10/14/2025 at 17:21):     color: "#fff",
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontSize: 16,
+home.tsx     (om patel on 10/14/2025 at 17:21):     padding: 8,
+home.tsx     (om patel on 10/14/2025 at 17:21):     borderRadius: 8,
+home.tsx     (om patel on 10/14/2025 at 17:21):     marginBottom: 8,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   mealItem: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     backgroundColor: "#333",
+home.tsx     (om patel on 10/14/2025 at 17:21):     color: "#fff",
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontSize: 16,
+home.tsx     (om patel on 10/14/2025 at 17:21):     padding: 8,
+home.tsx     (om patel on 10/14/2025 at 17:21):     borderRadius: 8,
+home.tsx     (om patel on 10/14/2025 at 17:21):     marginBottom: 12,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   circularProgressContainer: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     flexDirection: "row",
+home.tsx     (om patel on 10/14/2025 at 17:21):     justifyContent: "space-between",
+home.tsx     (om patel on 10/14/2025 at 17:21):     alignItems: "center",
+home.tsx     (om patel on 10/14/2025 at 17:21):     marginBottom: 16,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   circularProgressItem: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     alignItems: "center",
+home.tsx     (om patel on 10/14/2025 at 17:21):     justifyContent: "center",
+home.tsx     (om patel on 10/14/2025 at 17:21):     height: 80,
+home.tsx     (om patel on 10/14/2025 at 17:21):     width: 80,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   circularProgressText: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontSize: 16,
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontWeight: "bold",
+home.tsx     (om patel on 10/14/2025 at 17:21):     color: "#fff",
+home.tsx     (om patel on 10/14/2025 at 17:21):     marginTop: 8,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   circularProgressLabel: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontSize: 14,
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontWeight: "bold",
+home.tsx     (om patel on 10/14/2025 at 17:21):     color: "#fff",
+home.tsx     (om patel on 10/14/2025 at 17:21):     marginBottom: 8,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   editButton: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     backgroundColor: ORANGE,
+home.tsx     (om patel on 10/14/2025 at 17:21):     paddingVertical: 6,
+home.tsx     (om patel on 10/14/2025 at 17:21):     paddingHorizontal: 12,
+home.tsx     (om patel on 10/14/2025 at 17:21):     borderRadius: 8,
+home.tsx     (om patel on 10/14/2025 at 17:21):     marginTop: 8,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
+home.tsx     (om patel on 10/14/2025 at 17:21):   editButtonText: {
+home.tsx     (om patel on 10/14/2025 at 17:21):     color: "#000",
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontWeight: "bold",
+home.tsx     (om patel on 10/14/2025 at 17:21):     fontSize: 12,
+home.tsx     (om patel on 10/14/2025 at 17:21):   },
