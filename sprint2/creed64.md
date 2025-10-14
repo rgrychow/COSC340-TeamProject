@@ -37,5 +37,5 @@ Also used Node / React built-in packages as 3rd party tools.
 # What you accomplished
 
 I was able to accomplish a good amount and was happy with how the sprint turned out.
-I added some extra utility to the fitness tab. I also used a hook to connect the fitness and progress tabs so that the workout info
-is displayed on the progress tab. 
+I added some extra utility to the fitness tab. This included making workouts, sets, and exercises deletable and based off feedback will have presets in sprint 3. I also used a hook to connect the fitness and progress tabs so that the workout info
+is displayed on the progress tab. I completed a basic table on the progress tab and ryan added more utility to the progress tab from my connection. 
