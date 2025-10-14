@@ -10,9 +10,9 @@
 # Problems I Encountered
   - One problem I came across was getting the settings page to slide from the bottom of the screen to the top of the screen and look nice.
 # Issues I worked On
-  - #25 Add a settings Icon to the home screen
-  - #26 Add toggles to the tabs in settings
-  - #27 Do the Edit Profile tab
+  - [#25 Add a settings Icon to the home screen]
+  - [#26 Add toggles to the tabs in settings](https://github.com/rgrychow/COSC340-TeamProject/issues/26)
+  - https://github.com/rgrychow/COSC340-TeamProject/issues/27
 # Files I Worked On
   - AimHigh/AimHigh/app/tabs/home.tsx
   - AimHigh/AimHigh/app/settings_modal.tsx
