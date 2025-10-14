@@ -1,0 +1,627 @@
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400   1) import { Ionicons } from '@expo/vector-icons';
+                                                                                              2) import { useState } from 'react';
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400   3) import {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400   4)   Modal,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400   5)   ScrollView,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400   6)   StyleSheet,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400   7)   Switch,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400   8)   Text,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400   9)   TouchableOpacity,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  10)   View,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  11) } from 'react-native';
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  12) import EditProfileModal from './edit_profile_modal';
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  13)
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  14) const ORANGE = "#FF6A00";
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  15)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  16) interface SettingsModalProps {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  17)   visible: boolean;
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  18)   onClose: () => void;
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  19) }
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  20)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  21) export default function SettingsModal({ visible, onClose }: SettingsModalProps) {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  22)   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+:...skipping...
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400   1) import { Ionicons } from '@expo/vector-icons';
+a23e89e7b AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (Om Patel 2025-10-13 17:09:05 -0400   2) import { useState } from 'react';
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400   3) import {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400   4)   Modal,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400   5)   ScrollView,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400   6)   StyleSheet,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400   7)   Switch,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400   8)   Text,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400   9)   TouchableOpacity,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  10)   View,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  11) } from 'react-native';
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  12) import EditProfileModal from './edit_profile_modal';
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  13)
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  14) const ORANGE = "#FF6A00";
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  15)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  16) interface SettingsModalProps {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  17)   visible: boolean;
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  18)   onClose: () => void;
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  19) }
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  20)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  21) export default function SettingsModal({ visible, onClose }: SettingsModalProps) {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  22)   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  23)   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  24)   const [soundEnabled, setSoundEnabled] = useState(true);
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  25)   const [editProfileVisible, setEditProfileVisible] = useState(false);
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  26)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  27)   return (
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  28)     <Modal
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  29)       visible={visible}
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  30)       animationType="slide"
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  31)       transparent={true}
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  32)       onRequestClose={onClose}
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  33)     >
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  34)       <View style={styles.modalOverlay}>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  35)         <View style={styles.modalContent}>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  36)           {/* Header */}
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  37)           <View style={styles.header}>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  38)             <Text style={styles.headerTitle}>Settings</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  39)             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  40)               <Ionicons name="close" size={28} color="#fff" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  41)             </TouchableOpacity>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  42)           </View>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  43)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  44)           <ScrollView style={styles.scrollView}>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  45)             {/* Account Section */}
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  46)             <View style={styles.section}>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  47)               <Text style={styles.sectionTitle}>Account</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  48)
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  49)               <TouchableOpacity
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  50)                 style={styles.settingItem}
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  51)                 onPress={() => setEditProfileVisible(true)}
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  52)               >
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  53)                 <Ionicons name="person-outline" size={24} color="#fff" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  54)                 <Text style={styles.settingText}>Edit Profile</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  55)                 <Ionicons name="chevron-forward" size={20} color="#999" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  56)               </TouchableOpacity>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  57)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  58)               <TouchableOpacity style={styles.settingItem}>
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  59)                 <Ionicons name="lock-closed-outline" size={24} color="#fff" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  60)                 <Text style={styles.settingText}>Change Password</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  61)                 <Ionicons name="chevron-forward" size={20} color="#999" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  62)               </TouchableOpacity>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  63)             </View>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  64)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  65)             {/* Preferences Section */}
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  66)             <View style={styles.section}>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  67)               <Text style={styles.sectionTitle}>Preferences</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  68)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  69)               <View style={styles.settingItem}>
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  70)                 <Ionicons name="notifications-outline" size={24} color="#fff" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  71)                 <Text style={styles.settingText}>Notifications</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  72)                 <Switch
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  73)                   value={notificationsEnabled}
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  74)                   onValueChange={setNotificationsEnabled}
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  75)                   trackColor={{ false: '#333', true: ORANGE }}
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  76)                   thumbColor="#fff"
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  77)                 />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  78)               </View>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  79)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  80)               <View style={styles.settingItem}>
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  81)                 <Ionicons name="moon-outline" size={24} color="#fff" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  82)                 <Text style={styles.settingText}>Dark Mode</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  83)                 <Switch
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  84)                   value={darkModeEnabled}
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  85)                   onValueChange={setDarkModeEnabled}
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  86)                   trackColor={{ false: '#333', true: ORANGE }}
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  87)                   thumbColor="#fff"
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  88)                 />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  89)               </View>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  90)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  91)               <View style={styles.settingItem}>
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  92)                 <Ionicons name="volume-high-outline" size={24} color="#fff" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  93)                 <Text style={styles.settingText}>Sound Effects</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  94)                 <Switch
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  95)                   value={soundEnabled}
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  96)                   onValueChange={setSoundEnabled}
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400  97)                   trackColor={{ false: '#333', true: ORANGE }}
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  98)                   thumbColor="#fff"
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400  99)                 />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 100)               </View>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 101)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 102)               <TouchableOpacity style={styles.settingItem}>
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 103)                 <Ionicons name="language-outline" size={24} color="#fff" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 104)                 <Text style={styles.settingText}>Language</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 105)                 <Text style={styles.settingValue}>English</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 106)                 <Ionicons name="chevron-forward" size={20} color="#999" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 107)               </TouchableOpacity>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 108)             </View>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 109)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 110)             {/* Fitness Settings */}
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 111)             <View style={styles.section}>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 112)               <Text style={styles.sectionTitle}>Fitness</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 113)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 114)               <TouchableOpacity style={styles.settingItem}>
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 115)                 <Ionicons name="fitness-outline" size={24} color="#fff" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 116)                 <Text style={styles.settingText}>Units</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 117)                 <Text style={styles.settingValue}>Metric</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 118)                 <Ionicons name="chevron-forward" size={20} color="#999" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 119)               </TouchableOpacity>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 120)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 121)               <TouchableOpacity style={styles.settingItem}>
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 122)                 <Ionicons name="calendar-outline" size={24} color="#fff" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 123)                 <Text style={styles.settingText}>Weekly Goal</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 124)                 <Text style={styles.settingValue}>5 days</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 125)                 <Ionicons name="chevron-forward" size={20} color="#999" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 126)               </TouchableOpacity>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 127)             </View>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 128)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 129)             {/* About Section */}
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 130)             <View style={styles.section}>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 131)               <Text style={styles.sectionTitle}>About</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 132)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 133)               <TouchableOpacity style={styles.settingItem}>
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 134)                 <Ionicons name="information-circle-outline" size={24} color="#fff" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 135)                 <Text style={styles.settingText}>App Version</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 136)                 <Text style={styles.settingValue}>1.0.0</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 137)               </TouchableOpacity>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 138)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 139)               <TouchableOpacity style={styles.settingItem}>
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 140)                 <Ionicons name="document-text-outline" size={24} color="#fff" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 141)                 <Text style={styles.settingText}>Terms of Service</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 142)                 <Ionicons name="chevron-forward" size={20} color="#999" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 143)               </TouchableOpacity>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 144)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 145)               <TouchableOpacity style={styles.settingItem}>
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 146)                 <Ionicons name="shield-checkmark-outline" size={24} color="#fff" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 147)                 <Text style={styles.settingText}>Privacy Policy</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 148)                 <Ionicons name="chevron-forward" size={20} color="#999" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 149)               </TouchableOpacity>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 150)             </View>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 151)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 152)             {/* Logout Button */}
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 153)             <TouchableOpacity style={styles.logoutButton}>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 154)               <Ionicons name="log-out-outline" size={24} color="#ef4444" />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 155)               <Text style={styles.logoutText}>Log Out</Text>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 156)             </TouchableOpacity>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 157)           </ScrollView>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 158)         </View>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 159)       </View>
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 160)
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 161)       {/* Edit Profile Modal */}
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 162)       <EditProfileModal
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 163)         visible={editProfileVisible}
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 164)         onClose={() => setEditProfileVisible(false)}
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 165)       />
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 166)     </Modal>
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 167)   );
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 168) }
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 169)
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 170) const styles = StyleSheet.create({
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 171)   modalOverlay: {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 172)     flex: 1,
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 173)     backgroundColor: 'rgba(0, 0, 0, 0.7)',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 174)     justifyContent: 'flex-end',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 175)   },
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 176)   modalContent: {
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 177)     backgroundColor: '#111',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 178)     borderTopLeftRadius: 20,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 179)     borderTopRightRadius: 20,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 180)     height: '90%',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 181)     paddingTop: 20,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 182)   },
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 183)   header: {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 184)     flexDirection: 'row',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 185)     justifyContent: 'space-between',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 186)     alignItems: 'center',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 187)     paddingHorizontal: 20,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 188)     paddingBottom: 15,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 189)     borderBottomWidth: 1,
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 190)     borderBottomColor: '#333',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 191)   },
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 192)   headerTitle: {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 193)     fontSize: 24,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 194)     fontWeight: 'bold',
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 195)     color: '#fff',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 196)   },
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 197)   closeButton: {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 198)     padding: 4,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 199)   },
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 200)   scrollView: {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 201)     flex: 1,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 202)   },
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 203)   section: {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 204)     paddingTop: 20,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 205)     paddingBottom: 10,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 206)   },
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 207)   sectionTitle: {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 208)     fontSize: 14,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 209)     fontWeight: '600',
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 210)     color: '#999',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 211)     paddingHorizontal: 20,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 212)     paddingBottom: 10,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 213)     textTransform: 'uppercase',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 214)     letterSpacing: 0.5,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 215)   },
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 216)   settingItem: {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 217)     flexDirection: 'row',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 218)     alignItems: 'center',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 219)     paddingVertical: 15,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 220)     paddingHorizontal: 20,
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 221)     backgroundColor: '#111',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 222)     borderBottomWidth: 1,
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 223)     borderBottomColor: '#222',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 224)   },
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 225)   settingText: {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 226)     flex: 1,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 227)     fontSize: 16,
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 228)     color: '#fff',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 229)     marginLeft: 15,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 230)   },
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 231)   settingValue: {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 232)     fontSize: 14,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 233)     color: '#999',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 234)     marginRight: 5,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 235)   },
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 236)   logoutButton: {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 237)     flexDirection: 'row',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 238)     alignItems: 'center',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 239)     justifyContent: 'center',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 240)     paddingVertical: 15,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 241)     marginHorizontal: 20,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 242)     marginTop: 20,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 243)     marginBottom: 40,
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 244)     backgroundColor: '#1a0a0a',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 245)     borderRadius: 10,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 246)     borderWidth: 1,
+19c9f1ebf AimHigh/AimHigh/app/settings_modal.tsx        (mward79  2025-10-13 18:23:22 -0400 247)     borderColor: '#ef4444',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 248)   },
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 249)   logoutText: {
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 250)     fontSize: 16,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 251)     fontWeight: '600',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 252)     color: '#ef4444',
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 253)     marginLeft: 10,
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 254)   },
+6ab6cca1a AimHigh/AimHigh/app/(tabs)/settings_modal.tsx (mward79  2025-10-13 16:16:53 -0400 255) });
+(END)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400   1) import { Ionicons } from '@expo/vector-icons';
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400   2) import React, { useState } from 'react';
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400   3) import {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400   4)     Modal,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400   5)     ScrollView,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400   6)     StyleSheet,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400   7)     Text,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400   8)     TextInput,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400   9)     TouchableOpacity,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  10)     View
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  11) } from 'react-native';
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  12)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  13) const ORANGE = "#FF6A00";
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  14)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  15) interface EditProfileModalProps {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  16)   visible: boolean;
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  17)   onClose: () => void;
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  18) }
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  19)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  20) export default function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  21)   const [name, setName] = useState('Jackson');
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  22)   const [email, setEmail] = useState('jackson@aimhigh.com');
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  23)   const [phone, setPhone] = useState('(555) 123-4567');
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  24)   const [age, setAge] = useState('25');
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  25)   const [weight, setWeight] = useState('180');
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  26)   const [height, setHeight] = useState('5\'10"');
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  27)   const [goal, setGoal] = useState('Build Muscle');
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  28)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  29)   const handleSave = () => {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  30)     // Here you would typically save to your backend/database
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  31)     console.log('Profile saved:', { name, email, phone, age, weight, height, goal });
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  32)     onClose();
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  33)   };
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  34)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  35)   return (
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  36)     <Modal
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  37)       visible={visible}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  38)       animationType="slide"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  39)       transparent={true}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  40)       onRequestClose={onClose}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  41)     >
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  42)       <View style={styles.modalOverlay}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  43)         <View style={styles.modalContent}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  44)           {/* Header */}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  45)           <View style={styles.header}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  46)             <TouchableOpacity onPress={onClose} style={styles.backButton}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  47)               <Ionicons name="arrow-back" size={24} color="#fff" />
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  48)             </TouchableOpacity>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  49)             <Text style={styles.headerTitle}>Edit Profile</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  50)             <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  51)               <Text style={styles.saveButtonText}>Save</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  52)             </TouchableOpacity>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  53)           </View>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  54)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  55)           <ScrollView style={styles.scrollView}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  56)             {/* Profile Photo Section */}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  57)             <View style={styles.photoSection}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  58)               <View style={styles.photoContainer}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  59)                 <Ionicons name="person-circle" size={100} color="#666" />
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  60)                 <TouchableOpacity style={styles.photoEditButton}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  61)                   <Ionicons name="camera" size={20} color="#fff" />
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  62)                 </TouchableOpacity>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  63)               </View>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  64)               <TouchableOpacity>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  65)                 <Text style={styles.changePhotoText}>Change Photo</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  66)               </TouchableOpacity>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  67)             </View>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  68)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  69)             {/* Personal Information */}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  70)             <View style={styles.section}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  71)               <Text style={styles.sectionTitle}>Personal Information</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  72)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  73)               <View style={styles.inputGroup}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  74)                 <Text style={styles.label}>Full Name</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  75)                 <TextInput
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  76)                   style={styles.input}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  77)                   value={name}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  78)                   onChangeText={setName}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  79)                   placeholder="Enter your name"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  80)                   placeholderTextColor="#666"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  81)                 />
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  82)               </View>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  83)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  84)               <View style={styles.inputGroup}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  85)                 <Text style={styles.label}>Email</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  86)                 <TextInput
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  87)                   style={styles.input}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  88)                   value={email}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  89)                   onChangeText={setEmail}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  90)                   placeholder="Enter your email"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  91)                   placeholderTextColor="#666"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  92)                   keyboardType="email-address"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  93)                   autoCapitalize="none"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  94)                 />
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  95)               </View>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  96)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  97)               <View style={styles.inputGroup}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  98)                 <Text style={styles.label}>Phone Number</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400  99)                 <TextInput
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 100)                   style={styles.input}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 101)                   value={phone}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 102)                   onChangeText={setPhone}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 103)                   placeholder="Enter your phone"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 104)                   placeholderTextColor="#666"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 105)                   keyboardType="phone-pad"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 106)                 />
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 107)               </View>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 108)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 109)               <View style={styles.inputGroup}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 110)                 <Text style={styles.label}>Age</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 111)                 <TextInput
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 112)                   style={styles.input}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 113)                   value={age}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 114)                   onChangeText={setAge}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 115)                   placeholder="Enter your age"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 116)                   placeholderTextColor="#666"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 117)                   keyboardType="numeric"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 118)                 />
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 119)               </View>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 120)             </View>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 121)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 122)             {/* Fitness Information */}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 123)             <View style={styles.section}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 124)               <Text style={styles.sectionTitle}>Fitness Information</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 125)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 126)               <View style={styles.inputGroup}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 127)                 <Text style={styles.label}>Weight (lbs)</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 128)                 <TextInput
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 129)                   style={styles.input}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 130)                   value={weight}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 131)                   onChangeText={setWeight}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 132)                   placeholder="Enter your weight"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 133)                   placeholderTextColor="#666"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 134)                   keyboardType="numeric"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 135)                 />
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 136)               </View>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 137)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 138)               <View style={styles.inputGroup}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 139)                 <Text style={styles.label}>Height</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 140)                 <TextInput
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 141)                   style={styles.input}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 142)                   value={height}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 143)                   onChangeText={setHeight}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 144)                   placeholder="Enter your height"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 145)                   placeholderTextColor="#666"
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 146)                 />
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 147)               </View>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 148)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 149)               <View style={styles.inputGroup}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 150)                 <Text style={styles.label}>Fitness Goal</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 151)                 <TouchableOpacity style={styles.selectInput}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 152)                   <Text style={styles.selectInputText}>{goal}</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 153)                   <Ionicons name="chevron-down" size={20} color="#999" />
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 154)                 </TouchableOpacity>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 155)                 <View style={styles.goalOptions}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 156)                   <TouchableOpacity
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 157)                     style={styles.goalOption}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 158)                     onPress={() => setGoal('Lose Weight')}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 159)                   >
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 160)                     <Text style={styles.goalOptionText}>Lose Weight</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 161)                   </TouchableOpacity>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 162)                   <TouchableOpacity
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 163)                     style={styles.goalOption}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 164)                     onPress={() => setGoal('Build Muscle')}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 165)                   >
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 166)                     <Text style={styles.goalOptionText}>Build Muscle</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 167)                   </TouchableOpacity>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 168)                   <TouchableOpacity
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 169)                     style={styles.goalOption}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 170)                     onPress={() => setGoal('Stay Fit')}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 171)                   >
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 172)                     <Text style={styles.goalOptionText}>Stay Fit</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 173)                   </TouchableOpacity>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 174)                   <TouchableOpacity
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 175)                     style={styles.goalOption}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 176)                     onPress={() => setGoal('Improve Endurance')}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 177)                   >
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 178)                     <Text style={styles.goalOptionText}>Improve Endurance</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 179)                   </TouchableOpacity>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 180)                 </View>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 181)               </View>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 182)             </View>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 183)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 184)             {/* Delete Account Section */}
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 185)             <View style={styles.section}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 186)               <TouchableOpacity style={styles.deleteButton}>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 187)                 <Ionicons name="trash-outline" size={20} color="#ef4444" />
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 188)                 <Text style={styles.deleteButtonText}>Delete Account</Text>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 189)               </TouchableOpacity>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 190)             </View>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 191)           </ScrollView>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 192)         </View>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 193)       </View>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 194)     </Modal>
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 195)   );
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 196) }
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 197)
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 198) const styles = StyleSheet.create({
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 199)   modalOverlay: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 200)     flex: 1,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 201)     backgroundColor: 'rgba(0, 0, 0, 0.7)',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 202)     justifyContent: 'flex-end',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 203)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 204)   modalContent: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 205)     backgroundColor: '#000',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 206)     borderTopLeftRadius: 20,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 207)     borderTopRightRadius: 20,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 208)     height: '95%',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 209)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 210)   header: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 211)     flexDirection: 'row',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 212)     justifyContent: 'space-between',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 213)     alignItems: 'center',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 214)     paddingHorizontal: 20,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 215)     paddingVertical: 20,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 216)     borderBottomWidth: 1,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 217)     borderBottomColor: '#222',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 218)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 219)   backButton: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 220)     padding: 4,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 221)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 222)   headerTitle: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 223)     fontSize: 20,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 224)     fontWeight: 'bold',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 225)     color: '#fff',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 226)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 227)   saveButton: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 228)     backgroundColor: ORANGE,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 229)     paddingHorizontal: 20,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 230)     paddingVertical: 8,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 231)     borderRadius: 8,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 232)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 233)   saveButtonText: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 234)     color: '#fff',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 235)     fontWeight: 'bold',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 236)     fontSize: 16,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 237)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 238)   scrollView: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 239)     flex: 1,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 240)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 241)   photoSection: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 242)     alignItems: 'center',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 243)     paddingVertical: 30,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 244)     borderBottomWidth: 1,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 245)     borderBottomColor: '#222',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 246)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 247)   photoContainer: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 248)     position: 'relative',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 249)     marginBottom: 12,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 250)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 251)   photoEditButton: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 252)     position: 'absolute',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 253)     bottom: 0,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 254)     right: 0,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 255)     backgroundColor: ORANGE,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 256)     borderRadius: 20,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 257)     width: 36,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 258)     height: 36,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 259)     justifyContent: 'center',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 260)     alignItems: 'center',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 261)     borderWidth: 3,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 262)     borderColor: '#000',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 263)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 264)   changePhotoText: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 265)     color: ORANGE,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 266)     fontSize: 16,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 267)     fontWeight: '600',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 268)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 269)   section: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 270)     paddingHorizontal: 20,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 271)     paddingTop: 24,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 272)     paddingBottom: 16,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 273)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 274)   sectionTitle: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 275)     fontSize: 18,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 276)     fontWeight: 'bold',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 277)     color: '#fff',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 278)     marginBottom: 16,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 279)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 280)   inputGroup: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 281)     marginBottom: 20,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 282)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 283)   label: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 284)     fontSize: 14,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 285)     fontWeight: '600',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 286)     color: '#999',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 287)     marginBottom: 8,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 288)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 289)   input: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 290)     backgroundColor: '#111',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 291)     borderWidth: 1,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 292)     borderColor: '#333',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 293)     borderRadius: 10,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 294)     paddingHorizontal: 16,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 295)     paddingVertical: 14,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 296)     fontSize: 16,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 297)     color: '#fff',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 298)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 299)   selectInput: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 300)     backgroundColor: '#111',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 301)     borderWidth: 1,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 302)     borderColor: '#333',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 303)     borderRadius: 10,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 304)     paddingHorizontal: 16,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 305)     paddingVertical: 14,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 306)     flexDirection: 'row',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 307)     justifyContent: 'space-between',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 308)     alignItems: 'center',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 309)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 310)   selectInputText: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 311)     fontSize: 16,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 312)     color: '#fff',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 313)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 314)   goalOptions: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 315)     marginTop: 8,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 316)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 317)   goalOption: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 318)     backgroundColor: '#111',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 319)     borderWidth: 1,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 320)     borderColor: '#333',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 321)     borderRadius: 8,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 322)     paddingVertical: 12,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 323)     paddingHorizontal: 16,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 324)     marginBottom: 8,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 325)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 326)   goalOptionText: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 327)     fontSize: 15,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 328)     color: '#fff',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 329)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 330)   deleteButton: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 331)     flexDirection: 'row',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 332)     alignItems: 'center',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 333)     justifyContent: 'center',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 334)     paddingVertical: 14,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 335)     backgroundColor: '#1a0a0a',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 336)     borderRadius: 10,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 337)     borderWidth: 1,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 338)     borderColor: '#ef4444',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 339)     marginTop: 8,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 340)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 341)   deleteButtonText: {
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 342)     fontSize: 16,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 343)     fontWeight: '600',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 344)     color: '#ef4444',
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 345)     marginLeft: 8,
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 346)   },
+19c9f1ebf (mward79 2025-10-13 18:23:22 -0400 347) });
+(END)
