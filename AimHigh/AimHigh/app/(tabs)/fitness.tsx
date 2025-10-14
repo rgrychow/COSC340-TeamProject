@@ -1,75 +1,15 @@
 // app/(tabs)/fitness.tsx
 import React, { useState } from "react";
-import {
-  FlatList,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList } from "react-native";
+import { useWorkouts } from "../../hooks/useWorkouts";
 
 const ORANGE = "#FF6A00";
 
-type SetItem = { id: string; reps: number; weight: number };
-type Exercise = { id: string; name: string; sets: SetItem[] };
-type Workout = { id: string; dateISO: string; exercises: Exercise[] };
-
 export default function Fitness() {
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-
-  const addWorkout = (): void => {
-    const w: Workout = {
-      id: String(Date.now()),
-      dateISO: new Date().toISOString(),
-      exercises: [],
-    };
-    setWorkouts((prev) => [w, ...prev]);
-  };
-
-  const addExercise = (workoutId: string, name: string): void => {
-    setWorkouts((prev) =>
-      prev.map((w) =>
-        w.id === workoutId
-          ? {
-              ...w,
-              exercises: [
-                ...w.exercises,
-                { id: `${workoutId}-${Date.now()}`, name, sets: [] },
-              ],
-            }
-          : w
-      )
-    );
-  };
-
-  const addSet = (
-    workoutId: string,
-    exerciseId: string,
-    reps: number,
-    weight: number
-  ): void => {
-    setWorkouts((prev) =>
-      prev.map((w) =>
-        w.id === workoutId
-          ? {
-              ...w,
-              exercises: w.exercises.map((ex) =>
-                ex.id === exerciseId
-                  ? {
-                      ...ex,
-                      sets: [
-                        ...ex.sets,
-                        { id: `${exerciseId}-${Date.now()}`, reps, weight },
-                      ],
-                    }
-                  : ex
-              ),
-            }
-          : w
-      )
-    );
-  };
+  const {
+    workouts, addWorkout, deleteWorkout,
+    addExercise, deleteExercise, addSet, deleteSet,
+  } = useWorkouts();
 
   return (
     <View style={styles.container}>
@@ -81,8 +21,7 @@ export default function Fitness() {
 
       {workouts.length === 0 ? (
         <Text style={styles.muted}>
-          No workouts yet. Tap <Text style={styles.orange}>+ New Workout</Text>{" "}
-          to start.
+          No workouts yet. Tap <Text style={styles.orange}>+ New Workout</Text> to start.
         </Text>
       ) : (
         <FlatList
@@ -91,9 +30,14 @@ export default function Fitness() {
           contentContainerStyle={{ paddingBottom: 32 }}
           renderItem={({ item }) => (
             <WorkoutCard
-              workout={item}
+              workoutId={item.id}
+              dateISO={item.dateISO}
+              exercises={item.exercises}
               onAddExercise={addExercise}
+              onDeleteWorkout={deleteWorkout}
+              onDeleteExercise={deleteExercise}
               onAddSet={addSet}
+              onDeleteSet={deleteSet}
             />
           )}
         />
@@ -103,42 +47,31 @@ export default function Fitness() {
 }
 
 function WorkoutCard({
-  workout,
-  onAddExercise,
-  onAddSet,
+  workoutId, dateISO, exercises,
+  onAddExercise, onDeleteWorkout, onDeleteExercise, onAddSet, onDeleteSet,
 }: {
-  workout: Workout;
+  workoutId: string;
+  dateISO: string;
+  exercises: { id: string; name: string; sets: { id: string; reps: number; weight: number }[] }[];
   onAddExercise: (workoutId: string, name: string) => void;
-  onAddSet: (
-    workoutId: string,
-    exerciseId: string,
-    reps: number,
-    weight: number
-  ) => void;
+  onDeleteWorkout: (workoutId: string) => void;
+  onDeleteExercise: (workoutId: string, exerciseId: string) => void;
+  onAddSet: (workoutId: string, exerciseId: string, reps: number, weight: number) => void;
+  onDeleteSet: (workoutId: string, exerciseId: string, setId: string) => void;
 }) {
-  const [showExerciseForm, setShowExerciseForm] = useState<boolean>(false);
-  const [exerciseName, setExerciseName] = useState<string>("Push Ups");
+  const [showExerciseForm, setShowExerciseForm] = useState(false);
+  const [exerciseName, setExerciseName] = useState("Push Ups");
 
-  const dt = new Date(workout.dateISO);
-  const dateLabel = `${dt.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })}  ${dt.toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  })}`;
-
-  const handleAddExercise = (): void => {
-    const name = exerciseName.trim() || "Exercise";
-    onAddExercise(workout.id, name);
-    setExerciseName("Push Ups");
-    setShowExerciseForm(false);
-  };
+  const dt = new Date(dateISO);
+  const dateLabel = `${dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}  ${dt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
 
   return (
     <View style={styles.card}>
-      {/* Title and date stacked left; button below so it never overflows */}
+      {/* Delete workout */}
+      <TouchableOpacity style={styles.deletePillTopRight} onPress={() => onDeleteWorkout(workoutId)}>
+        <Text style={styles.deletePillText}>Delete</Text>
+      </TouchableOpacity>
+
       <Text style={styles.cardTitle}>Workout</Text>
       <Text style={styles.cardSubtitle}>{dateLabel}</Text>
 
@@ -146,9 +79,7 @@ function WorkoutCard({
         style={[styles.outlineBtn, { alignSelf: "flex-start", marginTop: 6 }]}
         onPress={() => setShowExerciseForm((s) => !s)}
       >
-        <Text style={styles.outlineBtnText}>
-          {showExerciseForm ? "Cancel" : "Add Exercise"}
-        </Text>
+        <Text style={styles.outlineBtnText}>{showExerciseForm ? "Cancel" : "Add Exercise"}</Text>
       </TouchableOpacity>
 
       {showExerciseForm && (
@@ -161,21 +92,32 @@ function WorkoutCard({
             placeholderTextColor="#777"
             style={styles.input}
           />
-          <TouchableOpacity style={styles.primaryBtn} onPress={handleAddExercise}>
+          <TouchableOpacity
+            style={styles.primaryBtn}
+            onPress={() => {
+              onAddExercise(workoutId, exerciseName.trim() || "Exercise");
+              setExerciseName("Push Ups");
+              setShowExerciseForm(false);
+            }}
+          >
             <Text style={styles.primaryBtnText}>Save Exercise</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {workout.exercises.length === 0 ? (
+      {exercises.length === 0 ? (
         <Text style={[styles.muted, { marginTop: 8 }]}>No exercises yet.</Text>
       ) : (
-        workout.exercises.map((ex) => (
+        exercises.map((ex) => (
           <ExerciseBlock
             key={ex.id}
-            workoutId={workout.id}
-            exercise={ex}
+            workoutId={workoutId}
+            exerciseId={ex.id}
+            name={ex.name}
+            sets={ex.sets}
             onAddSet={onAddSet}
+            onDeleteExercise={onDeleteExercise}
+            onDeleteSet={onDeleteSet}
           />
         ))
       )}
@@ -184,56 +126,50 @@ function WorkoutCard({
 }
 
 function ExerciseBlock({
-  workoutId,
-  exercise,
-  onAddSet,
+  workoutId, exerciseId, name, sets,
+  onAddSet, onDeleteExercise, onDeleteSet,
 }: {
   workoutId: string;
-  exercise: Exercise;
-  onAddSet: (
-    workoutId: string,
-    exerciseId: string,
-    reps: number,
-    weight: number
-  ) => void;
+  exerciseId: string;
+  name: string;
+  sets: { id: string; reps: number; weight: number }[];
+  onAddSet: (workoutId: string, exerciseId: string, reps: number, weight: number) => void;
+  onDeleteExercise: (workoutId: string, exerciseId: string) => void;
+  onDeleteSet: (workoutId: string, exerciseId: string, setId: string) => void;
 }) {
-  const [showSetForm, setShowSetForm] = useState<boolean>(false);
-  const [reps, setReps] = useState<string>("12");
-  const [weight, setWeight] = useState<string>("45");
-
-  const handleSaveSet = (): void => {
-    const r = parseInt(reps, 10);
-    const w = parseFloat(weight);
-    onAddSet(workoutId, exercise.id, isNaN(r) ? 0 : r, isNaN(w) ? 0 : w);
-    setShowSetForm(false);
-    setReps("12");
-    setWeight("45");
-  };
+  const [showSetForm, setShowSetForm] = useState(false);
+  const [reps, setReps] = useState("12");
+  const [weight, setWeight] = useState("45");
 
   return (
     <View style={styles.exerciseBlock}>
       <View style={styles.exerciseHeaderRow}>
-        <Text style={styles.exerciseName}>{exercise.name}</Text>
-        <TouchableOpacity
-          style={styles.smallOutlineBtn}
-          onPress={() => setShowSetForm((s) => !s)}
-        >
-          <Text style={styles.outlineBtnText}>
-            {showSetForm ? "Cancel" : "Add Set"}
-          </Text>
-        </TouchableOpacity>
+        <Text style={styles.exerciseName}>{name}</Text>
+
+        <View style={styles.actionsRow}>
+          <TouchableOpacity style={styles.smallOutlineBtn} onPress={() => setShowSetForm((s) => !s)}>
+            <Text style={styles.outlineBtnText}>{showSetForm ? "Cancel" : "Add Set"}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.smallDeleteBtn} onPress={() => onDeleteExercise(workoutId, exerciseId)}>
+            <Text style={styles.deletePillText}>Delete</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {exercise.sets.length === 0 ? (
+      {sets.length === 0 ? (
         <Text style={styles.muted}>No sets yet.</Text>
       ) : (
-        exercise.sets.map((s, idx) => (
+        sets.map((s, idx) => (
           <View key={s.id} style={styles.setRow}>
             <Text style={styles.setText}>Set {idx + 1}</Text>
-            <Text style={styles.setText}>
-              Reps: <Text style={styles.white}>{s.reps}</Text> • Wt:{" "}
-              <Text style={styles.white}>{s.weight}</Text> lb
-            </Text>
+            <View style={styles.setRightRow}>
+              <Text style={styles.setText}>
+                Reps: <Text style={styles.white}>{s.reps}</Text> • Wt: <Text style={styles.white}>{s.weight}</Text> lb
+              </Text>
+              <TouchableOpacity style={styles.smallDeleteBtn} onPress={() => onDeleteSet(workoutId, exerciseId, s.id)}>
+                <Text style={styles.deletePillText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ))
       )}
@@ -264,7 +200,14 @@ function ExerciseBlock({
           </View>
           <TouchableOpacity
             style={[styles.primaryBtn, { marginTop: 18 }]}
-            onPress={handleSaveSet}
+            onPress={() => {
+              const r = parseInt(reps, 10);
+              const w = parseFloat(weight);
+              onAddSet(workoutId, exerciseId, isNaN(r) ? 0 : r, isNaN(w) ? 0 : w);
+              setShowSetForm(false);
+              setReps("12");
+              setWeight("45");
+            }}
           >
             <Text style={styles.primaryBtnText}>Save Set</Text>
           </TouchableOpacity>
@@ -287,7 +230,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#1f1f1f",
     marginTop: 16,
+    position: "relative",
   },
+  deletePillTopRight: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: ORANGE,
+    borderRadius: 10,
+  },
+  deletePillText: { color: ORANGE, fontWeight: "700" },
+
   cardTitle: { color: ORANGE, fontWeight: "800", fontSize: 18 },
   cardSubtitle: { color: "#bbb", marginTop: 2, marginBottom: 8 },
 
@@ -299,21 +255,20 @@ const styles = StyleSheet.create({
     borderColor: "#1f1f1f",
     marginTop: 12,
   },
-  exerciseHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
+  exerciseHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+  actionsRow: { flexDirection: "row", alignItems: "center" },
+
   exerciseName: { color: "#fff", fontWeight: "700", fontSize: 16 },
 
   setRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#1f1f1f",
   },
+  setRightRow: { flexDirection: "row", alignItems: "center" },
   setText: { color: "#ddd" },
   white: { color: "#fff", fontWeight: "700" },
 
@@ -330,29 +285,11 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
 
-  primaryBtn: {
-    backgroundColor: ORANGE,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    borderRadius: 14,
-    alignSelf: "flex-start",
-    marginTop: 6,
-  },
+  primaryBtn: { backgroundColor: ORANGE, paddingVertical: 12, paddingHorizontal: 18, borderRadius: 14, alignSelf: "flex-start", marginTop: 6 },
   primaryBtnText: { color: "#000", fontWeight: "800", fontSize: 16 },
 
-  outlineBtn: {
-    borderWidth: 1,
-    borderColor: ORANGE,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-  },
-  smallOutlineBtn: {
-    borderWidth: 1,
-    borderColor: ORANGE,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-  },
+  outlineBtn: { borderWidth: 1, borderColor: ORANGE, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10 },
+  smallOutlineBtn: { borderWidth: 1, borderColor: ORANGE, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10 },
+  smallDeleteBtn: { borderWidth: 1, borderColor: ORANGE, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10, marginLeft: 8 },
   outlineBtnText: { color: ORANGE, fontWeight: "700" },
 });
