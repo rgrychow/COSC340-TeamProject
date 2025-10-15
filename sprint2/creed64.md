@@ -30,7 +30,7 @@
 # Use of AI and/or 3rd party software
 I used AI (ChatGPT) for: 
 - Debugging Git push / pull conflicts
-- Writing initial templates for hooks and utilities
+- Writing initial templates for files and debugging issues
 
 Also used Node / React built-in packages as 3rd party tools.
 
