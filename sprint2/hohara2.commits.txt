@@ -1,0 +1,746 @@
+{/* app/'(tabs)'/nutrition.tsx*/}
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400   2) // New
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400   3) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400   4) import React, { useRef, useState } from "react";
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400   5) import {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400   6)   ActivityIndicator,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400   7)   Animated,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400   8)   Dimensions,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400   9)   FlatList,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  10)   KeyboardAvoidingView,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  11)   Linking,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  12)   Platform,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  13)   Pressable,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  14)   ScrollView,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  15)   StyleSheet,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  16)   Text,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  17)   TextInput,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  18)   View,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  19) } from "react-native";
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  20) import { SafeAreaView } from "react-native-safe-area-context";
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  21) import Constants from "expo-constants";
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  22) import { Ring } from "../../components/nutrition-ring";
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  25) const USDA_API_KEY = Constants.expoConfig?.extra?.USDA_API_KEY || "";
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  26) const LIST_MAX = Math.min(420, Math.round(Dimensions.get("window").height * 0.5));
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  27) const MEAL_BASE = "https://themealdb.com/api/json/v1/1";
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  28) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  29) // Daily Targets (will update for user input when backend applied)
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  30) const TARGETS = { kcal: 2200, protein_g: 160, carbs_g: 220, fat_g: 70};
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  31) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  32) // USDA nutrient nums
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  33) const NUM = { kcal: "208", protein: "203", carbs: "205", fat: "204" };
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  34) const r1 = (x: number) => Math.round(x * 10) / 10;
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  35) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  36) function pickUSDA(nutrients: any[]) {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  37)   const out = { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  38)   for (const n of nutrients || []) {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  39)     const num = n?.nutrient?.number || n?.number;
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  40)     const amt = n?.amount ?? n?.value ?? 0;
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  41)     if (num === NUM.kcal) out.kcal = amt;
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  42)     if (num === NUM.protein) out.protein_g = amt;
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  43)     if (num === NUM.carbs) out.carbs_g = amt;
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  44)     if (num === NUM.fat_g) out.fat_g = amt;
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  45)   }
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  46)   return out;
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  47) }
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  48) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  49) function scale(per100: any, grams: number) {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  50)   return {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  51)     kcal: (per100.kcal * grams) / 100,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  52)     protein_g: (per100.protein_g * grams) / 100,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  53)     carbs_g: (per100.carbs_g * grams) / 100,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  54)     fat_g: (per100.fat_g * grams) / 100,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  55)   };
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  56) }
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  57) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  58) function useDebounce(cb: (...args: any[]) => void, delay = 350) {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  59)   const t = useRef<ReturnType<typeof setTimeout> | null>(null);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  60)   return (...args: any[]) => {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  61)     if (t.current) clearTimeout(t.current);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  62)     t.current = setTimeout(() => cb(...args), delay);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  63)   };
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  64) }
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  66) type LogEntry = {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  67)   id: string;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  68)   name: string;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  69)   brand?: string | null;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  70)   servings: number;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  71)   gramsPerServing: number
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  72)   macros: { kcal: number; protein_g: number; carbs_g: number; fat_g: number };
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  73)   atISO: string;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  74) };
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  75) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  77)   const [q, setQ] = useState("");
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  78)   const [loading, setLoading] = useState(false);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  79)   const [items, setItems] = useState<Array<{ id: string; name: string; brand: string | null}>>([]);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  80)   const [detail, setDetail] = useState<any | null>(null);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  81)   const [error, setError] = useState<string | null>(null);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  82) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  83)   // serving / consumption
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  84)   const [manualGramServing, setManualGramServing] = useState<string>("100"); // If USDA has now serving amt
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  85)   const [servingsCount, setServingsCount] = useState<string>("1");
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  86) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  87)   // daily totals (no backend - local only)
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  88)   const [totals, setTotals] = useState({
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  89)     kcal: 0,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  90)     protein_g: 0,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  91)     carbs_g: 0,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  92)     fat_g: 0,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  93)   });
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400  94) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  95)   // Daily Log Entries
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  96)   const [entries, setEntries] = useState<LogEntry[]>([]);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  97) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  98)   // Recipe Search state
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400  99)   const [recipeQ, setRecipeQ] = useState("");
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 100)   const [recipes, setRecipes] = useState<any[]>([]);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 101)   const [recipesLoading, setRecipesLoading] = useState(false);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 102)   const [recipesError, setRecipesError] = useState<string | null>(null);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 103) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 104)   // Recipe helpers
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 105)   const cleanParts = (s: string) => s.split(",").map(p => p.trim()).filter(Boolean);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 106)   type MealItem = { idMeal: string; strMeal: string; strMealThumb: string };
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 107) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 108)   async function fetchMealsForIngredient(ingredient: string): Promise<MealItem[]> {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 109)     const url = `${MEAL_BASE}/filter.php?i=${encodeURIComponent(ingredient)}`;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 110)     const r = await fetch(url);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 111)     if (!r.ok) throw new Error(`Meal filter ${r.status}`);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 112)     const j = await r.json();
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 113)     return (j.meals || []) as MealItem[];
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 114)   }
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 115) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 116)   function intersectById(arrays: MealItem[][]): MealItem[] {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 117)     if (!arrays.length) return [];
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 118)     const idSets = arrays.map(a => new Set(a.map(m => m.idMeal)));
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 119)     const first = arrays[0];
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 120)     return first.filter(m => idSets.every(set => set.has(m.idMeal)));
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 121)   }
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 122) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 123)   async function fetchMealDetail(idMeal: string) {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 124)     const r = await fetch(`${MEAL_BASE}/lookup.php?i=${idMeal}`);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 125)     if (!r.ok) throw new Error(`Meal detail ${r.status}`);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 126)     const j = await r.json();
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 127)     return (j.meals && j.meals[0]) || null;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 128)   }
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 129) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 130)   async function openMealLink(idMeal: string) {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 131)     try {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 132)       const d = await fetchMealDetail(idMeal);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 133)       const url = d?.strSource || d?.strYoutube || null;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 134)       if (url) await Linking.openURL(url);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 135)     } catch {}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 136)   }
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 137) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 138)   // Recipe Search Func
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 139)   const searchRecipes = async () => {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 140)     setRecipesError(null);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 141)     setRecipes([]);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 142)     const parts = cleanParts(recipeQ.toLowerCase());
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 143)     if (!parts.length) return;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 144) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 145)     setRecipesLoading(true);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 146)     try {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 147)       const lists = await Promise.all(parts.map(fetchMealsForIngredient));
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 148)       const common = intersectById(lists).slice(0, 5);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 149)       setRecipes(common);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 150)     } catch (e: any) {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 151)       setRecipesError(e.message || "Recipe search failed");
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 152)     } finally {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 153)       setRecipesLoading(false);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 154)     }
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 155)   };
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 156) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 157)   // Animated add button
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 158)   const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 159)   const btnScale = useRef(new Animated.Value(1)).current;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 160) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 161)   const pulse = () => {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 162)     btnScale.setValue(1);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 163)     Animated.sequence([
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 164)       Animated.spring(btnScale, { toValue: 0.96, duration: 80, useNativeDriver: true }),
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 165)       Animated.spring(btnScale, { toValue: 1, friction: 3, useNativeDriver: true }),
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 166)     ]).start();
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 167)   };
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 168) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 169)   const handleAdd = () => {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 170)     addToDaily(); 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 171)     pulse();
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 172)   };
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 173) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 174)   const search = useDebounce(async (text: string) => {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 175)     setError(null);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 176)     setDetail(null);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 177)     if (!text.trim()) {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 178)       setItems([]);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 179)       return;
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 180)     }
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 181) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 182)     if (!USDA_API_KEY) {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 183)       setError("Missing USDA_API_KEY");
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 184)       return;
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 185)     }
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 186) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 187)     setLoading(true);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 188)     try {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 189)       const url = new URL("https://api.nal.usda.gov/fdc/v1/foods/search");
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 190)       url.searchParams.set("query", text.trim());
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 191)       url.searchParams.set("pageSize", "15");
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 192)       url.searchParams.set("api_key", USDA_API_KEY);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 193) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 194)       const r = await fetch(url.toString());
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 195)       if (!r.ok) throw new Error(`USDA search ${r.status}`);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 196) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 197)       const data = await r.json();
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 198)       const list = (data.foods || []).map((f: any) => ({
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 199)         id: String(f.fdcId),
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 200)         name: f.description,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 201)         brand: f.brandOwner || null,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 202)       }));
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 203)       setItems(list);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 204)     } catch (e: any) {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 205)       setError(e.message || "Search failed");
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 206)       setItems([]);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 207)     } finally {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 208)       setLoading(false);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 209)     }
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 210)   }, 350);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 211) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 212)   const onChange = (text: string) => {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 213)     setQ(text);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 214)     search(text);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 215)   };
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 216) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 217)   const openDetail = async (fdcId: String) => {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 218)     if (!USDA_API_KEY) {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 219)       setError("Missing USDA_API_KEY");
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 220)       return;
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 221)     }
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 222)     setLoading(true);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 223)     setError(null);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 224)     try {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 225)       const u = `https://api.nal.usda.gov/fdc/v1/food/${fdcId}?api_key=${USDA_API_KEY}`;
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 226)       const r = await fetch(u);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 227)       if (!r.ok) throw new Error(`USDA detail ${r.status}`);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 228)       const d = await r.json();
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 229) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 230)       const per100 = pickUSDA(d.foodNutrients || []);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 231)       const portion = (d.foodPortions || []).find((p: any) => p.gramWeight) || null;
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 232)       const serving = portion 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 233)         ? { 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 234)           label: portion.portionDEscription || portion.modifier || "serving",
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 235)           grams: portion.gramWeight,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 236)         }
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 237)         : null;
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 238) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 239)       setDetail({
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 240)         id: String(d.fdcId),
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 241)         name: d.description,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 242)         brand: d.brandOwner || null,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 243)         per100,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 244)         serving,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 245)       });
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 246) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 247)       setServingsCount("1");
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 248)       if (!serving) setManualGramServing("100");
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 249)     } catch (e: any) {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 250)       setError(e.message || "Failed to load detail");
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 251)     } finally {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 252)       setLoading(false);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 253)     }
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 254)   };
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 255) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 256)   // computed macros for UI
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 257)   const hasServing = !!detail?.serving;
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 258)   const gramsPerServing = hasServing
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 259)     ? detail.serving.grams
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 260)     : Math.max(1, parseFloat(manualGramServing) || 0);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 261)   const macrosPerServing = 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 262)     detail && gramsPerServing 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 263)       ? scale(detail.per100, gramsPerServing) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 264)       : { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0};
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 265) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 266)   const servingsN = Math.max(0, parseFloat(servingsCount) || 0);
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 267)   const macrosThisEntry = {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 268)     kcal: macrosPerServing.kcal * servingsN, 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 269)     protein_g: macrosPerServing.protein_g * servingsN, 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 270)     carbs_g: macrosPerServing.carbs_g * servingsN, 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 271)     fat_g: macrosPerServing.fat_g * servingsN, 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 272)   };
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 273) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 274)   const addToDaily = () => {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 275)     setTotals((t) => ({
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 276)       kcal: t.kcal + macrosThisEntry.kcal,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 277)       protein_g: t.protein_g + macrosThisEntry.protein_g,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 278)       carbs_g: t.carbs_g + macrosThisEntry.carbs_g,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 279)       fat_g: t.fat_g + macrosThisEntry.fat_g,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 280)     }));
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 281) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 282)     // Log Entry
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 283)     if (detail) {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 284)       const entry: LogEntry = {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 285)         id: `${detail.id}-${Date.now()}`,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 286)         name: detail.name,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 287)         brand: detail.brand,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 288)         servings: servingsN,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 289)         gramsPerServing: gramsPerServing,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 290)         macros: {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 291)           kcal: macrosThisEntry.kcal,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 292)           protein_g: macrosThisEntry.protein_g,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 293)           carbs_g: macrosThisEntry.carbs_g,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 294)           fat_g: macrosThisEntry.fat_g,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 295)         },
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 296)         atISO: new Date().toISOString(),
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 297)       };
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 298)       setEntries((prev) => [entry, ...prev]);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 299)     }
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 300)   };
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 301) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 302)   const ResultRow = ({ item }: any) => (
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 303)     <Pressable style={styles.row} onPress={() => openDetail(item.id)}>
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 304)       <Text style={styles.item}>- {item.name}</Text>
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 305)       {!!item.brand && <Text style={styles.subItem}>{item.brand}</Text>}
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 306)     </Pressable>
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 307)   );
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 308) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 309) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 310)   return (
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 311)     <SafeAreaView style={styles.container}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 312)       <KeyboardAvoidingView
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 313)         style={{ flex: 1 }}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 314)         behavior={Platform.OS === "ios" ? "padding" : "height"}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 315)       >
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 316)         <ScrollView
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 317)           contentContainerStyle={styles.scrollBody}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 318)           keyboardShouldPersistTaps="handled"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 319)           nestedScrollEnabled
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 320)         >
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 321)           <View>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 322)             <Text style={styles.header}>Nutrition</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 323) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 324) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 325)             {/* Daily Intake RINGS*/}
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 326)             <View style={styles.card}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 327)               <Text style={styles.cardTitle}>Daily Intake</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 328) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 329)               <View style={{ alignItems: "center", marginTop: 6, marginBottom: 10 }}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 330)                 <Ring
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 331)                   size={120}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 332)                   stroke={12}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 333)                   value={totals.kcal}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 334)                   target={TARGETS.kcal}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 335)                   color="#FF6A00"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 336)                   label="Calories"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 337)                   sublabel={`${Math.round(totals.kcal)} / ${TARGETS.kcal} kcal`}
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 338)                 />
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 339)               </View>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 340) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 341)               <View style={{ flexDirection: "row", justifyContent: "space-around", marginTop: 6 }}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 342)                 <Ring
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 343)                   size={92}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 344)                   value={totals.protein_g}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 345)                   target={TARGETS.protein_g}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 346)                   color="#7abaff"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 347)                   label="Protein"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 348)                   sublabel={`${Math.round(totals.protein_g)} / ${TARGETS.protein_g} g`}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 349)                 />
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 350)                 <Ring
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 351)                   size={92}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 352)                   value={totals.carbs_g}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 353)                   target={TARGETS.carbs_g}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 354)                   color="#9BE37D"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 355)                   label="Carbs"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 356)                   sublabel={`${Math.round(totals.carbs_g)} / ${TARGETS.carbs_g} g`}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 357)                 />
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 358)                 <Ring
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 359)                   size={92}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 360)                   value={totals.fat_g}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 361)                   target={TARGETS.fat_g}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 362)                   color="#F6C945"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 363)                   label="Fats"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 364)                   sublabel={`${Math.round(totals.fat_g)} / ${TARGETS.fat_g} g`}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 365)                 />
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 366)               </View>
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 367)             </View>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 368) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 369) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 370)             {/* Search */}
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 371)             <View style={styles.card}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 372)               <Text style={styles.cardTitle}>Search Foods</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 373)               <TextInput
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 374)                 value={q}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 375)                 onChangeText={(t) => {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 376)                   setQ(t);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 377)                   search(t);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 378)                 }}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 379)                 placeholder="e.g., chicken breast"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 380)                 placeholderTextColor="#777"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 381)                 autoCapitalize="none"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 382)                 autoCorrect={false}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 383)                 returnKeyType="search"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 384)                 style={styles.input}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 385)               />
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 386)               {loading && <ActivityIndicator style={{ marginTop: 10}} />}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 387)               {error && <Text style={styles.error}>- {error}</Text>}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 388)             </View>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 389) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 390)             {/* Results Card / Detail Card*/}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 391)             {!detail ? (
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 392)               <View style={styles.card}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 393)                 <Text style={styles.cardTitle}>Results</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 394) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 395)                 {items.length === 0 ? (
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 396)                   <Text style={styles.item}>- Start typing to search</Text>
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 397)                 ) : (
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 398)                     <ScrollView
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 399)                       style={{ maxHeight: LIST_MAX }}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 400)                       nestedScrollEnabled
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 401)                       keyboardShouldPersistTaps="handled"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 402)                       showsVerticalScrollIndicator
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 403)                       contentContainerStyle={{ paddingBottom: 6}}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 404)                     >
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 405)                       {items.map((item) => (
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 406)                         <Pressable key={item.id} style={styles.row} onPress={() => openDetail(item.id)}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 407)                           <Text style={styles.item}>- {item.name}</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 408)                           {!!item.brand && <Text style={styles.subItem}>{item.brand}</Text>}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 409)                         </Pressable>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 410)                       ))}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 411)                     </ScrollView>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 412)                   )}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 413)               </View>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 414)             ) : (
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 415)                 <View style={styles.card}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 416)                   <Text style={styles.cardTitle}>Food Detail</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 417)                   <Text style={styles.item}>- {detail.name}</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 418)                   {detail.brand && <Text style={styles.subItem}>{detail.brand}</Text>}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 419) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 420)                   {/* Serving Picker*/}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 421)                   <View style={styles.block}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 422)                     {hasServing ? (
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 423)                       <Text style={styles.subItem}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 424)                         Serving: {detail.serving.label} = {detail.serving.grams} g
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 425)                       </Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 426)                     ) : (
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 427)                         <View style={{ marginTop: 4 }}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 428)                           <Text style={styles.subItem}>Serving (grams):</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 429)                           <TextInput
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 430)                             style={styles.inputSm}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 431)                             inputMode="numeric"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 432)                             value={manualGramServing}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 433)                             onChangeText={(t) => setManualGramServing(t.replace(/[^0-9.]/g, ""))}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 434)                             placeholder="grams"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 435)                             placeholderTextColor="#777"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 436)                           />
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 437)                         </View>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 438)                       )}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 439) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 440)                     {/* Per-serving macros*/}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 441)                     <Text style={[styles.item, { marginTop: 8 }]}>Per serving</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 442)                     <Text style={styles.subItem}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 443)                       kcal: {r1(macrosPerServing.kcal)} | P: {r1(macrosPerServing.protein_g)} g | C:{" "} 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 444)                       {r1(macrosPerServing.carbs_g)} g | F: {r1(macrosPerServing.fat_g)} g
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 445)                     </Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 446) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 447)                     {/* How Many Servings?*/}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 448)                     <View style={{ marginTop: 8 }}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 449)                       <Text style={styles.subItem}>Servings consumed:</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 450)                       <TextInput
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 451)                         style={styles.inputSm}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 452)                         inputMode="numeric"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 453)                         value={servingsCount}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 454)                         onChangeText={(t) => setServingsCount(t.replace(/[^0-9.]/g, ""))}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 455)                         placeholder="e.g., 1.5"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 456)                         placeholderTextColor="#777"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 457)                       />
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 458)                       <Text style={styles.subItem}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 459)                         This entry total -- kcal: {r1(macrosThisEntry.kcal)} | P:{" "}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 460)                         {r1(macrosThisEntry.protein_g)} g | C: {r1(macrosThisEntry.carbs_g)} g | F:{" "}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 461)                         {r1(macrosThisEntry.fat_g)} g
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 462)                       </Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 463)                     </View>
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 464)                   </View>
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 465) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 466)                   {/*Add to Daily Button*/}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 467)                   <Pressable
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 468)                     onPress={handleAdd}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 469)                     style={({ pressed }) => [
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 470)                       styles.addBtn,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 471)                       pressed && styles.addBtnPressed,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 472)                     ]}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 473)                   >
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 474)                     <Animated.View style={{ transform: [{ scale: btnScale }] }}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 475)                       <Text style={styles.addText}>+ Add to Daily Total</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 476)                     </Animated.View>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 477)                   </Pressable>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 478) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 479)                   <Pressable onPress={() => setDetail(null)} style={{ marginTop: 10 }}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 480)                     <Text style={[styles.item, { color: "#7abaff" }]}>Back to Results</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 481)                   </Pressable>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 482)                 </View>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 483)               )}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 484) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 485)             {/*Daily Log*/}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 486)             <View style={styles.card}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 487)               <Text style={styles.cardTitle}>Daily Log</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 488) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 489)               {entries.length === 0 ? (
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 490)                 <Text style={styles.subItem}>No entries yet.</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 491)               ) : (
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 492)                   <ScrollView
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 493)                     style={{ maxHeight: LIST_MAX }}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 494)                     nestedScrollEnabled
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 495)                     showsVerticalScrollINdicator
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 496)                     keyboardShouldPersistTaps="handled"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 497)                     contentContainerStyle={{ paddingBottom: 6 }}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 498)                   >
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 499)                     {entries.map((item) => (
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 500)                       <View key={item.id} style={{ marginBottom: 8}}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 501)                         <Text style={styles.item}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 502)                           - {item.name}{item.brand ? ` - ${item.brand}` : ""}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 503)                         </Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 504)                         <Text style={styles.subItem}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 505)                           {item.servings} * {Math.round(item.gramsPerServing)} g -- kcal {Math.round(item.macros.kcal)} - P {Math.round(item.macros.protein_g)} g - C {Math.round(item.macros.carbs_g)} g - F {Math.round(item.macros.fat_g)} g
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 506)                         </Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 507)                         <Text style={[styles.subItem, { fontSize: 12, opacity: 0.7 }]}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 508)                           {new Date(item.atISO).toLocaleTimeString()}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 509)                         </Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 510)                       </View> 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 511)                     ))}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 512)                   </ScrollView>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 513)                 )}
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 514)             </View>
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 515) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 516)             {/* Recipes */}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 517)             <View style={styles.card}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 518)               <Text style={styles.cardTitle}>Recipes</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 519) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 520)               <Text style={styles.subItem}>Enter ingredients (comma seperated):</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 521)               <TextInput
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 522)                 style={styles.input}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 523)                 value={recipeQ}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 524)                 onChangeText={setRecipeQ}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 525)                 placeholder="e.g., chicken, rice"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 526)                 placeholderTextColor="#777"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 527)                 autoCapitalize="none"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 528)                 autoCorrect={false}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 529)                 returnKeyType="search"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 530)                 onSubmitEditing={searchRecipes}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 531)               />
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 532) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 533)               <Pressable onPress={searchRecipes} style={[styles.addBtn, { marginTop: 10 }]}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 534)                 <Text style={styles.addText}>Search Recipes</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 535)               </Pressable>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 536) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 537)               {recipesLoading && <ActivityIndicator style={{ marginTop: 10 }} />}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 538)               {recipesError && <Text style={styles.error}>- {recipesError}</Text>}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 539) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 540)               {!recipesLoading && !recipesError && recipes.length > 0 && (
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 541)                 <ScrollView
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 542)                   style={{ maxHeight: LIST_MAX, marginTop: 10 }}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 543)                   nestedScrollEnabled
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 544)                   showsVerticalScrollIndicator
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 545)                   keyboardShouldPersistTaps="handled"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 546)                 >
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 547)                   {recipes.map((m) => (
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 548)                     <Pressable
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 549)                       key={m.idMeal}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 550)                       onPress={() => openMealLink(m.idMeal)}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 551)                       style={{ flexDirection: "row", alignItems: "center", paddingVertical: 8 }}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 552)                     >
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 553)                       <View
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 554)                         style={{
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 555)                           width: 56, height: 56, borderRadius: 8, overflow: "hidden",
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 556)                           backgronfColor: "#222", marginRight: 10,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 557)                         }}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 558)                       >
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 559)                         <View
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 560)                           style={{
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 561)                             flex: 1,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 562)                             backgroundColor: "#222"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 563)                           }}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 564)                         />
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 565)                       </View>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 566)                       <View style={{ flex: 1}}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 567)                         <Text style={styles.item}>- {m.strMeal}</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 568)                         <Text style={[styles.subItem, { fintSize: 12}]}>Tap to View Recipe</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 569)                       </View>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 570)                     </Pressable>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 571)                   ))}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 572)                 </ScrollView>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 573)               )}
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 574) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 575)               {!recipesLoading && !recipesError && recipes.length === 0 && (
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 576)                 <Text style={styles.subItem}>&nbsp;</Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 577)               )}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 578)             </View>
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 579)           </View>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 580)         </ScrollView>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 581)       </KeyboardAvoidingView>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 582)     </SafeAreaView>
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 587)   container: { flex: 1, backgroundColor: "#000" },
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 588)   scrollBody: { padding: 20, paddingBottom: 40 },
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 589) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 590)   header: {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 591)     color: "#fff",
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 592)     fontSize: 28,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 593)     fontWeight: "800",
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 594)     marginBottom: 12,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 595)   },
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 596) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 605)   cardTitle: { color: ORANGE, fontWeight: "800", marginBottom: 8, fontSize: 16},
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 606) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 607)   item: { color: "#eee", marginTop: 2, fontSize: 14 },
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 608)   subItem: { color: "#bdbdbd", marginTop: 2, fontSize: 13 },
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 609) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 610)   input: {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 611)     backgroundColor: "#0e0e0e",
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 612)     borderColor: "#1f1f1f",
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 613)     borderWidth: 1,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 614)     color: "#fff",
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 615)     borderRadius: 10,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 616)     paddingHorizontal: 12,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 617)     paddingVertical: 10,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 618)     marginTop: 6,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 619)   },
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 620)   inputSm: {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 621)     backgroundColor: "#0e0e0e",
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 622)     borderColor: "#1f1f1f",
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 623)     borderWidth: 1,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 624)     color: "#fff",
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 625)     borderRadius: 8,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 626)     paddingHorizontal: 10,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 627)     paddingVertical: 8,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 628)     marginTop: 6,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 629)     width: 120,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 630)   },
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 631) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 632)   sep: { height: 8 },
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 633)   block: { marginTop: 8, marginBottom: 8 },
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 634) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 635)   error: { color: "#ff6b6b", marginTop: 8, fontSize: 13 },
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 636) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 637)   addBtn: {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 638)     backgroundColor: ORANGE,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 639)     borderRadius: 10,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 640)     paddingVertical: 10,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 641)     alignItems: "center",
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 642)     justifyContent: "center",
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 643)     alignSelf: "stretch",
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 644)     marginTop: 10,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 645)   },
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 646)   addText: { color: "#000", fontWeight: "800" },
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 647) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 648)   barTrack: {
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 649)     height: 8,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 650)     borderRadius: 999,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 651)     backgroundColor: "#222",
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 652)     overflow: "hidden",
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 653)     marginTop: 6,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 654)     marginBottom: 8,
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 655)   },
+77c557dab (<hohara2@tesla1.eecs.utk.edu>   2025-10-09 18:22:16 -0400 656)   barFill: {height: 8, backgroundColor: ORANGE },
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu>   2025-10-12 18:47:05 -0400 657)   addBtnPressed: { backgroundColor: "#e05f00"},
+
+{/* components/nutrition-ring.tsx */}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400  1) import React from "react";
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400  2) import Svg, { Circle } from "react-native-svg";
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400  3) import { View, Text } from "react-native";
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400  4) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400  5) function clamp01(x: number) {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400  6)   if (!Number.isFinite(x)) return 0;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400  7)   return Math.max(0, Math.min(1, x));
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400  8) }
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400  9) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 10) export function Ring({
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 11)   size = 96,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 12)   stroke = 10,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 13)   value,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 14)   target,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 15)   color = "#FF6A00",
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 16)   track = "#222",
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 17)   label,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 18)   sublabel,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 19) }: {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 20)   size?: number;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 21)   stroke?: number;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 22)   value: number;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 23)   target: number;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 24)   color?: string;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 25)   track?: string;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 26)   label: string;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 27)   sublabel?: string;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 28) }) {
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 29)   const pct = Math.max(0, Math.min(1, target > 0 ? value / target : 0));
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 30)   const r = Math.max(0.001, (size - stroke) / 2);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 31)   const c = 2 * Math.PI * r;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 32)   const epsilon = 0.0001;
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 33) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 34)   const offset = pct <= 0 ? c - epsilon : pct >= 1 ? epsilon : c * (1 - pct);
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 35) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 36)   return (
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 37)     <View style={{ alignItems: "center" }}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 38)       <View style={{ width: size, height: size }}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 39)         <Svg width={size} height={size}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 40)           <Circle
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 41)             cx={size / 2}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 42)             cy={size / 2}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 43)             r={r}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 44)             stroke={track}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 45)             strokeWidth={stroke}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 46)             fill="none"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 47)             />
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 48)             {/* Progress */}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 49)             <Circle
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 50)               cx={size / 2}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 51)               cy={size / 2}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 52)               r={r}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 53)               stroke={color}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 54)               strokeWidth={stroke}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 55)               fill="none"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 56)               strokeLinecap="round"
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 57)               strokeDasharray={[c, c]}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 58)               strokeDashoffset={offset}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 59) //              transform={[{ rotate: "-180deg" }]}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 60)               transform={`rotate(-90 ${size / 2} ${size / 2})`}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 61)               orginX={size / 2}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 62)               orginY={size / 2}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 63)             />
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 64)           </Svg>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 65) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 66)           <Text
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 67)             style={{
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 68)               position: "absolute",
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 69)               top: size / 2 - 12,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 70)               left: 0,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 71)               right: 0,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 72)               textAlign: "center",
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 73)               color: "#eee",
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 74)               fontWeight: "800",
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 75)               fontSize: 14,
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 76)             }}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 77)           >
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 78)             {Math.round(pct * 100)}%
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 79)           </Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 80)         </View>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 81) 
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 82)         <Text style={{ color: "#eee", fontWeight: "700", marginTop: 8 }}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 83)           {label}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 84)         </Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 85)         {sublabel ? (
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 86)           <Text style={{ color: "#bdbdbd", fontSize: 12, marginTop: 2 }}>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 87)             {sublabel}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 88)           </Text>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 89)         ) : null}
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 90)       </View>
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 91)   );
+1db8fb134 (<hohara2@tesla1.eecs.utk.edu> 2025-10-12 18:47:05 -0400 92) }
+
+{/* app.config.js */}
+77c557dab (<hohara2@tesla1.eecs.utk.edu> 2025-10-09 18:22:16 -0400 1) import 'dotenv/config';
+77c557dab (<hohara2@tesla1.eecs.utk.edu> 2025-10-09 18:22:16 -0400 2) 
+77c557dab (<hohara2@tesla1.eecs.utk.edu> 2025-10-09 18:22:16 -0400 3) export default ({ config }) => ({
+77c557dab (<hohara2@tesla1.eecs.utk.edu> 2025-10-09 18:22:16 -0400 4)   ...config,
+77c557dab (<hohara2@tesla1.eecs.utk.edu> 2025-10-09 18:22:16 -0400 5)   extra: {
+77c557dab (<hohara2@tesla1.eecs.utk.edu> 2025-10-09 18:22:16 -0400 6)     ...config.extra,
+77c557dab (<hohara2@tesla1.eecs.utk.edu> 2025-10-09 18:22:16 -0400 7)     USDA_API_KEY: process.env.USDA_API_KEY,
+77c557dab (<hohara2@tesla1.eecs.utk.edu> 2025-10-09 18:22:16 -0400 8)   },
+77c557dab (<hohara2@tesla1.eecs.utk.edu> 2025-10-09 18:22:16 -0400 9) });
