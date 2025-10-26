@@ -25,7 +25,8 @@ export default ({ config }) => ({
   extra: {
     ...config.extra,
     USDA_API_KEY: process.env.USDA_API_KEY,
-    NUTRITIONIX_APP_ID: process.env.NUTRITIONIX_APP_ID,
-    NUTRITIONIX_APP_KEY: process.env.NUTRITIONIX_APP_KEY,
+  },
+  expo: {
+    ...config.expo,
   },
 });
