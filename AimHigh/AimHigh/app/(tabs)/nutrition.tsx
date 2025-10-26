@@ -1,11 +1,12 @@
 // app/(tabs)/nutrition.tsx
 // New
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  Easing,
   FlatList,
   KeyboardAvoidingView,
   Linking,
@@ -18,8 +19,10 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import Constants from "expo-constants";
 import { Ring } from "../../components/nutrition-ring";
+import * as Haptics from "expo-haptics";
 
 const ORANGE = "#FF6A00";
 const USDA_API_KEY = Constants.expoConfig?.extra?.USDA_API_KEY || "";
@@ -33,6 +36,10 @@ const TARGETS = { kcal: 2200, protein_g: 160, carbs_g: 220, fat_g: 70};
 const NUM = { kcal: "208", protein: "203", carbs: "205", fat: "204" };
 const r1 = (x: number) => Math.round(x * 10) / 10;
 
+// NutritionIX keys
+const NIX_APP_ID = Constants.expoConfig?.extra?.NUTRITIONIX_APP_ID || "";
+const NIX_APP_KEY = Constants.expoConfig?.extra?.NUTRITIONIX_APP_KEY || "";
+
 function pickUSDA(nutrients: any[]) {
   const out = { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
   for (const n of nutrients || []) {
@@ -44,6 +51,12 @@ function pickUSDA(nutrients: any[]) {
     if (num === NUM.fat_g) out.fat_g = amt;
   }
   return out;
+}
+
+function toEAN13(code: string) {
+  const s = (code || "").trim();
+  if (s.length === 12) return "0" + s;
+  return s;
 }
 
 function scale(per100: any, grams: number) {
@@ -73,6 +86,7 @@ type LogEntry = {
   atISO: string;
 };
 
+
 export default function Nutrition() {
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
@@ -100,6 +114,131 @@ export default function Nutrition() {
   const [recipes, setRecipes] = useState<any[]>([]);
   const [recipesLoading, setRecipesLoading] = useState(false);
   const [recipesError, setRecipesError] = useState<string | null>(null);
+
+  // scanner state
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
+
+  const scanGate = useRef(false);
+  const lineY = useRef(new Animated.Value(0)).current;
+  const [scanHeight, setScanHeight] = useState(0);
+
+  useEffect(() => {
+    if (!scannerOpen) return;
+    lineY.setValue(0);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(lineY, {
+          toValue: 1,
+          duration: 1400,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(lineY, { toValue: 0, duration: 0, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [scannerOpen]);
+
+  // ask for camera permission
+  const openScanner = async () => {
+    if (!permission || !permission.granted) {
+      await requestPermission();
+    }
+    setScannerOpen(true);
+  };
+
+  // Barcode Scan Function
+  async function fetchOpenFoodFactsUPC(raw: string) {
+    const ean = toEAN13(raw);
+
+    const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(ean)}.json`;
+
+    const r = await fetch(url);
+
+    if (!r.ok) throw new Error(`Open Food Facts ${r.status}`);
+    const j = await r.json();
+    const p = j?.product;
+    if (!p) throw new Error("Product not founf");
+
+    const name = p.product_name_en || p.product_name || p.generic_name_en || "Scanned Item";
+    const brand = (p.brands || "").split(",")[0]?.trim() || null;
+
+    let servingGrams: number | null = null;
+    if (typeof p.serving_quantity === "number") {
+      servingGrams = p.serving_quantity;
+    } else if (typeof p.serving_size === "string") {
+      const m = p.serving_size.match(/([\d.]+)\s*g/i);
+      if (m) servinggrams = parseFloat(m[1]);
+    }
+
+    const n = p.nutriments || {};
+
+    const kcal100 = 
+      (typeof n["energy-kcal_100g"] === "number"
+        ? n["energy-kcal_100g"]
+        : typeof n["energy_100g"] === "number"
+        ? n["energy_100g"] / 4.184
+        : 0) || 0;
+
+    const protein100 = Number(n["proteins_100g"] ?? n["protein_100g"] ?? 0);
+    const carbs100 = Number(n["carbohydrates_100g"] ?? n["carbs_100g"] ?? 0);
+    const fat100 = Number(n["fat_100g"] ?? n["fats_100g"] ?? 0);
+
+    const kcalServ = Number(n["energy-kcal_serving"] ?? (typeof n["energy_serving"] === "number" ? n["energy_serving"] / 4.184: NaN));
+
+    const protServ = Number(n["proteins_serving"]);
+    const carbServ = Number(n["carbohydrates_serving"]);
+    const fatServ = Number(n["fat_serving"]);
+
+    const per100 = {
+      kcal: Math.max(0, kcal100),
+      protein_g: Math.max(0, protein100),
+      carbs_g: Math.max(0, carbs100),
+      fat_g: Math.max(0, fat100),
+    };
+
+    const serving = 
+      servingGrams && servingGrams > 0
+        ? {
+            label: p.serving_size || "serving",
+            grams: servingGrams,
+          }
+        : null;
+
+    return {
+      id: String(p.code || ean),
+      name,
+      brand,
+      per100,
+      serving,
+    };
+  }
+
+  const onUPCScanned = async ({ data }: { data: string }) => {
+    if (scanGate.current) return;
+    scanGate.current = true;
+    setTimeout(() => (scanGate.current = false), 1200);
+
+    try {
+      // Success Buzz
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      setLoading(true);
+      setError(null);
+
+      const d = await fetchOpenFoodFactsUPC(data);
+      setDetail(d);
+      setServingsCount("1");
+      if (!d.serving) setManualGramServing("100");
+    } catch (e: any) {
+      setError(e.message || "Scan failed");
+    } finally {
+      setLoading(false);
+      setScannerOpen(false);
+    }
+  }; 
 
   // Recipe helpers
   const cleanParts = (s: string) => s.split(",").map(p => p.trim()).filter(Boolean);
@@ -370,6 +509,8 @@ export default function Nutrition() {
             {/* Search */}
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Search Foods</Text>
+
+              {/* Text Entry*/}
               <TextInput
                 value={q}
                 onChangeText={(t) => {
@@ -383,6 +524,19 @@ export default function Nutrition() {
                 returnKeyType="search"
                 style={styles.input}
               />
+
+              {/* OR divider */}
+              <View style={styles.orRow}>
+                <View style={styles.orLine} />
+                <Text styles={styles.orText}>OR</Text>
+                <View style={styles.orLine} />
+              </View>
+
+              {/* Scan Button */}
+              <Pressable onPress={openScanner} style={styles.scanBtn}>
+                <Text style={styles.scanBtnText}>ScanBarcode</Text>
+              </Pressable>
+
               {loading && <ActivityIndicator style={{ marginTop: 10}} />}
               {error && <Text style={styles.error}>- {error}</Text>}
             </View>
@@ -578,6 +732,72 @@ export default function Nutrition() {
             </View>
           </View>
         </ScrollView>
+
+        {/* Scanner Overlay */}
+        {scannerOpen && (
+          <View style={styles.scanOverlay}>
+            {permission && !permission.granted ? (
+              <View style={styles.scanInner}>
+                <Text style={styles.item}>Camera permission required.</Text>
+                <Pressable onPress={requestPermission} style={[styles.addBtn, { marginTop: 10 }]}>
+                  <Text style={styles.addText}>Grant Permission</Text>
+                </Pressable>
+                <Pressable onPress={() => setScannerOpen(false)} style={[styles.addBtn, { marginTop: 10 }]}>
+                  <Text style={styles.addText}>Camcel</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={styles.scanInner}>
+                <Text style={styles.cardTitle}>Scan a UPC</Text>
+                <View 
+                  style={styles.scanFrame}
+                  onLayout={(e) => setScanHeight(e.nativeEvent.layout.height)}
+                >
+                  <CameraView
+                    style={{ width: "100%", height: "100%" }}
+                    barcodeScannerSettings={{
+                      barcodeTypes: ["ean13", "upc_a", "upc_e"],
+                    }}
+                    onBarcodeScanned={({ data }) => onUPCScanned({ data })}
+                  />
+                  {/* dim mask at the edges to highlight the center */}
+                  <View pointerEvents="none" style={styles.maskTop} />
+                  <View pointerEvents="none" style={styles.maskBottom} />
+                  <View pointerEvents="none" style={styles.maskLeft} />
+                  <View pointerEvents="none" style={styles.maskRight} />
+
+                  {/* Orange Corner Brackets */}
+                  <View pointerEvents="none" style={[styles.corner, styles.cornerTL]} />
+                  <View pointerEvents="none" style={[styles.corner, styles.cornerTR]} />
+                  <View pointerEvents="none" style={[styles.corner, styles.cornerBL]} />
+                  <View pointerEvents="none" style={[styles.corner, styles.cornerBR]} />
+
+                  {/* Animated Scan Line */}
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[
+                      styles.scanLine,
+                      {
+                        transform: [
+                          {
+                            translateY: lineY.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [0, Math.max(0, scanHeight - 32)],
+                            }),
+                          },
+                        ],
+                      },
+                    ]}
+                  />
+                </View>
+                <Pressable onPress={() => setScannerOpen(false)} style={[styles.addBtn, { marginTop: 10 }]}>
+                  <Text style={styles.addText}>Cancel</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        )}
+
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -655,4 +875,79 @@ const styles = StyleSheet.create({
   },
   barFill: {height: 8, backgroundColor: ORANGE },
   addBtnPressed: { backgroundColor: "#e05f00"},
+
+  orRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  orLine: { flex: 1, height: 1, backgroundColor: "#1f1f1f" },
+  orText: { color: "#777", fontSize: 12, fontWeight: "700" },
+
+  scanBtn: {
+    backgroundColor: ORANGE,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  scanBtnText: { color: "#000", fontWeight: "800" },
+
+  scanOverlay: {
+    position: "absolute",
+    left: 0, right: 0, top: 0, bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 10,
+  },
+  scanInner: {
+    width: "100%",
+    maxWidth: 440,
+    backgroundColor: "#111",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#1f1f1f",
+    paddingColor: 16,
+  },
+  scanFrame: {
+    marginTop: 10,
+    width: "100%",
+    aspectRatio: 1,
+    overflow: "hidden",
+    borderRadius : 12,
+    borderColor: "#333",
+    borderWidth: 1,
+    backgroundColor: "#000",
+    position: "relative"
+  },
+
+  maskTop: { position: "absolute", left: 0, right: 0, top: 0, height: 16, backgroundColor: "rgba(0,0,0,0.35)" },
+  maskBottom: { position: "absolute", left: 0, right: 0, bottom: 0, height: 16, backgroundColor: "rgba(0,0,0,0.35)" },
+  maskLeft: { position: "absolute", left: 0, top: 0, bottom: 0, width: 16, backgroundColor: "rgba(0,0,0,0.35)" },
+  maskRight: { position: "absolute", right: 0, top: 0, bottom: 0, width: 16, backgroundColor: "rgba(0,0,0,0.35)" },
+
+  corner: {
+    position: "absolute",
+    width: 26,
+    height: 26,
+    borderColor: ORANGE,
+  },
+
+  cornerTL: { top: 8, left: 8, borderLeftWidth: 3, borderTopWidth: 3, borderTopLeftRadius: 6 },
+  cornerTR: { top: 8, right: 8, borderRightWidth: 3, borderTopWidth: 3, borderTopRightRadius: 6 },
+  cornerBL: { bottom: 8, left: 8, borderLeftWidth: 3, borderBottomWidth: 3, borderBottomLeftRadius: 6 },
+  cornerBR: { bottom: 8, right: 8, borderRightWidth: 3, borderBottomWidth: 3, borderBottomRightRadius: 6 },
+
+  scanLine: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    height: 2,
+    backgroundColor: ORANGE,
+    top: 16,
+    opacity: 0.95,
+  },
 });
