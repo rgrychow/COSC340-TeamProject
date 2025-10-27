@@ -1,0 +1,134 @@
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  4) import { useEffect } from "react";
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  5) import { Platform } from "react-native";
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  6) import { WorkoutsProvider } from "../hooks/useWorkouts";
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  9)   // Recommended for react-native-screens on Android
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 10)   useEffect(() => {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 11)     if (Platform.OS === "android") {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 12)       try {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 13)         // noop; react-native-screens is auto-initialized in Expo
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 14)       } catch {}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 15)     }
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 16)   }, []);
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 17) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 20)       <>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 21)         <StatusBar style="light" />
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 22)         <Stack
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 23)           screenOptions={{
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 24)             headerStyle: { backgroundColor: "#000" },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 25)             headerTintColor: "#fff",
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 26)             contentStyle: { backgroundColor: "#000" },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 27)           }}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 28)         >
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 29)           {/* index.tsx is the Login screen */}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 30)           <Stack.Screen name="index" options={{ headerShown: false }} />
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 31)           {/* (tabs) contains the 4 main pages */}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 32)           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 33)         </Stack>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 34)       </>
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  1) // hooks/useProgress.ts
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  2) import { Workout } from "./useWorkouts";
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  3) import { Meal } from "./useNutrition";
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  4) 
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  5) export function useProgress(workouts: Workout[], meals: Meal[]) {
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  6)   const totalWorkouts = workouts.length;
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  7) 
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  8)   const weeklyWorkouts = workouts.filter((w) => {
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  9)     const dt = new Date(w.dateISO);
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 10)     const now = new Date();
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 11)     const diffDays = (now.getTime() - dt.getTime()) / (1000 * 60 * 60 * 24);
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 12)     return diffDays <= 7;
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 13)   });
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 14) 
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 15)   const avgCalories =
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 16)     meals.length > 0
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 17)       ? Math.round(meals.reduce((sum, m) => sum + m.calories, 0) / meals.length)
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 18)       : 0;
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 19) 
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 20)   return {
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 21)     totalWorkouts,
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 22)     weeklyWorkouts: weeklyWorkouts.length,
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 23)     avgCalories,
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 24)   };
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 25) }
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 26) 
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  1) // utils/calc.ts
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  2) export function average(numbers: number[]): number {
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  3)   if (numbers.length === 0) return 0;
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  4)   return numbers.reduce((sum, n) => sum + n, 0) / numbers.length;
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  5) }
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  6) 
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  7) export function total(numbers: number[]): number {
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  8)   return numbers.reduce((sum, n) => sum + n, 0);
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  9) }
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 10) 
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  1) // utils/date.ts
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  2) export function formatDateTime(dateISO: string) {
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  3)   const dt = new Date(dateISO);
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  4)   const datePart = dt.toLocaleDateString(undefined, {
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  5)     month: "short",
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  6)     day: "numeric",
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  7)     year: "numeric",
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  8)   });
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400  9)   const timePart = dt.toLocaleTimeString(undefined, {
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 10)     hour: "numeric",
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 11)     minute: "2-digit",
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 12)   });
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 13)   return `${datePart}  ${timePart}`;
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 14) }
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 15) 
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 16) export function formatRelativeTime(dateISO: string) {
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 17)   const dt = new Date(dateISO);
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 18)   const now = new Date();
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 19)   const diff = (now.getTime() - dt.getTime()) / 1000; // seconds
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 20) 
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 21)   if (diff < 60) return `${Math.floor(diff)}s ago`;
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 22)   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 23)   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 24)   return `${Math.floor(diff / 86400)}d ago`;
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 25) }
+43b0c9020 (Ryan Grychowski 2025-09-26 10:18:41 -0400 26) 
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  1) // utils/streak.ts
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  2) // Computes how many consecutive weeks (most-recent backwards) meet or exceed a weekly goal.
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  3) // Weeks are grouped Monday–Sunday to be consistent.
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  4) 
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  5) type Dated = { dateISO: string };
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  6) 
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  7) function weekKeyMonday(d: Date): string {
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  8)   // shift to Monday
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  9)   const day = d.getDay(); // 0 Sun .. 6 Sat
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 10)   const offset = (day + 6) % 7; // 0 if Monday
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 11)   const monday = new Date(d);
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 12)   monday.setHours(0, 0, 0, 0);
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 13)   monday.setDate(d.getDate() - offset);
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 14)   return monday.toISOString().slice(0, 10); // YYYY-MM-DD
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 15) }
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 16) 
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 17) export function weeklyStreak(items: Dated[], goal = 4): number {
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 18)   if (items.length === 0) return 0;
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 19) 
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 20)   // count items per week
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 21)   const byWeek = new Map<string, number>();
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 22)   for (const it of items) {
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 23)     const key = weekKeyMonday(new Date(it.dateISO));
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 24)     byWeek.set(key, (byWeek.get(key) || 0) + 1);
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 25)   }
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 26) 
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 27)   // sort weeks descending (newest first)
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 28)   const weeks = [...byWeek.entries()].sort((a, b) =>
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 29)     a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 30)   );
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 31) 
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 32)   // ensure current week appears even if count is 0
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 33)   const nowKey = weekKeyMonday(new Date());
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 34)   if (!byWeek.has(nowKey)) {
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 35)     weeks.unshift([nowKey, 0]);
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 36)   }
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 37) 
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 38)   // count consecutive weeks meeting goal
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 39)   let streak = 0;
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 40)   for (const [, count] of weeks) {
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 41)     if (count >= goal) streak++;
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 42)     else break;
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 43)   }
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 44)   return streak;
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 45) }
