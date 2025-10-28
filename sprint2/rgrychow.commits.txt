@@ -1,0 +1,449 @@
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400   2) import React, { useMemo, useState } from "react";
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400   3) import { View, Text, StyleSheet, ScrollView, Pressable, useWindowDimensions } from "react-native";
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400   5) import { formatDateTime } from "../../utils/date";
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400   6) import { average, total } from "../../utils/calc";
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400   7) import Svg, { Polyline, Circle, Line as SvgLine, Text as SvgText } from "react-native-svg";
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  10) const CHIP_BG = "#151515";
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  11) const CHIP_BG_ACTIVE = "#1E1E1E";
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  12) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  13) type SetRow = { reps: number; weight: number; exercise: string; dateISO: string; ts?: number };
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  14) type Point = { dateISO: string; bestWeight: number; volume: number };
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  18)   const { width } = useWindowDimensions();
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  20)   // -------------------
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  21)   // LOCAL “TAB” STATE
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  22)   // -------------------
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  23)   type Tab = "Overview" | "Trends";
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  24)   const [tab, setTab] = useState<Tab>("Overview");
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  25) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  26)   // -------------------
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  27)   // SHARED DERIVED DATA
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  28)   // -------------------
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  29)   const allSets: SetRow[] = useMemo(() => {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  30)     const rows: SetRow[] = [];
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  31)     for (const w of workouts) {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  32)       for (const ex of w.exercises) {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  33)         for (const s of ex.sets) {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  34)           rows.push({
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  35)             reps: s.reps,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  36)             weight: s.weight,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  37)             ts: (s as any).ts,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  38)             exercise: ex.name,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  39)             dateISO: w.dateISO,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  40)           });
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  41)         }
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  42)       }
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  43)     }
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  44)     return rows;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  45)   }, [workouts]);
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  46) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  47)   const totalWorkouts = workouts.length;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  48)   const weeklyGoal = 4;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  49)   const weeklyWorkouts = workouts.filter((w) => {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  50)     const dt = new Date(w.dateISO).getTime();
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  51)     const days = (Date.now() - dt) / (1000 * 60 * 60 * 24);
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  52)     return days <= 7;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  53)   }).length;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  54)   const weeklyPct = Math.max(0, Math.min(100, (weeklyWorkouts / weeklyGoal) * 100));
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  55) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  56)   // -------------------
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  57)   // OVERVIEW METRICS
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  58)   // -------------------
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  59)   const maxWeightOverall = allSets.length ? Math.max(...allSets.map((s) => s.weight)) : 0;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  60)   const avgRepsOverall = allSets.length ? average(allSets.map((s) => s.reps)) : 0;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  61)   const recent = workouts.slice(-3).reverse(); // last 3 workouts (newest first)
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  62) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  63)   // -------------------
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  64)   // TRENDS: BY EXERCISE (for the graph)
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  65)   // -------------------
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  66)   const exerciseNames = useMemo(() => {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  67)     const set = new Set<string>();
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  68)     workouts.forEach((w) => w.exercises.forEach((ex) => set.add(ex.name)));
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  69)     return Array.from(set).sort();
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  70)   }, [workouts]);
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  71) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  72)   const [exercise, setExercise] = useState<string>(exerciseNames[0] ?? "");
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  74)   const series: Point[] = useMemo(() => {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  75)     if (!exercise) return [];
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  76)     // For each workout, compute best weight & volume for the selected exercise
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  77)     return workouts
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  78)       .map((w) => {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  79)         const exMatches = w.exercises.filter((e) => e.name === exercise);
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  80)         if (exMatches.length === 0) return null;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  81) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  82)         const sets = exMatches.flatMap((e) => e.sets);
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  83)         const bestWeight = sets.length ? Math.max(...sets.map((s) => s.weight)) : 0;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  84)         const volume = sets.length ? total(sets.map((s) => s.reps * s.weight)) : 0;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  85) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  86)         return { dateISO: w.dateISO, bestWeight, volume };
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  87)       })
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  88)       .filter(Boolean) as Point[];
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  89)   }, [workouts, exercise]);
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  90) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  91)   const maxBest = series.length ? Math.max(...series.map((p) => p.bestWeight)) : 0;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  92)   const maxVol = series.length ? Math.max(...series.map((p) => p.volume)) : 0;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  93) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  94)   // -------------------
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  95)   // RENDER
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  96)   // -------------------
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  98)     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 101)       {/* Top-level in-screen tabs */}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 102)       <View style={styles.tabRow}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 103)         <TabChip label="Overview" active={tab === "Overview"} onPress={() => setTab("Overview")} />
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 104)         <TabChip label="Trends" active={tab === "Trends"} onPress={() => setTab("Trends")} />
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 106) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 107)       {tab === "Overview" ? (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 108)         <>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 109)           {/* Weekly Summary */}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 110)           <View style={styles.card}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 111)             <Text style={styles.cardTitle}>This Week</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 112)             <Text style={styles.item}>• Workouts: {weeklyWorkouts} / {weeklyGoal}</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 113)             <View style={styles.progressBarBackground}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 114)               <View style={[styles.progressBarFill, { width: `${weeklyPct}%` }]} />
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 115)             </View>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 116)             <Text style={styles.progressBarLabel}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 117)               {weeklyWorkouts}/{weeklyGoal} completed
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 118)             </Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 119)           </View>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 120) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 121)           {/* Overall Stats */}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 122)           <View style={styles.card}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 123)             <Text style={styles.cardTitle}>Stats</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 124)             <Text style={styles.item}>• Total Workouts: {totalWorkouts}</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 125)             <Text style={styles.item}>• Total Sets: {allSets.length}</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 126)             <Text style={styles.item}>• Avg Reps per Set: {avgRepsOverall.toFixed(1)}</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 127)             <Text style={styles.item}>• Personal Best (Weight): {maxWeightOverall} lb</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 128)           </View>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 129) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 130)           {/* Recent Workouts */}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 131)           <View style={styles.card}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 132)             <Text style={styles.cardTitle}>Recent Workouts</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 133)             {recent.length === 0 ? (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 134)               <Text style={styles.item}>No workout data yet</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 135)             ) : (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 136)               recent.map((w) => (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 137)                 <View key={w.id} style={styles.workoutCard}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 138)                   <Text style={styles.workoutTitle}>{formatDateTime(w.dateISO)}</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 139)                   {w.exercises.length === 0 ? (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 140)                     <Text style={styles.exercise}>No exercises added</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 141)                   ) : (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 142)                     w.exercises.map((ex) => (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 143)                       <Text key={ex.id} style={styles.exercise}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 144)                         {ex.name} — {ex.sets.length} set{ex.sets.length === 1 ? "" : "s"}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 145)                       </Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 146)                     ))
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 147)                   )}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 148)                 </View>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 149)               ))
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 150)             )}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 151)           </View>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 152)         </>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 153)       ) : (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 154)         <>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 155)           {/* Exercise Picker */}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 156)           <View style={[styles.card, { paddingBottom: 10 }]}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 157)             <Text style={styles.cardTitle}>Select Exercise</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 158)             {exerciseNames.length === 0 ? (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 159)               <Text style={styles.item}>No exercises yet — add some in Fitness</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 160)             ) : (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 161)               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 162)                 {exerciseNames.map((name) => {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 163)                   const active = exercise === name;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 164)                   return (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 165)                     <Pressable
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 166)                       key={name}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 167)                       onPress={() => setExercise(name)}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 168)                       style={[
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 169)                         styles.chip,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 170)                         { backgroundColor: active ? CHIP_BG_ACTIVE : CHIP_BG, borderColor: active ? ORANGE : "#222" },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 171)                       ]}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 172)                     >
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 173)                       <Text style={[styles.chipText, { color: active ? ORANGE : "#ddd" }]}>{name}</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 174)                     </Pressable>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 175)                   );
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 176)                 })}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 177)               </ScrollView>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 178)             )}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 179)             {!!exercise && <Text style={styles.itemSmall}>Showing: {exercise}</Text>}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 180)           </View>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 181) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 182)           {/* ===== Line Graph: Best Weight over Time ===== */}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 183)           <View style={styles.card}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 184)             <Text style={styles.cardTitle}>Best Weight Over Time</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 185)             {series.length < 2 ? (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 186)               <Text style={styles.item}>Need at least 2 sessions for a line chart</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 187)             ) : (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 188)               <LineChart
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 189)                 data={series.map((p) => ({ x: new Date(p.dateISO).getTime(), y: p.bestWeight }))}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 190)                 width={Math.max(260, width - 40)} // padding accounted by container
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 191)                 height={220}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 192)                 color={ORANGE}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 193)               />
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 194)             )}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 195)           </View>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 196) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 197)           {/* Trends: Volume per Workout (bars) */}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 198)           <View style={styles.card}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 199)             <Text style={styles.cardTitle}>Volume per Workout (reps × weight)</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 200)             {series.length === 0 ? (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 201)               <Text style={styles.item}>No data yet</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 202)             ) : (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 203)               series.map((p, idx) => {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 204)                 const maxVolSafe = Math.max(1, maxVol);
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 205)                 const pct = Math.max(5, (p.volume / maxVolSafe) * 100);
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 206)                 return (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 207)                   <View key={idx} style={styles.row}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 208)                     <Text style={styles.rowLabel}>{shortDate(p.dateISO)}</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 209)                     <View style={styles.barTrack}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 210)                       <View style={[styles.barFillMuted, { width: `${pct}%` }]} />
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 211)                     </View>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 212)                     <Text style={styles.rowValue}>{p.volume}</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 213)                   </View>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 214)                 );
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 215)               })
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 216)             )}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 217)           </View>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 218) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 219)           {/* Timeline (optional) */}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 220)           <View style={styles.card}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 221)             <Text style={styles.cardTitle}>Timeline</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 222)             {series.length === 0 ? (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 223)               <Text style={styles.item}>No data yet</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 224)             ) : (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 225)               series.map((p, idx) => (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 226)                 <Text key={idx} style={styles.item}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 227)                   • {formatDateTime(p.dateISO)} — Best: {p.bestWeight} lb, Volume: {p.volume}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 228)                 </Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 229)               ))
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 230)             )}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 231)           </View>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 232)         </>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 233)       )}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 234)     </ScrollView>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 238) /* ------------- helpers + tiny line chart ------------- */
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 239) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 240) function shortDate(dateISO: string) {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 241)   const d = new Date(dateISO);
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 242)   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 243) }
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 244) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 245) function TabChip({
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 246)   label,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 247)   active,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 248)   onPress,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 249) }: {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 250)   label: string;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 251)   active: boolean;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 252)   onPress: () => void;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 253) }) {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 254)   return (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 255)     <Pressable
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 256)       onPress={onPress}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 257)       style={[
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 258)         styles.tabChip,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 259)         { backgroundColor: active ? CHIP_BG_ACTIVE : CHIP_BG, borderColor: active ? ORANGE : "#222" },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 260)       ]}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 261)     >
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 262)       <Text style={[styles.tabChipText, { color: active ? ORANGE : "#ddd" }]}>{label}</Text>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 263)     </Pressable>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 264)   );
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 265) }
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 267) function LineChart({
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 268)   data,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 269)   width,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 270)   height,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 271)   color,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 272) }: {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 273)   data: { x: number; y: number }[];
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 274)   width: number;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 275)   height: number;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 276)   color: string;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 277) }) {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 278)   // sort by time
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 279)   const sorted = [...data].sort((a, b) => a.x - b.x);
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 281)   const minX = sorted[0].x;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 282)   const maxX = sorted[sorted.length - 1].x;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 283)   const minY = Math.min(...sorted.map((p) => p.y));
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 284)   const maxY = Math.max(...sorted.map((p) => p.y));
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 286)   const pad = 30; // inner padding for axes
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 287)   const cw = width - pad * 2;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 288)   const ch = height - pad * 2;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 290)   const mapX = (x: number) => pad + ((x - minX) / Math.max(1, maxX - minX)) * cw;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 291)   const mapY = (y: number) =>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 292)     pad + ch - ((y - minY) / Math.max(1, maxY - minY)) * ch;
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 294)   const points = sorted.map((p) => `${mapX(p.x)},${mapY(p.y)}`).join(" ");
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 296)   // Build x-axis tick labels (first, middle, last)
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 297)   const midIndex = Math.floor(sorted.length / 2);
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 298)   const tickXs = [sorted[0].x, sorted[midIndex].x, sorted[sorted.length - 1].x];
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 299)   const tickLabels = tickXs.map((t) =>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 300)     new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 301)   );
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 304)     <Svg width={width} height={height}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 306)       <SvgLine x1={pad} y1={pad} x2={pad} y2={height - pad} stroke="#444" strokeWidth={1} />
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 307)       <SvgLine x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="#444" strokeWidth={1} />
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 309)       {/* X ticks */}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 310)       {tickXs.map((tx, i) => {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 311)         const x = mapX(tx);
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 313)           <React.Fragment key={i}>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 314)             <SvgLine x1={x} y1={height - pad} x2={x} y2={height - pad + 4} stroke="#555" strokeWidth={1} />
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 315)             <SvgText
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 316)               x={x}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 317)               y={height - pad + 16}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 318)               fill="#888"
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 319)               fontSize="10"
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 320)               textAnchor="middle"
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 321)             >
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 322)               {tickLabels[i]}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 328)       {/* Line */}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 329)       <Polyline points={points} fill="none" stroke={color} strokeWidth={2} />
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 331)       {/* Dots */}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 332)       {sorted.map((p, idx) => (
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 333)         <Circle key={idx} cx={mapX(p.x)} cy={mapY(p.y)} r={3} fill={color} />
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 335) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 336)       {/* Y labels: min & max */}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 337)       <SvgText x={pad - 6} y={mapY(minY)} fill="#888" fontSize="10" textAnchor="end">
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 338)         {minY}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 339)       </SvgText>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 340)       <SvgText x={pad - 6} y={mapY(maxY)} fill="#888" fontSize="10" textAnchor="end">
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 341)         {maxY}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 342)       </SvgText>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 347) /* ------------- styles ------------- */
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 348) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 353)   // in-screen tabs
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 354)   tabRow: { flexDirection: "row", marginBottom: 12 },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 355)   tabChip: {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 356)     paddingVertical: 8,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 357)     paddingHorizontal: 14,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 358)     borderRadius: 999,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 359)     marginRight: 8,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 360)     borderWidth: 1,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 361)   },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 362)   tabChipText: { fontSize: 13, fontWeight: "700" },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 363) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 364)   // exercise chips
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 365)   chip: {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 366)     paddingVertical: 6,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 367)     paddingHorizontal: 12,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 368)     borderRadius: 999,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 369)     marginRight: 8,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 370)     borderWidth: 1,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 371)   },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 372)   chipText: { fontSize: 13, fontWeight: "600" },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 373) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 377)     borderRadius: 14,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 378)     borderWidth: 1,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 379)     borderColor: "#1f1f1f",
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 380)     marginBottom: 16,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 381)   },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 382)   cardTitle: { color: ORANGE, fontWeight: "800", marginBottom: 8, fontSize: 18 },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 383)   item: { color: "#eee", marginTop: 4, fontSize: 14 },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 384)   itemSmall: { color: "#aaa", marginTop: 6, fontSize: 12 },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 385) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 386)   progressBarBackground: {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 387)     width: "100%",
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 388)     height: 10,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 389)     backgroundColor: "#333",
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 390)     borderRadius: 6,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 391)     overflow: "hidden",
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 392)     marginTop: 8,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 393)   },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 394)   progressBarFill: {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 395)     height: "100%",
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 396)     backgroundColor: ORANGE,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 397)     borderRadius: 6,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 398)   },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 399)   progressBarLabel: { color: "#aaa", fontSize: 12, marginTop: 6 },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 400) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 401)   // trends bars
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 402)   row: { flexDirection: "row", alignItems: "center", marginVertical: 6 },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 403)   rowLabel: { color: "#aaa", width: 72, fontSize: 12 },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 404)   barTrack: {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 405)     flex: 1,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 406)     height: 10,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 407)     backgroundColor: "#2a2a2a",
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 408)     borderRadius: 6,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 409)     overflow: "hidden",
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 410)     marginHorizontal: 8,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 411)   },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 412)   barFill: { height: "100%", backgroundColor: ORANGE },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 413)   barFillMuted: { height: "100%", backgroundColor: "#4c4c4c" },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 414)   rowValue: { color: "#eee", width: 72, textAlign: "right", fontSize: 12 },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 415) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 416)   workoutCard: {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 417)     marginTop: 8,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 418)     backgroundColor: "#0f0f0f",
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 419)     borderRadius: 12,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 420)     padding: 10,
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 424)   workoutTitle: { color: ORANGE, fontWeight: "700", marginBottom: 6 },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 425)   exercise: { color: "#eee", marginLeft: 6 },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  4) import { useEffect } from "react";
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  5) import { Platform } from "react-native";
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  6) import { WorkoutsProvider } from "../hooks/useWorkouts";
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400  9)   // Recommended for react-native-screens on Android
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 10)   useEffect(() => {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 11)     if (Platform.OS === "android") {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 12)       try {
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 13)         // noop; react-native-screens is auto-initialized in Expo
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 14)       } catch {}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 15)     }
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 16)   }, []);
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 17) 
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 20)       <>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 21)         <StatusBar style="light" />
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 22)         <Stack
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 23)           screenOptions={{
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 24)             headerStyle: { backgroundColor: "#000" },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 25)             headerTintColor: "#fff",
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 26)             contentStyle: { backgroundColor: "#000" },
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 27)           }}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 28)         >
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 29)           {/* index.tsx is the Login screen */}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 30)           <Stack.Screen name="index" options={{ headerShown: false }} />
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 31)           {/* (tabs) contains the 4 main pages */}
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 32)           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 33)         </Stack>
+1ee80255a (Ryan Grychowski 2025-10-13 21:54:51 -0400 34)       </>
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  1) // utils/streak.ts
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  2) // Computes how many consecutive weeks (most-recent backwards) meet or exceed a weekly goal.
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  3) // Weeks are grouped Monday–Sunday to be consistent.
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  4) 
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  5) type Dated = { dateISO: string };
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  6) 
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  7) function weekKeyMonday(d: Date): string {
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  8)   // shift to Monday
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400  9)   const day = d.getDay(); // 0 Sun .. 6 Sat
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 10)   const offset = (day + 6) % 7; // 0 if Monday
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 11)   const monday = new Date(d);
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 12)   monday.setHours(0, 0, 0, 0);
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 13)   monday.setDate(d.getDate() - offset);
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 14)   return monday.toISOString().slice(0, 10); // YYYY-MM-DD
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 15) }
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 16) 
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 17) export function weeklyStreak(items: Dated[], goal = 4): number {
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 18)   if (items.length === 0) return 0;
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 19) 
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 20)   // count items per week
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 21)   const byWeek = new Map<string, number>();
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 22)   for (const it of items) {
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 23)     const key = weekKeyMonday(new Date(it.dateISO));
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 24)     byWeek.set(key, (byWeek.get(key) || 0) + 1);
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 25)   }
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 26) 
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 27)   // sort weeks descending (newest first)
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 28)   const weeks = [...byWeek.entries()].sort((a, b) =>
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 29)     a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 30)   );
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 31) 
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 32)   // ensure current week appears even if count is 0
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 33)   const nowKey = weekKeyMonday(new Date());
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 34)   if (!byWeek.has(nowKey)) {
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 35)     weeks.unshift([nowKey, 0]);
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 36)   }
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 37) 
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 38)   // count consecutive weeks meeting goal
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 39)   let streak = 0;
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 40)   for (const [, count] of weeks) {
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 41)     if (count >= goal) streak++;
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 42)     else break;
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 43)   }
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 44)   return streak;
+9fe872289 (Ryan Grychowski 2025-10-13 21:57:12 -0400 45) }

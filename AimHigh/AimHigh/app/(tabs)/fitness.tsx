@@ -1,6 +1,6 @@
 // app/(tabs)/fitness.tsx
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList } from "react-native";
+import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useWorkouts } from "../../hooks/useWorkouts";
 
 const ORANGE = "#FF6A00";

@@ -1,0 +1,594 @@
+fitness.tsx
+
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400   1) // app/(tabs)/fitness.tsx
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400   2) import React, { useState } from "react";
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400   3) import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList } from "react-native";
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400   4) import { useWorkouts } from "../../hooks/useWorkouts";
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400   5)
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400   6) const ORANGE = "#FF6A00";
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400   7)
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400   8) export default function Fitness() {
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400   9)   const {
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  10)     workouts, addWorkout, deleteWorkout,
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  11)     addExercise, deleteExercise, addSet, deleteSet,
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  12)   } = useWorkouts();
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400  13)
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400  14)   return (
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400  15)     <View style={styles.container}>
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400  16)       <Text style={styles.header}>Fitness</Text>
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  17)
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  18)       <TouchableOpacity style={styles.primaryBtn} onPress={addWorkout}>
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  19)         <Text style={styles.primaryBtnText}>+ New Workout</Text>
+:...skipping...
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400   1) // app/(tabs)/fitness.tsx
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400   2) import React, { useState } from "react";
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400   3) import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList } from "react-native";
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400   4) import { useWorkouts } from "../../hooks/useWorkouts";
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400   5)
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400   6) const ORANGE = "#FF6A00";
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400   7)
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400   8) export default function Fitness() {
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400   9)   const {
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  10)     workouts, addWorkout, deleteWorkout,
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  11)     addExercise, deleteExercise, addSet, deleteSet,
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  12)   } = useWorkouts();
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400  13)
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400  14)   return (
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400  15)     <View style={styles.container}>
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400  16)       <Text style={styles.header}>Fitness</Text>
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  17)
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  18)       <TouchableOpacity style={styles.primaryBtn} onPress={addWorkout}>
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  19)         <Text style={styles.primaryBtnText}>+ New Workout</Text>
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  20)       </TouchableOpacity>
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  21)
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  22)       {workouts.length === 0 ? (
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  23)         <Text style={styles.muted}>
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  24)           No workouts yet. Tap <Text style={styles.orange}>+ New Workout</Text> to start.
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  25)         </Text>
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  26)       ) : (
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  27)         <FlatList
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  28)           data={workouts}
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  29)           keyExtractor={(w) => w.id}
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  30)           contentContainerStyle={{ paddingBottom: 32 }}
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  31)           renderItem={({ item }) => (
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400  32)             <WorkoutCard
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  33)               workoutId={item.id}
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  34)               dateISO={item.dateISO}
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  35)               exercises={item.exercises}
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400  36)               onAddExercise={addExercise}
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400  37)               onDeleteWorkout={deleteWorkout}
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400  38)               onDeleteExercise={deleteExercise}
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  39)               onAddSet={addSet}
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400  40)               onDeleteSet={deleteSet}
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400  41)             />
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  42)           )}
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  43)         />
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  44)       )}
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  45)     </View>
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  46)   );
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  47) }
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  48)
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  49) function WorkoutCard({
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  50)   workoutId, dateISO, exercises,
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  51)   onAddExercise, onDeleteWorkout, onDeleteExercise, onAddSet, onDeleteSet,
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  52) }: {
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  53)   workoutId: string;
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  54)   dateISO: string;
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  55)   exercises: { id: string; name: string; sets: { id: string; reps: number; weight: number }[] }[];
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400  56)   onAddExercise: (workoutId: string, name: string) => void;
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400  57)   onDeleteWorkout: (workoutId: string) => void;
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400  58)   onDeleteExercise: (workoutId: string, exerciseId: string) => void;
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  59)   onAddSet: (workoutId: string, exerciseId: string, reps: number, weight: number) => void;
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400  60)   onDeleteSet: (workoutId: string, exerciseId: string, setId: string) => void;
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  61) }) {
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  62)   const [showExerciseForm, setShowExerciseForm] = useState(false);
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  63)   const [exerciseName, setExerciseName] = useState("Push Ups");
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400  64)
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  65)   const dt = new Date(dateISO);
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  66)   const dateLabel = `${dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}  ${dt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  67)
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  68)   return (
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  69)     <View style={styles.card}>
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  70)       {/* Delete workout */}
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  71)       <TouchableOpacity style={styles.deletePillTopRight} onPress={() => onDeleteWorkout(workoutId)}>
+20e3e8021 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:53:51 -0400  72)         <Text style={styles.deletePillText}>Delete</Text>
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400  73)       </TouchableOpacity>
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400  74)
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400  75)       <Text style={styles.cardTitle}>Workout</Text>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400  76)       <Text style={styles.cardSubtitle}>{dateLabel}</Text>
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  77)
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400  78)       <TouchableOpacity
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400  79)         style={[styles.outlineBtn, { alignSelf: "flex-start", marginTop: 6 }]}
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400  80)         onPress={() => setShowExerciseForm((s) => !s)}
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400  81)       >
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  82)         <Text style={styles.outlineBtnText}>{showExerciseForm ? "Cancel" : "Add Exercise"}</Text>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400  83)       </TouchableOpacity>
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  84)
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400  85)       {showExerciseForm && (
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  86)         <View style={styles.form}>
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  87)           <Text style={styles.formLabel}>Exercise Name</Text>
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  88)           <TextInput
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400  89)             value={exerciseName}
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400  90)             onChangeText={setExerciseName}
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  91)             placeholder="e.g., Push Ups"
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  92)             placeholderTextColor="#777"
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  93)             style={styles.input}
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400  94)           />
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  95)           <TouchableOpacity
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  96)             style={styles.primaryBtn}
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  97)             onPress={() => {
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  98)               onAddExercise(workoutId, exerciseName.trim() || "Exercise");
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400  99)               setExerciseName("Push Ups");
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 100)               setShowExerciseForm(false);
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 101)             }}
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 102)           >
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 103)             <Text style={styles.primaryBtnText}>Save Exercise</Text>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 104)           </TouchableOpacity>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 105)         </View>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 106)       )}
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 107)
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 108)       {exercises.length === 0 ? (
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 109)         <Text style={[styles.muted, { marginTop: 8 }]}>No exercises yet.</Text>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 110)       ) : (
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 111)         exercises.map((ex) => (
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 112)           <ExerciseBlock
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 113)             key={ex.id}
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 114)             workoutId={workoutId}
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 115)             exerciseId={ex.id}
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 116)             name={ex.name}
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 117)             sets={ex.sets}
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 118)             onAddSet={onAddSet}
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 119)             onDeleteExercise={onDeleteExercise}
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 120)             onDeleteSet={onDeleteSet}
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 121)           />
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 122)         ))
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 123)       )}
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 124)     </View>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 125)   );
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 126) }
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 127)
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 128) function ExerciseBlock({
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 129)   workoutId, exerciseId, name, sets,
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 130)   onAddSet, onDeleteExercise, onDeleteSet,
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 131) }: {
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 132)   workoutId: string;
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 133)   exerciseId: string;
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 134)   name: string;
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 135)   sets: { id: string; reps: number; weight: number }[];
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 136)   onAddSet: (workoutId: string, exerciseId: string, reps: number, weight: number) => void;
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 137)   onDeleteExercise: (workoutId: string, exerciseId: string) => void;
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 138)   onDeleteSet: (workoutId: string, exerciseId: string, setId: string) => void;
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 139) }) {
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 140)   const [showSetForm, setShowSetForm] = useState(false);
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 141)   const [reps, setReps] = useState("12");
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 142)   const [weight, setWeight] = useState("45");
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 143)
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 144)   return (
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 145)     <View style={styles.exerciseBlock}>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 146)       <View style={styles.exerciseHeaderRow}>
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 147)         <Text style={styles.exerciseName}>{name}</Text>
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 148)
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 149)         <View style={styles.actionsRow}>
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 150)           <TouchableOpacity style={styles.smallOutlineBtn} onPress={() => setShowSetForm((s) => !s)}>
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 151)             <Text style={styles.outlineBtnText}>{showSetForm ? "Cancel" : "Add Set"}</Text>
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 152)           </TouchableOpacity>
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 153)           <TouchableOpacity style={styles.smallDeleteBtn} onPress={() => onDeleteExercise(workoutId, exerciseId)}>
+20e3e8021 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:53:51 -0400 154)             <Text style={styles.deletePillText}>Delete</Text>
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 155)           </TouchableOpacity>
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 156)         </View>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 157)       </View>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 158)
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 159)       {sets.length === 0 ? (
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 160)         <Text style={styles.muted}>No sets yet.</Text>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 161)       ) : (
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 162)         sets.map((s, idx) => (
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 163)           <View key={s.id} style={styles.setRow}>
+7816056de AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:38:38 -0400 164)             <Text style={styles.setText}>Set {idx + 1}</Text>
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 165)             <View style={styles.setRightRow}>
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 166)               <Text style={styles.setText}>
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 167)                 Reps: <Text style={styles.white}>{s.reps}</Text> • Wt: <Text style={styles.white}>{s.weight}</Text> lb
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 168)               </Text>
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 169)               <TouchableOpacity style={styles.smallDeleteBtn} onPress={() => onDeleteSet(workoutId, exerciseId, s.id)}>
+20e3e8021 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:53:51 -0400 170)                 <Text style={styles.deletePillText}>Delete</Text>
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 171)               </TouchableOpacity>
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 172)             </View>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 173)           </View>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 174)         ))
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 175)       )}
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 176)
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 177)       {showSetForm && (
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 178)         <View style={styles.formInline}>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 179)           <View style={{ flex: 1, marginRight: 8 }}>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 180)             <Text style={styles.formLabel}>Reps</Text>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 181)             <TextInput
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 182)               value={reps}
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 183)               onChangeText={setReps}
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 184)               keyboardType="number-pad"
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 185)               placeholder="e.g., 12"
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 186)               placeholderTextColor="#777"
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 187)               style={styles.input}
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 188)             />
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 189)           </View>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 190)           <View style={{ flex: 1, marginLeft: 8 }}>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 191)             <Text style={styles.formLabel}>Weight (lb)</Text>
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 192)             <TextInput
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 193)               value={weight}
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 194)               onChangeText={setWeight}
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 195)               keyboardType="decimal-pad"
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 196)               placeholder="e.g., 45"
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 197)               placeholderTextColor="#777"
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 198)               style={styles.input}
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 199)             />
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 200)           </View>
+7816056de AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:38:38 -0400 201)           <TouchableOpacity
+7816056de AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:38:38 -0400 202)             style={[styles.primaryBtn, { marginTop: 18 }]}
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 203)             onPress={() => {
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 204)               const r = parseInt(reps, 10);
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 205)               const w = parseFloat(weight);
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 206)               onAddSet(workoutId, exerciseId, isNaN(r) ? 0 : r, isNaN(w) ? 0 : w);
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 207)               setShowSetForm(false);
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 208)               setReps("12");
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 209)               setWeight("45");
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 210)             }}
+7816056de AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:38:38 -0400 211)           >
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 212)             <Text style={styles.primaryBtnText}>Save Set</Text>
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 213)           </TouchableOpacity>
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 214)         </View>
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 215)       )}
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400 216)     </View>
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400 217)   );
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400 218) }
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400 219)
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400 220) const styles = StyleSheet.create({
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400 221)   container: { flex: 1, backgroundColor: "#000", padding: 20 },
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400 222)   header: { color: "#fff", fontSize: 28, fontWeight: "800", marginBottom: 12 },
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 223)   muted: { color: "#9a9a9a" },
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 224)   orange: { color: ORANGE },
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 225)
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400 226)   card: {
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400 227)     backgroundColor: "#111",
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400 228)     padding: 16,
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 229)     borderRadius: 16,
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400 230)     borderWidth: 1,
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400 231)     borderColor: "#1f1f1f",
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 232)     marginTop: 16,
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 233)     position: "relative",
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 234)   },
+20e3e8021 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:53:51 -0400 235)   deletePillTopRight: {
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 236)     position: "absolute",
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 237)     top: 10,
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 238)     right: 10,
+20e3e8021 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:53:51 -0400 239)     paddingVertical: 6,
+20e3e8021 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:53:51 -0400 240)     paddingHorizontal: 10,
+20e3e8021 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:53:51 -0400 241)     borderWidth: 1,
+20e3e8021 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:53:51 -0400 242)     borderColor: ORANGE,
+20e3e8021 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:53:51 -0400 243)     borderRadius: 10,
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 244)   },
+20e3e8021 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:53:51 -0400 245)   deletePillText: { color: ORANGE, fontWeight: "700" },
+20e3e8021 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:53:51 -0400 246)
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 247)   cardTitle: { color: ORANGE, fontWeight: "800", fontSize: 18 },
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 248)   cardSubtitle: { color: "#bbb", marginTop: 2, marginBottom: 8 },
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 249)
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 250)   exerciseBlock: {
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 251)     backgroundColor: "#0b0b0b",
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 252)     padding: 14,
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 253)     borderRadius: 14,
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 254)     borderWidth: 1,
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 255)     borderColor: "#1f1f1f",
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 256)     marginTop: 12,
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 257)   },
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 258)   exerciseHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 259)   actionsRow: { flexDirection: "row", alignItems: "center" },
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 260)
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 261)   exerciseName: { color: "#fff", fontWeight: "700", fontSize: 16 },
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 262)
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 263)   setRow: {
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 264)     flexDirection: "row",
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 265)     justifyContent: "space-between",
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 266)     alignItems: "center",
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 267)     paddingVertical: 8,
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 268)     borderBottomWidth: 1,
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 269)     borderBottomColor: "#1f1f1f",
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 270)   },
+feb1b914e AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 16:44:45 -0400 271)   setRightRow: { flexDirection: "row", alignItems: "center" },
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 272)   setText: { color: "#ddd" },
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 273)   white: { color: "#fff", fontWeight: "700" },
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 274)
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 275)   form: { marginTop: 12 },
+0afc54385 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:31:46 -0400 276)   formInline: { marginTop: 8 },
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 277)   formLabel: { color: "#fff", fontWeight: "700", marginBottom: 6 },
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 278)   input: {
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 279)     backgroundColor: "#0b0b0b",
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 280)     borderWidth: 1,
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 281)     borderColor: ORANGE,
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 282)     borderRadius: 12,
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 283)     paddingHorizontal: 12,
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 284)     paddingVertical: 10,
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 285)     color: "#fff",
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 286)   },
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 287)
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 288)   primaryBtn: { backgroundColor: ORANGE, paddingVertical: 12, paddingHorizontal: 18, borderRadius: 14, alignSelf: "flex-start", marginTop: 6 },
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 289)   primaryBtnText: { color: "#000", fontWeight: "800", fontSize: 16 },
+aec0929c9 AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 10:46:31 -0400 290)
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 291)   outlineBtn: { borderWidth: 1, borderColor: ORANGE, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10 },
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 292)   smallOutlineBtn: { borderWidth: 1, borderColor: ORANGE, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10 },
+14515cbbe AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-10-13 17:55:08 -0400 293)   smallDeleteBtn: { borderWidth: 1, borderColor: ORANGE, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10, marginLeft: 8 },
+7816056de AimHigh/AimHigh/app/(tabs)/fitness.tsx (Camden Reed 2025-09-23 16:38:38 -0400 294)   outlineBtnText: { color: ORANGE, fontWeight: "700" },
+4dc885360 AimHigh/AimHigh/app/(tabs)/Fitness     (Camden Reed 2025-09-23 09:21:34 -0400 295) });
+
+progress.tsx
+
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400   1) // app/(tabs)/progress.tsx
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400   2) import React, { useMemo } from "react";
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400   3) import { View, Text, StyleSheet, Dimensions } from "react-native";
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400   4) import Svg, { Line as SvgLine, Circle, Text as SvgText } from "react-native-svg";
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400   5) import { useWorkouts } from "../../hooks/useWorkouts";
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400   6)
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400   7) const ORANGE = "#FF6A00";
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400   8) const { width } = Dimensions.get("window");
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400   9)
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400  10) export default function Progress() {
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  11)   const { workouts } = useWorkouts();
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  12)
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  13)   // Each set becomes a point: x = reps, y = weight
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  14)   const points = useMemo(
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  15)     () =>
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  16)       workouts.flatMap((w) =>
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  17)         w.exercises.flatMap((ex) =>
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  18)           ex.sets.map((s) => ({ x: s.reps, y: s.weight }))
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  19)         )
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  20)       ),
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  21)     [workouts]
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  22)   );
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  23)
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400  24)   return (
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400  25)     <View style={styles.container}>
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400  26)       <Text style={styles.header}>Progress</Text>
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  27)
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400  28)       <View style={styles.card}>
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  29)         <Text style={styles.cardTitle}>Reps vs Weight</Text>
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  30)         {points.length === 0 ? (
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  31)           <Text style={styles.muted}>
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  32)             Add sets on the Fitness tab to see your chart.
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  33)           </Text>
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  34)         ) : (
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  35)           <ScatterChart points={points} />
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400  36)         )}
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400  37)       </View>
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400  38)     </View>
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400  39)   );
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400  40) }
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400  41)
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  42) function ScatterChart({ points }: { points: { x: number; y: number }[] }) {
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  43)   const chartWidth = width - 40;   // match container padding (20 + 20)
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  44)   const chartHeight = 260;
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  45)   const pad = 36;
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  46)
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  47)   const xs = points.map((p) => p.x);
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  48)   const ys = points.map((p) => p.y);
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  49)
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  50)   const xMin = Math.min(...xs);
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  51)   const xMax = Math.max(...xs);
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  52)   const yMin = Math.min(...ys);
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  53)   const yMax = Math.max(...ys);
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  54)
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  55)   // Add a small padding to domains so points aren't glued to edges
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  56)   const xSpan = Math.max(1, xMax - xMin);
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  57)   const ySpan = Math.max(1, yMax - yMin);
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  58)   const x0 = xMin - xSpan * 0.05;
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  59)   const x1 = xMax + xSpan * 0.05;
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  60)   const y0 = yMin - ySpan * 0.05;
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  61)   const y1 = yMax + ySpan * 0.05;
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  62)
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  63)   const innerW = chartWidth - pad * 2;
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  64)   const innerH = chartHeight - pad * 2;
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  65)
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  66)   const xScale = (x: number) => pad + ((x - x0) / (x1 - x0)) * innerW;
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  67)   const yScale = (y: number) => chartHeight - pad - ((y - y0) / (y1 - y0)) * innerH;
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  68)
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  69)   // 4 tick marks each axis
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  70)   const ticks = 4;
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  71)   const xTicks = Array.from({ length: ticks + 1 }, (_, i) => x0 + (i * (x1 - x0)) / ticks);
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  72)   const yTicks = Array.from({ length: ticks + 1 }, (_, i) => y0 + (i * (y1 - y0)) / ticks);
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  73)
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  74)   return (
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  75)     <Svg width={chartWidth} height={chartHeight}>
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  76)       {/* Axes */}
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  77)       <SvgLine x1={pad} y1={chartHeight - pad} x2={chartWidth - pad} y2={chartHeight - pad} stroke="#444" strokeWidth={2} />
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  78)       <SvgLine x1={pad} y1={pad} x2={pad} y2={chartHeight - pad} stroke="#444" strokeWidth={2} />
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  79)
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  80)       {/* Grid + tick labels */}
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  81)       {xTicks.map((tx, i) => {
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  82)         const x = xScale(tx);
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  83)         return (
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  84)           <React.Fragment key={`x-${i}`}>
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  85)             <SvgLine x1={x} y1={pad} x2={x} y2={chartHeight - pad} stroke="#222" strokeWidth={1} />
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  86)             <SvgText x={x} y={chartHeight - pad + 18} fill="#ddd" fontSize="10" textAnchor="middle">
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  87)               {Math.round(tx)}
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  88)             </SvgText>
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  89)           </React.Fragment>
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  90)         );
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  91)       })}
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  92)       {yTicks.map((ty, i) => {
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  93)         const y = yScale(ty);
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  94)         return (
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  95)           <React.Fragment key={`y-${i}`}>
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  96)             <SvgLine x1={pad} y1={y} x2={chartWidth - pad} y2={y} stroke="#222" strokeWidth={1} />
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  97)             <SvgText x={pad - 8} y={y + 3} fill="#ddd" fontSize="10" textAnchor="end">
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  98)               {Math.round(ty)}
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400  99)             </SvgText>
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 100)           </React.Fragment>
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 101)         );
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 102)       })}
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 103)
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 104)       {/* Axis labels */}
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 105)       <SvgText x={(chartWidth) / 2} y={chartHeight - 6} fill="#fff" fontSize="12" textAnchor="middle">
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 106)         Reps
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 107)       </SvgText>
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 108)       <SvgText
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 109)         x={12}
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 110)         y={chartHeight / 2}
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 111)         fill="#fff"
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 112)         fontSize="12"
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 113)         textAnchor="middle"
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 114)         transform={`rotate(-90, 12, ${chartHeight / 2})`}
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 115)       >
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 116)         Weight (lb)
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 117)       </SvgText>
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 118)
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 119)       {/* Points */}
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 120)       {points.map((p, idx) => (
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 121)         <Circle key={idx} cx={xScale(p.x)} cy={yScale(p.y)} r={4} fill={ORANGE} />
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 122)       ))}
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 123)     </Svg>
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 124)   );
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 125) }
+32e57314b (Camden Reed 2025-10-13 18:13:57 -0400 126)
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400 127) const styles = StyleSheet.create({
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400 128)   container: { flex: 1, backgroundColor: "#000", padding: 20 },
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400 129)   header: { color: "#fff", fontSize: 28, fontWeight: "800", marginBottom: 12 },
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400 130)
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400 131)   card: {
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400 132)     backgroundColor: "#111",
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400 133)     padding: 16,
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400 134)     borderRadius: 16,
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400 135)     borderWidth: 1,
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400 136)     borderColor: "#1f1f1f",
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400 137)     marginTop: 16,
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400 138)   },
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400 139)   cardTitle: { color: ORANGE, fontWeight: "800", fontSize: 18, marginBottom: 8 },
+e43e02c84 (Camden Reed 2025-10-13 17:55:44 -0400 140)   muted: { color: "#9a9a9a" },
+2a1f7583e (Camden Reed 2025-09-23 09:22:49 -0400 141) });
+
+useWorkouts.tsx
+
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400   1) import React, { createContext, useContext, useState, ReactNode } from "react";
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400   2)
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400   3) export type SetItem = { id: string; reps: number; weight: number; ts: number };
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400   4) export type Exercise = { id: string; name: string; sets: SetItem[] };
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400   5) export type Workout = { id: string; dateISO: string; exercises: Exercise[] };
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400   6)
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400   7) type WorkoutsContextValue = {
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400   8)   workouts: Workout[];
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400   9)   addWorkout: () => void;
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  10)   deleteWorkout: (workoutId: string) => void;
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  11)   addExercise: (workoutId: string, name: string) => void;
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  12)   deleteExercise: (workoutId: string, exerciseId: string) => void;
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  13)   addSet: (workoutId: string, exerciseId: string, reps: number, weight: number) => void;
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  14)   deleteSet: (workoutId: string, exerciseId: string, setId: string) => void;
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  15) };
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  16)
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  17) const WorkoutsContext = createContext<WorkoutsContextValue | undefined>(undefined);
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  18)
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  19) export function WorkoutsProvider({ children }: { children: ReactNode }) {
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  20)   const [workouts, setWorkouts] = useState<Workout[]>([]);
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  21)
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  22)   const addWorkout = () => {
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  23)     setWorkouts(prev => [
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  24)       { id: String(Date.now()), dateISO: new Date().toISOString(), exercises: [] },
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  25)       ...prev,
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  26)     ]);
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  27)   };
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  28)
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  29)   const deleteWorkout = (workoutId: string) => {
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  30)     setWorkouts(prev => prev.filter(w => w.id !== workoutId));
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  31)   };
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  32)
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  33)   const addExercise = (workoutId: string, name: string) => {
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  34)     setWorkouts(prev =>
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  35)       prev.map(w =>
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  36)         w.id === workoutId
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  37)           ? { ...w, exercises: [...w.exercises, { id: `${workoutId}-${Date.now()}`, name, sets: [] }] }
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  38)           : w
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  39)       )
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  40)     );
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  41)   };
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  42)
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  43)   const deleteExercise = (workoutId: string, exerciseId: string) => {
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  44)     setWorkouts(prev =>
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  45)       prev.map(w =>
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  46)         w.id === workoutId ? { ...w, exercises: w.exercises.filter(ex => ex.id !== exerciseId) } : w
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  47)       )
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  48)     );
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  49)   };
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  50)
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  51)   const addSet = (workoutId: string, exerciseId: string, reps: number, weight: number) => {
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  52)     const ts = Date.now();
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  53)     setWorkouts(prev =>
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  54)       prev.map(w =>
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  55)         w.id === workoutId
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  56)           ? {
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  57)               ...w,
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  58)               exercises: w.exercises.map(ex =>
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  59)                 ex.id === exerciseId
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  60)                   ? { ...ex, sets: [...ex.sets, { id: `${exerciseId}-${ts}`, reps, weight, ts }] }
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  61)                   : ex
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  62)               ),
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  63)             }
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  64)           : w
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  65)       )
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  66)     );
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  67)   };
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400  68)
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  69)   const deleteSet = (workoutId: string, exerciseId: string, setId: string) => {
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  70)     setWorkouts(prev =>
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  71)       prev.map(w =>
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  72)         w.id === workoutId
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  73)           ? {
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  74)               ...w,
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  75)               exercises: w.exercises.map(ex =>
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  76)                 ex.id === exerciseId ? { ...ex, sets: ex.sets.filter(s => s.id !== setId) } : ex
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  77)               ),
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  78)             }
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  79)           : w
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  80)       )
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  81)     );
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  82)   };
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  83)
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  84)   const value: WorkoutsContextValue = {
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  85)     workouts,
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  86)     addWorkout,
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  87)     deleteWorkout,
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  88)     addExercise,
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  89)     deleteExercise,
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  90)     addSet,
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  91)     deleteSet,
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  92)   };
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  93)
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  94)   return <WorkoutsContext.Provider value={value}>{children}</WorkoutsContext.Provider>;
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  95) }
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  96)
+210cffc26 AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 18:24:22 -0400  97) export function useWorkouts(): WorkoutsContextValue {
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  98)   const ctx = useContext(WorkoutsContext);
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400  99)   if (!ctx) throw new Error("useWorkouts must be used within WorkoutsProvider");
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400 100)   return ctx;
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400 101) }
+cb4d70ddc AimHigh/AimHigh/hooks/useWorkouts.ts (Camden Reed     2025-10-13 17:53:01 -0400 102)
+43b0c9020 AimHigh/AimHigh/hooks/useWorkouts.ts (Ryan Grychowski 2025-09-26 10:18:41 -0400 103)
+
+_layouts.tsx
+
+C:\Users\socce\COSC340-TeamProject\AimHigh\AimHigh\app> git blame _layout.tsx
+5c89642c9 (Camden Reed 2025-09-23 08:59:50 -0400  1) // app/_layout.tsx
+fd62e839b (Camden Reed 2025-10-13 17:53:46 -0400  2) // app/_layout.tsx
+5c89642c9 (Camden Reed 2025-09-23 08:59:50 -0400  3) import { Stack } from "expo-router";
+5c89642c9 (Camden Reed 2025-09-23 08:59:50 -0400  4) import { StatusBar } from "expo-status-bar";
+fd62e839b (Camden Reed 2025-10-13 17:53:46 -0400  5) import { WorkoutsProvider } from "../hooks/useWorkouts"; // 👈 adjust path exactly like this
+eb228426e (clumzycodes 2025-09-23 08:51:01 -0400  6)
+eb228426e (clumzycodes 2025-09-23 08:51:01 -0400  7) export default function RootLayout() {
+eb228426e (clumzycodes 2025-09-23 08:51:01 -0400  8)   return (
+fd62e839b (Camden Reed 2025-10-13 17:53:46 -0400  9)     <WorkoutsProvider>
+5c89642c9 (Camden Reed 2025-09-23 08:59:50 -0400 10)       <StatusBar style="light" />
+5c89642c9 (Camden Reed 2025-09-23 08:59:50 -0400 11)       <Stack
+5c89642c9 (Camden Reed 2025-09-23 08:59:50 -0400 12)         screenOptions={{
+5c89642c9 (Camden Reed 2025-09-23 08:59:50 -0400 13)           headerStyle: { backgroundColor: "#000" },
+5c89642c9 (Camden Reed 2025-09-23 08:59:50 -0400 14)           headerTintColor: "#fff",
+5c89642c9 (Camden Reed 2025-09-23 08:59:50 -0400 15)           contentStyle: { backgroundColor: "#000" },
+5c89642c9 (Camden Reed 2025-09-23 08:59:50 -0400 16)         }}
+5c89642c9 (Camden Reed 2025-09-23 08:59:50 -0400 17)       >
+eb228426e (clumzycodes 2025-09-23 08:51:01 -0400 18)         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+fd62e839b (Camden Reed 2025-10-13 17:53:46 -0400 19)         {/* keep any other screens you already have, like "modal" */}
+eb228426e (clumzycodes 2025-09-23 08:51:01 -0400 20)       </Stack>
+fd62e839b (Camden Reed 2025-10-13 17:53:46 -0400 21)     </WorkoutsProvider>
+eb228426e (clumzycodes 2025-09-23 08:51:01 -0400 22)   );
+eb228426e (clumzycodes 2025-09-23 08:51:01 -0400 23) }
