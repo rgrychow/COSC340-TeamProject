@@ -1,0 +1,757 @@
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400   1) import { Ionicons } from '@expo/vector-icons';
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400   2) import { useState, useEffect } from 'react';
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400   3) import {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400   4)   Modal,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400   5)   ScrollView,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400   6)   StyleSheet,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400   7)   Text,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400   8)   TextInput,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400   9)   TouchableOpacity,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  10)   View,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  11) } from 'react-native';
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  12)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  13) const ORANGE = "#FF6A00";
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  14)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  15) interface NutritionCalculatorProps {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  16)   visible: boolean;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  17)   onClose: () => void;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  18)   onComplete?: (goals: NutritionGoals) => void;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  19)   initialAge?: string;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  20)   initialWeight?: string;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  21)   initialHeight?: string;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  22) }
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  23)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  24) interface NutritionGoals {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  25)   calories: number;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  26)   protein: number;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  27)   fats: number;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  28)   carbs: number;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  29) }
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  30)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  31) type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  32) type Goal = 'cut' | 'maintain' | 'bulk';
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  33) type Gender = 'male' | 'female';
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  34)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  35) export default function NutritionCalculator({
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  36)   visible,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  37)   onClose,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  38)   onComplete,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  39)   initialAge = '',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  40)   initialWeight = '',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  41)   initialHeight = ''
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  42) }: NutritionCalculatorProps) {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  43)   const [step, setStep] = useState(1);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  44)   const [gender, setGender] = useState<Gender>('male');
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  45)   const [age, setAge] = useState('');
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  46)   const [weight, setWeight] = useState('');
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  47)   const [heightFeet, setHeightFeet] = useState('');
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  48)   const [heightInches, setHeightInches] = useState('');
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  49)   const [activityLevel, setActivityLevel] = useState<ActivityLevel>('moderate');
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  50)   const [goal, setGoal] = useState<Goal>('maintain');
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  51)   const [results, setResults] = useState<NutritionGoals | null>(null);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  52)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  53)   // Parse initial height string like "5'10"" into feet and inches
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  54)   const parseHeight = (heightStr: string): { feet: string; inches: string } => {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  55)     const match = heightStr.match(/(\d+)['\s]+(\d+)/);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  56)     if (match) {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  57)       return { feet: match[1], inches: match[2] };
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  58)     }
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  59)     return { feet: '', inches: '' };
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  60)   };
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  61)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  62)   // Pre-fill values when modal opens
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  63)   useEffect(() => {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  64)     if (visible) {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  65)       setAge(initialAge);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  66)       setWeight(initialWeight);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  67)       const parsed = parseHeight(initialHeight);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  68)       setHeightFeet(parsed.feet);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  69)       setHeightInches(parsed.inches);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  70)     }
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  71)   }, [visible, initialAge, initialWeight, initialHeight]);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  72)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  73)   const activityMultipliers = {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  74)     sedentary: 1.2,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  75)     light: 1.375,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  76)     moderate: 1.55,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  77)     active: 1.725,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  78)     very_active: 1.9,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  79)   };
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  80)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  81)   const activityLabels = {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  82)     sedentary: 'Sedentary (little to no exercise)',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  83)     light: 'Light (1-3 days/week)',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  84)     moderate: 'Moderate (3-5 days/week)',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  85)     active: 'Active (6-7 days/week)',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  86)     very_active: 'Very Active (athlete/physical job)',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  87)   };
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  88)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  89)   const calculateNutrition = () => {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  90)     // Convert pounds to kg
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  91)     const weightLbs = parseFloat(weight);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  92)     const weightKg = weightLbs * 0.453592;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  93)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  94)     // Convert feet/inches to cm
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  95)     const feet = parseInt(heightFeet);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  96)     const inches = parseInt(heightInches);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  97)     const totalInches = feet * 12 + inches;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  98)     const heightCm = totalInches * 2.54;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  99)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 100)     const ageNum = parseInt(age);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 101)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 102)     // Calculate BMR using Mifflin-St Jeor Equation (uses kg and cm)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 103)     let bmr: number;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 104)     if (gender === 'male') {
++ 6.25 * heightCm - 5 * ageNum + 5;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  78)     very_active: 1.9,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  79)   };
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  80)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  81)   const activityLabels = {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  82)     sedentary: 'Sedentary (little to no exercise)',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  83)     light: 'Light (1-3 days/week)',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  84)     moderate: 'Moderate (3-5 days/week)',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  85)     active: 'Active (6-7 days/week)',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  86)     very_active: 'Very Active (athlete/physical job)',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  87)   };
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  88)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  89)   const calculateNutrition = () => {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  90)     // Convert pounds to kg
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  91)     const weightLbs = parseFloat(weight);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  92)     const weightKg = weightLbs * 0.453592;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  93)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  94)     // Convert feet/inches to cm
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  95)     const feet = parseInt(heightFeet);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  96)     const inches = parseInt(heightInches);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  97)     const totalInches = feet * 12 + inches;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  98)     const heightCm = totalInches * 2.54;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400  99)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 100)     const ageNum = parseInt(age);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 101)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 102)     // Calculate BMR using Mifflin-St Jeor Equation (uses kg and cm)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 103)     let bmr: number;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 104)     if (gender === 'male') {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 105)       bmr = 10 * weightKg + 6.25 * heightCm - 5 * ageNum + 5;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 106)     } else {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 107)       bmr = 10 * weightKg + 6.25 * heightCm - 5 * ageNum - 161;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 108)     }
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 109)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 110)     // Calculate TDEE
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 111)     const tdee = bmr * activityMultipliers[activityLevel];
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 112)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 113)     // Adjust calories based on goal
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 114)     let calories: number;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 115)     if (goal === 'cut') {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 116)       calories = tdee - 500;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 117)     } else if (goal === 'bulk') {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 118)       calories = tdee + 300;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 119)     } else {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 120)       calories = tdee;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 121)     }
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 122)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 123)     // Calculate macros (protein based on lbs for easier understanding)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 124)     let proteinPerLb: number;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 125)     if (goal === 'cut') {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 126)       proteinPerLb = 1.0; // ~2.2g per kg
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 127)     } else if (goal === 'bulk') {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 128)       proteinPerLb = 1.0; // ~2.2g per kg
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 129)     } else {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 130)       proteinPerLb = 0.8; // ~1.8g per kg
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 131)     }
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 132)     const protein = Math.round(weightLbs * proteinPerLb);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 133)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 134)     const fatPercentage = 0.28;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 135)     const fatCalories = calories * fatPercentage;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 136)     const fats = Math.round(fatCalories / 9);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 137)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 138)     const proteinCalories = protein * 4;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 139)     const remainingCalories = calories - proteinCalories - fatCalories;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 140)     const carbs = Math.round(remainingCalories / 4);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 141)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 142)     const nutritionGoals: NutritionGoals = {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 143)       calories: Math.round(calories),
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 144)       protein,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 145)       fats,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 146)       carbs,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 147)     };
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 148)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 149)     setResults(nutritionGoals);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 150)     setStep(5);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 151)   };
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 152)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 153)   const resetCalculator = () => {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 154)     setStep(1);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 155)     setGender('male');
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 156)     setAge('');
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 157)     setWeight('');
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 158)     setHeightFeet('');
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 159)     setHeightInches('');
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 160)     setActivityLevel('moderate');
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 161)     setGoal('maintain');
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 162)     setResults(null);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 163)   };
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 164)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 165)   const handleComplete = () => {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 166)     if (results && onComplete) {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 167)       onComplete(results);
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 168)     }
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 169)     onClose();
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 170)     resetCalculator();
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 171)   };
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 172)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 173)   const renderStep = () => {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 174)     switch (step) {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 175)       case 1:
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 176)         return (
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 177)           <View style={styles.stepContainer}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 178)             <Text style={styles.stepTitle}>What's your gender?</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 179)             <Text style={styles.stepSubtitle}>This helps us calculate your baseline metabolism</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 180)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 181)             <TouchableOpacity
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 182)               style={[styles.optionButton, gender === 'male' && styles.optionButtonSelected]}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 183)               onPress={() => setGender('male')}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 184)             >
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 185)               <Ionicons name="male" size={24} color={gender === 'male' ? '#fff' : '#999'} />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 186)               <Text style={[styles.optionText, gender === 'male' && styles.optionTextSelected]}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 187)                 Male
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 188)               </Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 189)             </TouchableOpacity>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 190)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 191)             <TouchableOpacity
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 192)               style={[styles.optionButton, gender === 'female' && styles.optionButtonSelected]}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 193)               onPress={() => setGender('female')}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 194)             >
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 195)               <Ionicons name="female" size={24} color={gender === 'female' ? '#fff' : '#999'} />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 196)               <Text style={[styles.optionText, gender === 'female' && styles.optionTextSelected]}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 197)                 Female
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 198)               </Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 199)             </TouchableOpacity>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 200)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 201)             <TouchableOpacity
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 202)               style={styles.nextButton}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 203)               onPress={() => setStep(2)}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 204)             >
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 205)               <Text style={styles.nextButtonText}>Next</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 206)             </TouchableOpacity>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 207)           </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 208)         );
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 209)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 210)       case 2:
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 211)         return (
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 212)           <View style={styles.stepContainer}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 213)             <Text style={styles.stepTitle}>Tell us about yourself</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 214)             <Text style={styles.stepSubtitle}>We need these details to calculate your metabolism</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 215)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 216)             <View style={styles.inputGroup}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 217)               <Text style={styles.inputLabel}>Age (years)</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 218)               <TextInput
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 219)                 style={styles.input}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 220)                 value={age}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 221)                 onChangeText={setAge}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 222)                 keyboardType="numeric"
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 223)                 placeholder="e.g., 25"
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 224)                 placeholderTextColor="#666"
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 225)               />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 226)             </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 227)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 228)             <View style={styles.inputGroup}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 229)               <Text style={styles.inputLabel}>Weight (lbs)</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 230)               <TextInput
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 231)                 style={styles.input}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 232)                 value={weight}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 233)                 onChangeText={setWeight}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 234)                 keyboardType="numeric"
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 235)                 placeholder="e.g., 180"
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 236)                 placeholderTextColor="#666"
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 237)               />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 238)             </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 239)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 240)             <View style={styles.inputGroup}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 241)               <Text style={styles.inputLabel}>Height</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 242)               <View style={styles.heightInputRow}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 243)                 <View style={styles.heightInputContainer}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 244)                   <TextInput
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 245)                     style={styles.heightInput}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 246)                     value={heightFeet}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 247)                     onChangeText={setHeightFeet}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 248)                     keyboardType="numeric"
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 249)                     placeholder="5"
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 250)                     placeholderTextColor="#666"
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 251)                     maxLength={1}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 252)                   />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 253)                   <Text style={styles.heightUnit}>ft</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 254)                 </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 255)                 <View style={styles.heightInputContainer}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 256)                   <TextInput
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 257)                     style={styles.heightInput}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 258)                     value={heightInches}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 259)                     onChangeText={setHeightInches}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 260)                     keyboardType="numeric"
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 261)                     placeholder="10"
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 262)                     placeholderTextColor="#666"
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 263)                     maxLength={2}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 264)                   />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 265)                   <Text style={styles.heightUnit}>in</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 266)                 </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 267)               </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 268)             </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 269)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 270)             <View style={styles.buttonRow}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 271)               <TouchableOpacity
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 272)                 style={styles.backButton}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 273)                 onPress={() => setStep(1)}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 274)               >
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 275)                 <Text style={styles.backButtonText}>Back</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 276)               </TouchableOpacity>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 277)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 278)               <TouchableOpacity
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 279)                 style={[styles.nextButton, styles.nextButtonFlex]}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 280)                 onPress={() => setStep(3)}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 281)                 disabled={!age || !weight || !heightFeet || !heightInches}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 282)               >
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 283)                 <Text style={styles.nextButtonText}>Next</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 284)               </TouchableOpacity>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 285)             </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 286)           </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 287)         );
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 288)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 289)       case 3:
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 290)         return (
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 291)           <View style={styles.stepContainer}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 292)             <Text style={styles.stepTitle}>What's your activity level?</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 293)             <Text style={styles.stepSubtitle}>Be honest to get accurate results</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 294)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 295)             {(Object.keys(activityLabels) as ActivityLevel[]).map((level) => (
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 296)               <TouchableOpacity
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 297)                 key={level}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 298)                 style={[styles.optionButton, activityLevel === level && styles.optionButtonSelected]}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 299)                 onPress={() => setActivityLevel(level)}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 300)               >
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 301)                 <Text style={[styles.optionText, activityLevel === level && styles.optionTextSelected]}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 302)                   {activityLabels[level]}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 303)                 </Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 304)               </TouchableOpacity>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 305)             ))}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 306)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 307)             <View style={styles.buttonRow}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 308)               <TouchableOpacity
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 309)                 style={styles.backButton}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 310)                 onPress={() => setStep(2)}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 311)               >
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 312)                 <Text style={styles.backButtonText}>Back</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 313)               </TouchableOpacity>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 314)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 315)               <TouchableOpacity
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 316)                 style={[styles.nextButton, styles.nextButtonFlex]}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 317)                 onPress={() => setStep(4)}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 318)               >
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 319)                 <Text style={styles.nextButtonText}>Next</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 320)               </TouchableOpacity>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 321)             </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 322)           </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 323)         );
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 324)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 325)       case 4:
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 326)         return (
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 327)           <View style={styles.stepContainer}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 328)             <Text style={styles.stepTitle}>What's your goal?</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 329)             <Text style={styles.stepSubtitle}>This determines your calorie target</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 330)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 331)             <TouchableOpacity
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 332)               style={[styles.optionButton, goal === 'cut' && styles.optionButtonSelected]}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 333)               onPress={() => setGoal('cut')}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 334)             >
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 335)               <Ionicons name="trending-down" size={24} color={goal === 'cut' ? '#fff' : '#999'} />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 336)               <View style={styles.optionTextContainer}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 337)                 <Text style={[styles.optionText, goal === 'cut' && styles.optionTextSelected]}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 338)                   Cut (Lose Fat)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 339)                 </Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 340)                 <Text style={styles.optionDescription}>500 calorie deficit</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 341)               </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 342)             </TouchableOpacity>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 343)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 344)             <TouchableOpacity
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 345)               style={[styles.optionButton, goal === 'maintain' && styles.optionButtonSelected]}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 346)               onPress={() => setGoal('maintain')}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 347)             >
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 348)               <Ionicons name="remove" size={24} color={goal === 'maintain' ? '#fff' : '#999'} />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 349)               <View style={styles.optionTextContainer}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 350)                 <Text style={[styles.optionText, goal === 'maintain' && styles.optionTextSelected]}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 351)                   Maintain
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 352)                 </Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 353)                 <Text style={styles.optionDescription}>Maintenance calories</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 354)               </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 355)             </TouchableOpacity>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 356)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 357)             <TouchableOpacity
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 358)               style={[styles.optionButton, goal === 'bulk' && styles.optionButtonSelected]}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 359)               onPress={() => setGoal('bulk')}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 360)             >
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 361)               <Ionicons name="trending-up" size={24} color={goal === 'bulk' ? '#fff' : '#999'} />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 362)               <View style={styles.optionTextContainer}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 363)                 <Text style={[styles.optionText, goal === 'bulk' && styles.optionTextSelected]}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 364)                   Bulk (Build Muscle)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 365)                 </Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 366)                 <Text style={styles.optionDescription}>300 calorie surplus</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 367)               </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 368)             </TouchableOpacity>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 369)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 370)             <View style={styles.buttonRow}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 371)               <TouchableOpacity
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 372)                 style={styles.backButton}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 373)                 onPress={() => setStep(3)}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 374)               >
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 375)                 <Text style={styles.backButtonText}>Back</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 376)               </TouchableOpacity>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 377)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 378)               <TouchableOpacity
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 379)                 style={[styles.nextButton, styles.nextButtonFlex]}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 380)                 onPress={calculateNutrition}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 381)               >
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 382)                 <Text style={styles.nextButtonText}>Calculate</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 383)               </TouchableOpacity>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 384)             </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 385)           </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 386)         );
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 387)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 388)       case 5:
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 389)         return (
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 390)           <View style={styles.stepContainer}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 391)             <View style={styles.resultsHeader}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 392)               <Ionicons name="checkmark-circle" size={48} color={ORANGE} />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 393)               <Text style={styles.resultsTitle}>Your Nutrition Goals</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 394)               <Text style={styles.resultsSubtitle}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 395)                 Based on your {goal === 'cut' ? 'cutting' : goal === 'bulk' ? 'bulking' : 'maintenance'} goal
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 396)               </Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 397)             </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 398)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 399)             <View style={styles.resultsContainer}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 400)               <View style={styles.resultCard}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 401)                 <Ionicons name="flame" size={32} color={ORANGE} />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 402)                 <Text style={styles.resultValue}>{results?.calories}</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 403)                 <Text style={styles.resultLabel}>Calories/day</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 404)               </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 405)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 406)               <View style={styles.resultCard}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 407)                 <Ionicons name="fish" size={32} color="#3b82f6" />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 408)                 <Text style={styles.resultValue}>{results?.protein}g</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 409)                 <Text style={styles.resultLabel}>Protein</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 410)               </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 411)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 412)               <View style={styles.resultCard}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 413)                 <Ionicons name="water" size={32} color="#10b981" />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 414)                 <Text style={styles.resultValue}>{results?.fats}g</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 415)                 <Text style={styles.resultLabel}>Fats</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 416)               </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 417)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 418)               <View style={styles.resultCard}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 419)                 <Ionicons name="pizza" size={32} color="#f59e0b" />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 420)                 <Text style={styles.resultValue}>{results?.carbs}g</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 421)                 <Text style={styles.resultLabel}>Carbs</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 422)               </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 423)             </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 424)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 425)             <View style={styles.infoBox}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 426)               <Ionicons name="information-circle-outline" size={20} color={ORANGE} />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 427)               <Text style={styles.infoText}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 428)                 These are daily targets. Track your intake and adjust based on your progress.
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 429)               </Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 430)             </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 431)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 432)             <View style={styles.buttonRow}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 433)               <TouchableOpacity
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 434)                 style={styles.backButton}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 435)                 onPress={resetCalculator}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 436)               >
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 437)                 <Text style={styles.backButtonText}>Recalculate</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 438)               </TouchableOpacity>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 439)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 440)               <TouchableOpacity
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 441)                 style={[styles.nextButton, styles.nextButtonFlex]}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 442)                 onPress={handleComplete}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 443)               >
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 444)                 <Text style={styles.nextButtonText}>Done</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 445)               </TouchableOpacity>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 446)             </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 447)           </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 448)         );
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 449)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 450)       default:
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 451)         return null;
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 452)     }
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 453)   };
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 454)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 455)   return (
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 456)     <Modal
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 457)       visible={visible}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 458)       animationType="slide"
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 459)       transparent={true}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 460)       onRequestClose={onClose}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 461)     >
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 462)       <View style={styles.modalOverlay}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 463)         <View style={styles.modalContent}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 464)           <View style={styles.header}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 465)             <Text style={styles.headerTitle}>Nutrition Calculator</Text>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 466)             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 467)               <Ionicons name="close" size={28} color="#fff" />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 468)             </TouchableOpacity>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 469)           </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 470)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 471)           <View style={styles.progressContainer}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 472)             {[1, 2, 3, 4, 5].map((s) => (
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 473)               <View
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 474)                 key={s}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 475)                 style={[
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 476)                   styles.progressDot,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 477)                   step >= s && styles.progressDotActive,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 478)                 ]}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 479)               />
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 480)             ))}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 481)           </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 482)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 483)           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 484)             {renderStep()}
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 485)           </ScrollView>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 486)         </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 487)       </View>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 488)     </Modal>
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 489)   );
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 490) }
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 491)
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 492) const styles = StyleSheet.create({
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 493)   modalOverlay: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 494)     flex: 1,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 495)     backgroundColor: 'rgba(0, 0, 0, 0.9)',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 496)     justifyContent: 'center',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 497)     alignItems: 'center',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 498)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 499)   modalContent: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 500)     backgroundColor: '#111',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 501)     borderRadius: 20,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 502)     width: '90%',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 503)     maxHeight: '85%',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 504)     paddingTop: 20,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 505)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 506)   header: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 507)     flexDirection: 'row',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 508)     justifyContent: 'space-between',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 509)     alignItems: 'center',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 510)     paddingHorizontal: 20,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 511)     paddingBottom: 15,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 512)     borderBottomWidth: 1,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 513)     borderBottomColor: '#333',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 514)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 515)   headerTitle: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 516)     fontSize: 22,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 517)     fontWeight: 'bold',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 518)     color: '#fff',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 519)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 520)   closeButton: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 521)     padding: 4,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 522)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 523)   progressContainer: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 524)     flexDirection: 'row',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 525)     justifyContent: 'center',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 526)     alignItems: 'center',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 527)     paddingVertical: 20,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 528)     gap: 8,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 529)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 530)   progressDot: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 531)     width: 10,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 532)     height: 10,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 533)     borderRadius: 5,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 534)     backgroundColor: '#333',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 535)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 536)   progressDotActive: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 537)     backgroundColor: ORANGE,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 538)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 539)   scrollView: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 540)     flex: 1,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 541)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 542)   stepContainer: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 543)     padding: 20,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 544)     backgroundColor: '#000', // Added for visibility
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 545)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 546)   stepTitle: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 547)     fontSize: 24,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 548)     fontWeight: 'bold',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 549)     color: '#fff',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 550)     marginBottom: 8,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 551)     fontFamily: 'System',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 552)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 553)   stepSubtitle: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 554)     fontSize: 14,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 555)     color: '#999',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 556)     marginBottom: 24,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 557)     fontFamily: 'System',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 558)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 559)   optionButton: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 560)     flexDirection: 'row',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 561)     alignItems: 'center',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 562)     padding: 16,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 563)     backgroundColor: '#1a1a1a',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 564)     borderRadius: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 565)     marginBottom: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 566)     borderWidth: 2,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 567)     borderColor: '#333',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 568)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 569)   optionButtonSelected: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 570)     backgroundColor: '#2a2a2a',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 571)     borderColor: ORANGE,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 572)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 573)   optionText: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 574)     fontSize: 16,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 575)     color: '#999',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 576)     marginLeft: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 577)     flex: 1,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 578)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 579)   optionTextSelected: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 580)     color: '#fff',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 581)     fontWeight: '600',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 582)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 583)   optionTextContainer: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 584)     flex: 1,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 585)     marginLeft: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 586)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 587)   optionDescription: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 588)     fontSize: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 589)     color: '#666',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 590)     marginTop: 2,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 591)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 592)   inputGroup: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 593)     marginBottom: 20,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 594)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 595)   inputLabel: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 596)     fontSize: 14,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 597)     fontWeight: '600',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 598)     color: '#fff',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 599)     marginBottom: 8,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 600)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 601)   input: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 602)     backgroundColor: '#1a1a1a',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 603)     borderWidth: 1,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 604)     borderColor: '#333',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 605)     borderRadius: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 606)     padding: 16,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 607)     fontSize: 16,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 608)     color: '#fff',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 609)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 610)   heightInputRow: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 611)     flexDirection: 'row',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 612)     gap: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 613)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 614)   heightInputContainer: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 615)     flex: 1,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 616)     flexDirection: 'row',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 617)     alignItems: 'center',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 618)     backgroundColor: '#1a1a1a',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 619)     borderWidth: 1,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 620)     borderColor: '#333',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 621)     borderRadius: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 622)     paddingHorizontal: 16,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 623)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 624)   heightInput: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 625)     flex: 1,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 626)     padding: 16,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 627)     fontSize: 16,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 628)     color: '#fff',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 629)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 630)   heightUnit: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 631)     fontSize: 14,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 632)     color: '#999',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 633)     fontWeight: '600',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 634)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 635)   buttonRow: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 636)     flexDirection: 'row',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 637)     gap: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 638)     marginTop: 20,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 639)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 640)   backButton: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 641)     flex: 1,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 642)     padding: 16,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 643)     backgroundColor: '#1a1a1a',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 644)     borderRadius: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 645)     borderWidth: 1,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 646)     borderColor: '#333',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 647)     alignItems: 'center',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 648)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 649)   backButtonText: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 650)     fontSize: 16,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 651)     fontWeight: '600',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 652)     color: '#fff',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 653)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 654)   nextButton: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 655)     padding: 16,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 656)     backgroundColor: ORANGE,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 657)     borderRadius: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 658)     alignItems: 'center',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 659)     marginTop: 20,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 660)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 661)   nextButtonFlex: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 662)     flex: 2,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 663)     marginTop: 0,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 664)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 665)   nextButtonText: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 666)     fontSize: 16,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 667)     fontWeight: '600',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 668)     color: '#fff',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 669)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 670)   resultsHeader: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 671)     alignItems: 'center',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 672)     marginBottom: 24,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 673)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 674)   resultsTitle: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 675)     fontSize: 24,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 676)     fontWeight: 'bold',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 677)     color: '#fff',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 678)     marginTop: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 679)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 680)   resultsSubtitle: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 681)     fontSize: 14,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 682)     color: '#999',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 683)     marginTop: 4,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 684)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 685)   resultsContainer: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 686)     flexDirection: 'row',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 687)     flexWrap: 'wrap',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 688)     gap: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 689)     marginBottom: 20,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 690)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 691)   resultCard: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 692)     flex: 1,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 693)     minWidth: '45%',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 694)     backgroundColor: '#1a1a1a',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 695)     borderRadius: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 696)     padding: 16,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 697)     alignItems: 'center',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 698)     borderWidth: 1,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 699)     borderColor: '#333',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 700)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 701)   resultValue: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 702)     fontSize: 28,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 703)     fontWeight: 'bold',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 704)     color: '#fff',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 705)     marginTop: 8,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 706)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 707)   resultLabel: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 708)     fontSize: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 709)     color: '#999',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 710)     marginTop: 4,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 711)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 712)   infoBox: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 713)     flexDirection: 'row',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 714)     backgroundColor: '#1a0f00',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 715)     borderRadius: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 716)     padding: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 717)     borderWidth: 1,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 718)     borderColor: ORANGE + '40',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 719)     marginBottom: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 720)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 721)   infoText: {
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 722)     flex: 1,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 723)     fontSize: 12,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 724)     color: '#999',
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 725)     marginLeft: 8,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 726)     lineHeight: 18,
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 727)   },
+7135ecb1d (mward79 2025-10-28 09:49:38 -0400 728) });
+(END)
