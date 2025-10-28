@@ -1,0 +1,280 @@
+index.tsx    (om patel on 10/27/2025 at 21:19): import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+index.tsx    (om patel on 10/27/2025 at 21:19): import { doc, setDoc } from 'firebase/firestore';
+index.tsx    (om patel on 10/27/2025 at 21:19): import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+index.tsx    (om patel on 10/27/2025 at 21:19): import { auth, db } from '../firebase'; // Adjust path to your firebaseConfig.js
+index.tsx    (om patel on 10/27/2025 at 21:19):   const [showProfileModal, setShowProfileModal] = useState(false);
+index.tsx    (om patel on 10/27/2025 at 21:19):   const [name, setName] = useState<string>('');
+index.tsx    (om patel on 10/27/2025 at 21:19):   const [height, setHeight] = useState<string>(''); // In inches
+index.tsx    (om patel on 10/27/2025 at 21:19):   const [weightLb, setWeightLb] = useState<string>(''); // In pounds
+index.tsx    (om patel on 10/27/2025 at 21:19):   const [age, setAge] = useState<string>('');
+index.tsx    (om patel on 10/27/2025 at 21:19):   const [gender, setGender] = useState<string>('');
+index.tsx    (om patel on 10/27/2025 at 21:19):   const [targetKcal, setTargetKcal] = useState<string>('');
+index.tsx    (om patel on 10/27/2025 at 21:19):   const [targetProtein, setTargetProtein] = useState<string>('');
+index.tsx    (om patel on 10/27/2025 at 21:19):   const [targetFats, setTargetFats] = useState<string>('');
+index.tsx    (om patel on 10/27/2025 at 21:19):   const [targetCarbs, setTargetCarbs] = useState<string>('');
+index.tsx    (om patel on 10/27/2025 at 21:19):   const router = useRouter();
+index.tsx    (om patel on 10/27/2025 at 21:19):   const [newUserId, setNewUserId] = useState<string | null>(null);
+index.tsx    (om patel on 10/27/2025 at 21:19):   const handleLoginOrSignUp = async () => {
+index.tsx    (om patel on 10/27/2025 at 21:19):       try {
+index.tsx    (om patel on 10/27/2025 at 21:19):         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+index.tsx    (om patel on 10/27/2025 at 21:19):         const user = userCredential.user;
+index.tsx    (om patel on 10/27/2025 at 21:19):         setNewUserId(user.uid);
+index.tsx    (om patel on 10/27/2025 at 21:19):         setShowProfileModal(true);
+index.tsx    (om patel on 10/27/2025 at 21:19):       } catch (error: any) {
+index.tsx    (om patel on 10/27/2025 at 21:19):         Alert.alert('Error', error.message || 'Failed to create account');
+index.tsx    (om patel on 10/27/2025 at 21:19):       }
+index.tsx    (om patel on 10/27/2025 at 21:19):     } else {
+index.tsx    (om patel on 10/27/2025 at 21:19):       try {
+index.tsx    (om patel on 10/27/2025 at 21:19):         await signInWithEmailAndPassword(auth, email, password);
+index.tsx    (om patel on 10/27/2025 at 21:19):         Alert.alert('Success', 'Logged in!');
+index.tsx    (om patel on 10/27/2025 at 21:19):         router.replace('/(tabs)/home');
+index.tsx    (om patel on 10/27/2025 at 21:19):       } catch (error: any) {
+index.tsx    (om patel on 10/27/2025 at 21:19):         Alert.alert('Error', error.message || 'Failed to log in');
+index.tsx    (om patel on 10/27/2025 at 21:19):       }
+index.tsx    (om patel on 10/27/2025 at 21:19):     }
+index.tsx    (om patel on 10/27/2025 at 21:19):   };
+index.tsx    (om patel on 10/27/2025 at 21:19):   const handleProfileSubmit = async () => {
+index.tsx    (om patel on 10/27/2025 at 21:19):     if (!name.trim() || !height || !weightLb || !age || !gender || !targetKcal || !targetProtein || !targetFats || !targetCarbs) {
+index.tsx    (om patel on 10/27/2025 at 21:19):       Alert.alert('Error', 'Please fill all fields');
+index.tsx    (om patel on 10/27/2025 at 21:19):       return;
+index.tsx    (om patel on 10/27/2025 at 21:19):     }
+index.tsx    (om patel on 10/27/2025 at 21:19):     if (isNaN(parseFloat(height)) || isNaN(parseFloat(weightLb)) || isNaN(parseInt(age)) ||
+index.tsx    (om patel on 10/27/2025 at 21:19):         isNaN(parseFloat(targetKcal)) || isNaN(parseFloat(targetProtein)) ||
+index.tsx    (om patel on 10/27/2025 at 21:19):         isNaN(parseFloat(targetFats)) || isNaN(parseFloat(targetCarbs))) {
+index.tsx    (om patel on 10/27/2025 at 21:19):       Alert.alert('Error', 'Please enter valid numbers for height, weight, age, and nutrition targets');
+index.tsx    (om patel on 10/27/2025 at 21:19):       return;
+index.tsx    (om patel on 10/27/2025 at 21:19):     }
+index.tsx    (om patel on 10/27/2025 at 21:19):       const currentUser = auth.currentUser;
+index.tsx    (om patel on 10/27/2025 at 21:19):       if (!currentUser || currentUser.uid !== newUserId) {
+index.tsx    (om patel on 10/27/2025 at 21:19):         Alert.alert('Error', 'Authentication error. Please try signing up again.');
+index.tsx    (om patel on 10/27/2025 at 21:19):       await setDoc(doc(db, 'users', newUserId!), {
+index.tsx    (om patel on 10/27/2025 at 21:19):         name: name.trim(),
+index.tsx    (om patel on 10/27/2025 at 21:19):         email: email,
+index.tsx    (om patel on 10/27/2025 at 21:19):         height: parseFloat(height),
+index.tsx    (om patel on 10/27/2025 at 21:19):         weightLb: parseFloat(weightLb),
+index.tsx    (om patel on 10/27/2025 at 21:19):         age: parseInt(age),
+index.tsx    (om patel on 10/27/2025 at 21:19):         gender: gender,
+index.tsx    (om patel on 10/27/2025 at 21:19):         nutrition: {
+index.tsx    (om patel on 10/27/2025 at 21:19):           target: {
+index.tsx    (om patel on 10/27/2025 at 21:19):             kcal: parseFloat(targetKcal),
+index.tsx    (om patel on 10/27/2025 at 21:19):             protein: parseFloat(targetProtein),
+index.tsx    (om patel on 10/27/2025 at 21:19):             fats: parseFloat(targetFats),
+index.tsx    (om patel on 10/27/2025 at 21:19):             carbs: parseFloat(targetCarbs),
+index.tsx    (om patel on 10/27/2025 at 21:19):           },
+index.tsx    (om patel on 10/27/2025 at 21:19):           current: {
+index.tsx    (om patel on 10/27/2025 at 21:19):             kcal: 0,
+index.tsx    (om patel on 10/27/2025 at 21:19):             protein: 0,
+index.tsx    (om patel on 10/27/2025 at 21:19):             fats: 0,
+index.tsx    (om patel on 10/27/2025 at 21:19):             carbs: 0,
+index.tsx    (om patel on 10/27/2025 at 21:19):           },
+index.tsx    (om patel on 10/27/2025 at 21:19):         },
+index.tsx    (om patel on 10/27/2025 at 21:19):         createdAt: new Date().toISOString(),
+index.tsx    (om patel on 10/27/2025 at 21:19):       });
+index.tsx    (om patel on 10/27/2025 at 21:19):       Alert.alert('Success', 'Profile saved! Please log in.');
+index.tsx    (om patel on 10/27/2025 at 21:19):       setShowProfileModal(false);
+index.tsx    (om patel on 10/27/2025 at 21:19):       setIsSignUp(false);
+index.tsx    (om patel on 10/27/2025 at 21:19):       setEmail('');
+index.tsx    (om patel on 10/27/2025 at 21:19):       setName('');
+index.tsx    (om patel on 10/27/2025 at 21:19):       setHeight('');
+index.tsx    (om patel on 10/27/2025 at 21:19):       setWeightLb('');
+index.tsx    (om patel on 10/27/2025 at 21:19):       setAge('');
+index.tsx    (om patel on 10/27/2025 at 21:19):       setGender('');
+index.tsx    (om patel on 10/27/2025 at 21:19):       setTargetKcal('');
+index.tsx    (om patel on 10/27/2025 at 21:19):       setTargetProtein('');
+index.tsx    (om patel on 10/27/2025 at 21:19):       setTargetFats('');
+index.tsx    (om patel on 10/27/2025 at 21:19):       setTargetCarbs('');
+index.tsx    (om patel on 10/27/2025 at 21:19):       setNewUserId(null);
+index.tsx    (om patel on 10/27/2025 at 21:19):     } catch (error: any) {
+index.tsx    (om patel on 10/27/2025 at 21:19):       Alert.alert('Error', error.message || 'Failed to save profile');
+index.tsx    (om patel on 10/27/2025 at 21:19):       console.error('Firestore Error:', error); // Log for debugging
+index.tsx    (om patel on 10/27/2025 at 21:19):         <TouchableOpacity style={styles.button} onPress={handleLoginOrSignUp}>
+index.tsx    (om patel on 10/27/2025 at 21:19):           <Text style={styles.buttonText}>{isSignUp ? 'Create Account' : 'Log In'}</Text>
+index.tsx    (om patel on 10/27/2025 at 21:19):         <TouchableOpacity style={styles.toggleButton} onPress={() => setIsSignUp(!isSignUp)}>
+index.tsx    (om patel on 10/27/2025 at 21:19):       <Modal visible={showProfileModal} transparent animationType="slide">
+index.tsx    (om patel on 10/27/2025 at 21:19):         <View style={styles.modalContainer}>
+index.tsx    (om patel on 10/27/2025 at 21:19):           <ScrollView contentContainerStyle={styles.modalContent}>
+index.tsx    (om patel on 10/27/2025 at 21:19):             <Text style={styles.modalTitle}>Complete Your Profile</Text>
+index.tsx    (om patel on 10/27/2025 at 21:19):             <TextInput
+index.tsx    (om patel on 10/27/2025 at 21:19):               style={styles.input}
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholder="Name"
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholderTextColor="#4B4B4B"
+index.tsx    (om patel on 10/27/2025 at 21:19):               value={name}
+index.tsx    (om patel on 10/27/2025 at 21:19):               onChangeText={setName}
+index.tsx    (om patel on 10/27/2025 at 21:19):               autoCapitalize="words"
+index.tsx    (om patel on 10/27/2025 at 21:19):             />
+index.tsx    (om patel on 10/27/2025 at 21:19):             <TextInput
+index.tsx    (om patel on 10/27/2025 at 21:19):               style={styles.input}
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholder="Height (inches)"
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholderTextColor="#4B4B4B"
+index.tsx    (om patel on 10/27/2025 at 21:19):               value={height}
+index.tsx    (om patel on 10/27/2025 at 21:19):               onChangeText={setHeight}
+index.tsx    (om patel on 10/27/2025 at 21:19):               keyboardType="numeric"
+index.tsx    (om patel on 10/27/2025 at 21:19):             />
+index.tsx    (om patel on 10/27/2025 at 21:19):             <TextInput
+index.tsx    (om patel on 10/27/2025 at 21:19):               style={styles.input}
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholder="Weight (pounds)"
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholderTextColor="#4B4B4B"
+index.tsx    (om patel on 10/27/2025 at 21:19):               value={weightLb}
+index.tsx    (om patel on 10/27/2025 at 21:19):               onChangeText={setWeightLb}
+index.tsx    (om patel on 10/27/2025 at 21:19):               keyboardType="numeric"
+index.tsx    (om patel on 10/27/2025 at 21:19):             />
+index.tsx    (om patel on 10/27/2025 at 21:19):             <TextInput
+index.tsx    (om patel on 10/27/2025 at 21:19):               style={styles.input}
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholder="Age"
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholderTextColor="#4B4B4B"
+index.tsx    (om patel on 10/27/2025 at 21:19):               value={age}
+index.tsx    (om patel on 10/27/2025 at 21:19):               onChangeText={setAge}
+index.tsx    (om patel on 10/27/2025 at 21:19):               keyboardType="numeric"
+index.tsx    (om patel on 10/27/2025 at 21:19):             />
+index.tsx    (om patel on 10/27/2025 at 21:19):             <TextInput
+index.tsx    (om patel on 10/27/2025 at 21:19):               style={styles.input}
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholder="Gender (e.g., Male/Female/Other)"
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholderTextColor="#4B4B4B"
+index.tsx    (om patel on 10/27/2025 at 21:19):               value={gender}
+index.tsx    (om patel on 10/27/2025 at 21:19):               onChangeText={setGender}
+index.tsx    (om patel on 10/27/2025 at 21:19):               autoCapitalize="words"
+index.tsx    (om patel on 10/27/2025 at 21:19):             />
+index.tsx    (om patel on 10/27/2025 at 21:19):             <TextInput
+index.tsx    (om patel on 10/27/2025 at 21:19):               style={styles.input}
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholder="Target Calories (kcal)"
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholderTextColor="#4B4B4B"
+index.tsx    (om patel on 10/27/2025 at 21:19):               value={targetKcal}
+index.tsx    (om patel on 10/27/2025 at 21:19):               onChangeText={setTargetKcal}
+index.tsx    (om patel on 10/27/2025 at 21:19):               keyboardType="numeric"
+index.tsx    (om patel on 10/27/2025 at 21:19):             />
+index.tsx    (om patel on 10/27/2025 at 21:19):             <TextInput
+index.tsx    (om patel on 10/27/2025 at 21:19):               style={styles.input}
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholder="Target Protein (grams)"
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholderTextColor="#4B4B4B"
+index.tsx    (om patel on 10/27/2025 at 21:19):               value={targetProtein}
+index.tsx    (om patel on 10/27/2025 at 21:19):               onChangeText={setTargetProtein}
+index.tsx    (om patel on 10/27/2025 at 21:19):               keyboardType="numeric"
+index.tsx    (om patel on 10/27/2025 at 21:19):             />
+index.tsx    (om patel on 10/27/2025 at 21:19):             <TextInput
+index.tsx    (om patel on 10/27/2025 at 21:19):               style={styles.input}
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholder="Target Fats (grams)"
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholderTextColor="#4B4B4B"
+index.tsx    (om patel on 10/27/2025 at 21:19):               value={targetFats}
+index.tsx    (om patel on 10/27/2025 at 21:19):               onChangeText={setTargetFats}
+index.tsx    (om patel on 10/27/2025 at 21:19):               keyboardType="numeric"
+index.tsx    (om patel on 10/27/2025 at 21:19):             />
+index.tsx    (om patel on 10/27/2025 at 21:19):             <TextInput
+index.tsx    (om patel on 10/27/2025 at 21:19):               style={styles.input}
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholder="Target Carbs (grams)"
+index.tsx    (om patel on 10/27/2025 at 21:19):               placeholderTextColor="#4B4B4B"
+index.tsx    (om patel on 10/27/2025 at 21:19):               value={targetCarbs}
+index.tsx    (om patel on 10/27/2025 at 21:19):               onChangeText={setTargetCarbs}
+index.tsx    (om patel on 10/27/2025 at 21:19):               keyboardType="numeric"
+index.tsx    (om patel on 10/27/2025 at 21:19):             />
+index.tsx    (om patel on 10/27/2025 at 21:19):             <TouchableOpacity style={styles.button} onPress={handleProfileSubmit}>
+index.tsx    (om patel on 10/27/2025 at 21:19):               <Text style={styles.buttonText}>Submit</Text>
+index.tsx    (om patel on 10/27/2025 at 21:19):             </TouchableOpacity>
+index.tsx    (om patel on 10/27/2025 at 21:19):           </ScrollView>
+index.tsx    (om patel on 10/27/2025 at 21:19):         </View>
+index.tsx    (om patel on 10/27/2025 at 21:19):       </Modal>
+index.tsx    (om patel on 10/27/2025 at 21:19):   modalTitle: {
+index.tsx    (om patel on 10/27/2025 at 21:19):     fontSize: 24,
+index.tsx    (om patel on 10/27/2025 at 21:19):     fontWeight: 'bold',
+index.tsx    (om patel on 10/27/2025 at 21:19):     marginBottom: 16,
+index.tsx    (om patel on 10/27/2025 at 21:19):     textAlign: 'center',
+index.tsx    (om patel on 10/27/2025 at 21:19):     color: '#000000',
+index.tsx    (om patel on 10/27/2025 at 21:19):   },
+firebase.js  (om patel on 10/27/2025 at 21:21): // Import the functions you need from the SDKs you need
+firebase.js  (om patel on 10/27/2025 at 21:21): import { getApp, getApps, initializeApp } from "firebase/app";
+firebase.js  (om patel on 10/27/2025 at 21:21): import { getAuth } from "firebase/auth";
+firebase.js  (om patel on 10/27/2025 at 21:21): import { getFirestore } from "firebase/firestore";
+firebase.js  (om patel on 10/27/2025 at 21:21): import { getStorage } from "firebase/storage";
+firebase.js  (om patel on 10/27/2025 at 21:21): // Your web app's Firebase configuration
+firebase.js  (om patel on 10/27/2025 at 21:21): const firebaseConfig = {
+firebase.js  (om patel on 10/27/2025 at 21:21):   apiKey: "AIzaSyAc1r0IycqYHObFNVWadhBTGLdbdmXe97o",
+firebase.js  (om patel on 10/27/2025 at 21:21):   authDomain: "aim-high-d86a1.firebaseapp.com",
+firebase.js  (om patel on 10/27/2025 at 21:21):   databaseURL: "https://aim-high-d86a1-default-rtdb.firebaseio.com",
+firebase.js  (om patel on 10/27/2025 at 21:21):   projectId: "aim-high-d86a1",
+firebase.js  (om patel on 10/27/2025 at 21:21):   messagingSenderId: "1019607569837",
+firebase.js  (om patel on 10/27/2025 at 21:21):   appId: "1:1019607569837:web:9279c1c4a13f0d7f91bd24",
+firebase.js  (om patel on 10/27/2025 at 21:21):   measurementId: "G-LV1KHT3SK7"
+firebase.js  (om patel on 10/27/2025 at 21:21): };
+firebase.js  (om patel on 10/27/2025 at 21:21): // Initialize Firebase
+firebase.js  (om patel on 10/27/2025 at 21:21): const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+firebase.js  (om patel on 10/27/2025 at 21:21): // Initialize services
+firebase.js  (om patel on 10/27/2025 at 21:21): export const auth = getAuth(app);
+firebase.js  (om patel on 10/27/2025 at 21:21): export const db = getFirestore(app);
+firebase.js  (om patel on 10/27/2025 at 21:21): export const storage = getStorage(app);
+home.tsx     (om patel on 10/27/2025 at 21:20): import { getAuth } from "firebase/auth"; // Import Firebase Auth
+home.tsx     (om patel on 10/27/2025 at 21:20): import { doc, getDoc } from "firebase/firestore"; // Import Firestore
+home.tsx     (om patel on 10/27/2025 at 21:20): import { useEffect, useRef, useState } from "react";
+home.tsx     (om patel on 10/27/2025 at 21:20): import { db } from "../../firebase"; // Import Firestore instance from your firebaseConfig.js
+home.tsx     (om patel on 10/27/2025 at 21:20):   const [searchInput, setSearchInput] = useState(""); // State for search input
+home.tsx     (om patel on 10/27/2025 at 21:20):   const [userName, setUserName] = useState("User"); // Default to "User"
+home.tsx     (om patel on 10/27/2025 at 21:20):   useEffect(() => {
+home.tsx     (om patel on 10/27/2025 at 21:20):     const fetchUserName = async () => {
+home.tsx     (om patel on 10/27/2025 at 21:20):       const auth = getAuth();
+home.tsx     (om patel on 10/27/2025 at 21:20):       const user = auth.currentUser;
+home.tsx     (om patel on 10/27/2025 at 21:20):       if (user) {
+home.tsx     (om patel on 10/27/2025 at 21:20):         try {
+home.tsx     (om patel on 10/27/2025 at 21:20):           const userDocRef = doc(db, "users", user.uid);
+home.tsx     (om patel on 10/27/2025 at 21:20):           const userDoc = await getDoc(userDocRef);
+home.tsx     (om patel on 10/27/2025 at 21:20):           if (userDoc.exists()) {
+home.tsx     (om patel on 10/27/2025 at 21:20):             const userData = userDoc.data();
+home.tsx     (om patel on 10/27/2025 at 21:20):             setUserName(userData.name || "User"); // Set name from Firestore or fallback to "User"
+home.tsx     (om patel on 10/27/2025 at 21:20):           } else {
+home.tsx     (om patel on 10/27/2025 at 21:20):             setUserName("User");
+home.tsx     (om patel on 10/27/2025 at 21:20):           }
+home.tsx     (om patel on 10/27/2025 at 21:20):         } catch (error) {
+home.tsx     (om patel on 10/27/2025 at 21:20):           console.error("Error fetching user name:", error);
+home.tsx     (om patel on 10/27/2025 at 21:20):           setUserName("User"); // Fallback on error
+home.tsx     (om patel on 10/27/2025 at 21:20):         }
+home.tsx     (om patel on 10/27/2025 at 21:20):       } else {
+home.tsx     (om patel on 10/27/2025 at 21:20):         setUserName("User");
+home.tsx     (om patel on 10/27/2025 at 21:20):       }
+home.tsx     (om patel on 10/27/2025 at 21:20):     };
+home.tsx     (om patel on 10/27/2025 at 21:20):     fetchUserName();
+home.tsx     (om patel on 10/27/2025 at 21:20):   }, []);
+home.tsx     (om patel on 10/27/2025 at 21:20):     <ScrollView style={styles.container987}>
+home.tsx     (om patel on 10/27/2025 at 21:20):       <View style={styles.headerRow654}>
+home.tsx     (om patel on 10/27/2025 at 21:20):         <Text style={styles.header321}>Welcome, {userName}</Text>
+home.tsx     (om patel on 10/27/2025 at 21:20):         <View style={styles.headerButtons123}>
+home.tsx     (om patel on 10/27/2025 at 21:20):         contentContainerStyle={styles.carouselContent456}
+home.tsx     (om patel on 10/27/2025 at 21:20):         style={styles.carousel789}
+home.tsx     (om patel on 10/27/2025 at 21:20):           <View key={index} style={styles.carouselItem147}>
+home.tsx     (om patel on 10/27/2025 at 21:20):             <Image source={image} style={styles.carouselImage258} />
+home.tsx     (om patel on 10/27/2025 at 21:20):   container987: {
+home.tsx     (om patel on 10/27/2025 at 21:20):     flex: 1,
+home.tsx     (om patel on 10/27/2025 at 21:20):     backgroundColor: "#000",
+home.tsx     (om patel on 10/27/2025 at 21:20):   },
+home.tsx     (om patel on 10/27/2025 at 21:20):   headerRow654: {
+home.tsx     (om patel on 10/27/2025 at 21:20):     flexDirection: "row",
+home.tsx     (om patel on 10/27/2025 at 21:20):     justifyContent: "space-between",
+home.tsx     (om patel on 10/27/2025 at 21:20):     alignItems: "center",
+home.tsx     (om patel on 10/27/2025 at 21:20):     paddingHorizontal: 20,
+home.tsx     (om patel on 10/27/2025 at 21:20):     paddingVertical: 15,
+home.tsx     (om patel on 10/27/2025 at 21:20):     backgroundColor: "#1C2526",
+home.tsx     (om patel on 10/27/2025 at 21:20):   },
+home.tsx     (om patel on 10/27/2025 at 21:20):   header321: {
+home.tsx     (om patel on 10/27/2025 at 21:20):     fontSize: 24,
+home.tsx     (om patel on 10/27/2025 at 21:20):     fontWeight: "bold",
+home.tsx     (om patel on 10/27/2025 at 21:20):     color: "#fff",
+home.tsx     (om patel on 10/27/2025 at 21:20):   },
+home.tsx     (om patel on 10/27/2025 at 21:20):   headerButtons123: {
+home.tsx     (om patel on 10/27/2025 at 21:20):     flexDirection: "row",
+home.tsx     (om patel on 10/27/2025 at 21:20):     gap: 15,
+home.tsx     (om patel on 10/27/2025 at 21:20):   },
+home.tsx     (om patel on 10/27/2025 at 21:20):   carousel789: {
+home.tsx     (om patel on 10/27/2025 at 21:20):     marginVertical: 10,
+home.tsx     (om patel on 10/27/2025 at 21:20):   },
+home.tsx     (om patel on 10/27/2025 at 21:20):   carouselContent456: {
+home.tsx     (om patel on 10/27/2025 at 21:20):     paddingHorizontal: 10,
+home.tsx     (om patel on 10/27/2025 at 21:20):   },
+home.tsx     (om patel on 10/27/2025 at 21:20):   carouselItem147: {
+home.tsx     (om patel on 10/27/2025 at 21:20):     width: 300,
+home.tsx     (om patel on 10/27/2025 at 21:20):     height: 200,
+home.tsx     (om patel on 10/27/2025 at 21:20):     borderRadius: 10,
+home.tsx     (om patel on 10/27/2025 at 21:20):     overflow: "hidden",
+home.tsx     (om patel on 10/27/2025 at 21:20):     marginHorizontal: 5,
+home.tsx     (om patel on 10/27/2025 at 21:20):   },
+home.tsx     (om patel on 10/27/2025 at 21:20):   carouselImage258: {
+home.tsx     (om patel on 10/27/2025 at 21:20):     width: "100%",
+home.tsx     (om patel on 10/27/2025 at 21:20):     height: "100%",
+home.tsx     (om patel on 10/27/2025 at 21:20):     resizeMode: "cover",
+home.tsx     (om patel on 10/27/2025 at 21:20):   },
+home.tsx     (om patel on 10/27/2025 at 21:20):   // Add other styles as needed for the rest of your components
