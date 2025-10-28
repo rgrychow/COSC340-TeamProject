@@ -10,7 +10,7 @@ const firebaseConfig = {
   authDomain: "aim-high-d86a1.firebaseapp.com",
   databaseURL: "https://aim-high-d86a1-default-rtdb.firebaseio.com",
   projectId: "aim-high-d86a1",
-  storageBucket: "aim-high-d86a1.firebasestorage.app",
+  storageBucket: "aim-high-d86a1.appspot.com",
   messagingSenderId: "1019607569837",
   appId: "1:1019607569837:web:9279c1c4a13f0d7f91bd24",
   measurementId: "G-LV1KHT3SK7"
