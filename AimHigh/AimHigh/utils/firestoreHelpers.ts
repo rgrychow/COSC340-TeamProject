@@ -1,48 +1,65 @@
-// utils/firestoreHelpers.ts
-import { db, auth } from "../firebase";
-import { collection, doc, setDoc, getDocs, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection } from "firebase/firestore";
+import { auth, db } from "../firebase";
 
-function getUid() {
-  const user = auth.currentUser;
-  if (!user) throw new Error("User not signed in");
-  return user.uid;
+// ✅ Save a single workout set to Firestore
+export async function saveWorkout(
+  day: string,
+  exercise: string,
+  setNum: number,
+  reps: number,
+  weight: number
+) {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not authenticated");
+
+    // Path: users/{uid}/workouts/{day}/exercises/{exercise}
+    const exerciseRef = doc(db, "users", user.uid, "workouts", day, "exercises", exercise);
+
+    // Each exercise has multiple sets, we’ll merge them under 'sets'
+    await setDoc(
+      exerciseRef,
+      {
+        date: day,
+        name: exercise,
+        sets: {
+          [`set_${setNum}`]: { reps, weight },
+        },
+      },
+      { merge: true }
+    );
+
+    console.log("✅ Saved to Firestore:", {
+      user: user.uid,
+      day,
+      exercise,
+      setNum,
+      reps,
+      weight,
+    });
+  } catch (error) {
+    console.error("❌ Firestore save error:", error);
+  }
 }
 
-export async function saveWorkout(day: string, workoutType: string, setNumber: number, reps: number, weightLb: number) {
-  const uid = getUid();
-  const workoutId = `${workoutType}_${Date.now()}`;
-  const setId = `set_${setNumber}`;
-  const setRef = doc(db, "users", uid, "workoutDays", day, "workouts", workoutId, "sets", setId);
-  await setDoc(setRef, { setNumber, reps, weightLb, createdAt: serverTimestamp() });
-  const workoutRef = doc(db, "users", uid, "workoutDays", day, "workouts", workoutId);
-  await setDoc(workoutRef, { workoutType, createdAt: serverTimestamp() }, { merge: true });
-}
-
-export async function saveRun(day: string, distanceMiles: number, durationSec: number) {
-  const uid = getUid();
-  const runId = `run_${Date.now()}`;
-  const runRef = doc(db, "users", uid, "runDays", day, "runs", runId);
-  await setDoc(runRef, { distanceMiles, durationSec, createdAt: serverTimestamp() });
-}
-
-export async function saveMeal(day: string, mealName: string, calories: number, protein: number, fats: number, carbs: number) {
-  const uid = getUid();
-  const mealId = `meal_${Date.now()}`;
-  const mealRef = doc(db, "users", uid, "mealDays", day, "meals", mealId);
-  await setDoc(mealRef, { mealName, calories, protein, fats, carbs, createdAt: serverTimestamp() });
-}
-
+// ✅ Fetch all workouts for a given day
 export async function fetchDayData(day: string) {
-  const uid = getUid();
-  const [workoutsSnap, runsSnap, mealsSnap] = await Promise.all([
-    getDocs(collection(db, "users", uid, "workoutDays", day, "workouts")),
-    getDocs(collection(db, "users", uid, "runDays", day, "runs")),
-    getDocs(collection(db, "users", uid, "mealDays", day, "meals")),
-  ]);
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not authenticated");
 
-  const workouts = workoutsSnap.docs.map((d) => d.data());
-  const runs = runsSnap.docs.map((d) => d.data());
-  const meals = mealsSnap.docs.map((d) => d.data());
+    const dayRef = doc(db, "users", user.uid, "workouts", day);
+    const daySnap = await getDoc(dayRef);
 
-  return { workouts, runs, meals };
+    if (daySnap.exists()) {
+      console.log("📄 Fetched workout:", daySnap.data());
+      return daySnap.data();
+    } else {
+      console.log("⚠️ No data found for that day:", day);
+      return null;
+    }
+  } catch (error) {
+    console.error("❌ Firestore fetch error:", error);
+    return null;
+  }
 }
