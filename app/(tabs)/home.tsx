@@ -1,9 +1,11 @@
-// app/(tabs)/home.tsx
 import { Ionicons } from "@expo/vector-icons"; // For icons
 import Slider from "@react-native-community/slider";
 import { useNavigation } from "@react-navigation/native";
-import { useRef, useState } from "react";
+import { getAuth } from "firebase/auth"; // Import Firebase Auth
+import { doc, getDoc } from "firebase/firestore"; // Import Firestore
+import { useEffect, useRef, useState } from "react";
 import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"; // Import necessary components
+import { db } from "../../firebase"; // Import Firestore instance from your firebaseConfig.js
 import SettingsModal from "../settings_modal"; // Import the Settings Modal
 
 const ORANGE = "#FF6A00";
@@ -22,7 +24,7 @@ export default function Home() {
   const [macroModalVisible, setMacroModalVisible] = useState(false);
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [searchModalVisible, setSearchModalVisible] = useState(false); // State for search modal
-  const [searchInput, setSearchInput] = useState(""); // State for search input for search modal
+  const [searchInput, setSearchInput] = useState(""); // State for search input
   const [recentSearches, setRecentSearches] = useState<string[]>([]); // State for recent searches
   const [completedWorkouts, setCompletedWorkouts] = useState(0); // Tracks completed workouts
   const [workoutGoal, setWorkoutGoal] = useState(5); // Default workout goal set to 5
@@ -39,11 +41,11 @@ export default function Home() {
   const [meals, setMeals] = useState([]); // State for meals
   const [mealNameModalVisible, setMealNameModalVisible] = useState(false); // State for showing the modal
   const [newMealName, setNewMealName] = useState(""); // State for the new meal name
-  // State for Step Count and Water Intake
   const [stepCount, setStepCount] = useState(5000); // Current step count
   const [waterIntake, setWaterIntake] = useState(1.5); // Current water intake in liters
   const [waterModalVisible, setWaterModalVisible] = useState(false); // State for water intake modal
   const [waterGoal, setWaterGoal] = useState(3); // Water intake goal in liters
+  const [userName, setUserName] = useState("User"); // Default to "User"
 
   const handleSearchSubmit = () => {
     if (searchInput.trim() !== "") {
@@ -69,11 +71,37 @@ export default function Home() {
     );
   };
 
+  useEffect(() => {
+    const fetchUserName = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          const userDocRef = doc(db, "users", user.uid);
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUserName(userData.name || "User"); // Set name from Firestore or fallback to "User"
+          } else {
+            setUserName("User");
+          }
+        } catch (error) {
+          console.error("Error fetching user name:", error);
+          setUserName("User"); // Fallback on error
+        }
+      } else {
+        setUserName("User");
+      }
+    };
+
+    fetchUserName();
+  }, []);
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.header}>Welcome Jackson</Text>
-        <View style={styles.headerButtons}>
+    <ScrollView style={styles.container987}>
+      <View style={styles.headerRow654}>
+        <Text style={styles.header321}>Welcome, {userName}</Text>
+        <View style={styles.headerButtons123}>
           <TouchableOpacity onPress={() => setSearchModalVisible(true)}>
             <Ionicons name="search" size={24} color="#fff" />
           </TouchableOpacity>
@@ -91,12 +119,12 @@ export default function Home() {
         showsHorizontalScrollIndicator={false}
         onScroll={handleScroll}
         ref={scrollViewRef}
-        contentContainerStyle={styles.carouselContent} // Added contentContainerStyle
-        style={styles.carousel}
+        contentContainerStyle={styles.carouselContent456}
+        style={styles.carousel789}
       >
         {images.map((image, index) => (
-          <View key={index} style={styles.carouselItem}>
-            <Image source={image} style={styles.carouselImage} />
+          <View key={index} style={styles.carouselItem147}>
+            <Image source={image} style={styles.carouselImage258} />
           </View>
         ))}
       </ScrollView>
@@ -585,6 +613,49 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000", padding: 20 },
+  container987: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
+  headerRow654: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: "#1C2526",
+  },
+  header321: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  headerButtons123: {
+    flexDirection: "row",
+    gap: 15,
+  },
+  carousel789: {
+    marginVertical: 10,
+  },
+  carouselContent456: {
+    paddingHorizontal: 10,
+  },
+  carouselItem147: {
+    width: 300,
+    height: 200,
+    borderRadius: 10,
+    overflow: "hidden",
+    marginHorizontal: 5,
+  },
+  carouselImage258: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  // Add other styles as needed for the rest of your components
+
+
+
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
