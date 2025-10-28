@@ -1,10 +1,12 @@
 // app/(tabs)/progress.tsx
 import React, { useMemo, useState } from "react";
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -18,6 +20,10 @@ import Svg, {
 import { useWorkouts } from "../../hooks/useWorkouts";
 import { average, total } from "../../utils/calc";
 import { formatDateTime } from "../../utils/date";
+import {
+  fetchDayData,
+  saveWorkout,
+} from "../../utils/firestoreHelpers";
 import { weeklyStreak } from "../../utils/streak";
 
 const ORANGE = "#FF6A00";
@@ -35,9 +41,48 @@ type Point = {
 export default function Progress() {
   const { workouts } = useWorkouts();
   const { width } = useWindowDimensions();
-
   const [tab, setTab] = useState<"Overview" | "Trends">("Overview");
   const [metric, setMetric] = useState<"weight" | "volume" | "reps">("weight");
+  const [cloudStatus, setCloudStatus] = useState("local");
+
+  // -------------------
+  // Sync workouts to Firestore
+  // -------------------
+  async function syncToCloud() {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      for (const w of workouts) {
+        const day = w.dateISO.slice(0, 10);
+        for (const ex of w.exercises) {
+          for (let i = 0; i < ex.sets.length; i++) {
+            const s = ex.sets[i];
+            await saveWorkout(day, ex.name, i + 1, s.reps, s.weight);
+          }
+        }
+      }
+      setCloudStatus("synced");
+      Alert.alert("✅ Synced", "Workouts saved to Firestore!");
+    } catch (err: any) {
+      console.error("Sync Error:", err);
+      Alert.alert("Error", "Failed to sync workouts.");
+      setCloudStatus("error");
+    }
+  }
+
+  const [cloudData, setCloudData] = useState<any>(null);
+
+  async function pullFromCloud() {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const data = await fetchDayData(today);
+      setCloudData(data);
+      setCloudStatus("downloaded");
+      Alert.alert("📥 Pulled Data", "Fetched workouts from Firestore!");
+    } catch (err: any) {
+      console.error("Fetch Error:", err);
+      Alert.alert("Error", "Failed to fetch from Firestore.");
+    }
+  }
 
   // -------------------
   // Flatten data
@@ -85,7 +130,6 @@ export default function Progress() {
   const weeklyGoal = 4;
   const streak = weeklyStreak(workouts, weeklyGoal);
 
-  // Compute average days between workouts
   const avgGap = useMemo(() => {
     if (workouts.length < 2) return 0;
     const times = workouts
@@ -97,7 +141,6 @@ export default function Progress() {
     return average(diffs);
   }, [workouts]);
 
-  // Most active weekday (Mon–Sun)
   const weekdayStats = useMemo(() => {
     const counts = Array(7).fill(0);
     workouts.forEach((w) => counts[new Date(w.dateISO).getDay()]++);
@@ -105,7 +148,7 @@ export default function Progress() {
   }, [workouts]);
 
   // -------------------
-  // Trends (graph)
+  // Trends
   // -------------------
   const exerciseNames = useMemo(() => {
     const set = new Set<string>();
@@ -121,7 +164,6 @@ export default function Progress() {
       .map((w) => {
         const exMatches = w.exercises.filter((e) => e.name === exercise);
         if (!exMatches.length) return null;
-
         const sets = exMatches.flatMap((e) => e.sets);
         const bestWeight = Math.max(...sets.map((s) => s.weight));
         const volume = total(sets.map((s) => s.reps * s.weight));
@@ -144,13 +186,42 @@ export default function Progress() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{ paddingBottom: 32 }}
+      contentContainerStyle={{ paddingBottom: 40 }}
     >
       <Text style={styles.header}>Progress</Text>
 
       <View style={styles.syncBadge}>
-        <View style={styles.dot} />
-        <Text style={styles.syncText}>Local Data</Text>
+        <View
+          style={[
+            styles.dot,
+            {
+              backgroundColor:
+                cloudStatus === "synced"
+                  ? "#4CAF50"
+                  : cloudStatus === "error"
+                    ? "#F44336"
+                    : cloudStatus === "downloaded"
+                      ? "#2196F3"
+                      : "#AAA",
+            },
+          ]}
+        />
+        <Text style={styles.syncText}>
+          {cloudStatus === "synced"
+            ? "Cloud Synced"
+            : cloudStatus === "downloaded"
+              ? "Data Pulled"
+              : "Local Data"}
+        </Text>
+      </View>
+
+      <View style={{ flexDirection: "row", marginBottom: 12 }}>
+        <TouchableOpacity style={styles.syncButton} onPress={syncToCloud}>
+          <Text style={styles.syncButtonText}>Sync → Cloud</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.syncButton} onPress={pullFromCloud}>
+          <Text style={styles.syncButtonText}>Pull ← Cloud</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.tabRow}>
@@ -168,15 +239,10 @@ export default function Progress() {
 
       {tab === "Overview" ? (
         <>
-          {/* Weekly Goal + Streak */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Consistency</Text>
-            <Text style={styles.item}>
-              Weekly Goal: {weeklyGoal} workouts
-            </Text>
-            <Text style={styles.item}>
-              Current Streak: {streak} weeks 🔥
-            </Text>
+            <Text style={styles.item}>Weekly Goal: {weeklyGoal} workouts</Text>
+            <Text style={styles.item}>Current Streak: {streak} weeks 🔥</Text>
             {avgGap > 0 && (
               <Text style={styles.item}>
                 Avg gap between workouts: {avgGap.toFixed(1)} days
@@ -184,7 +250,6 @@ export default function Progress() {
             )}
           </View>
 
-          {/* Personal Bests */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Personal Bests</Text>
             {bestsByExercise.length === 0 ? (
@@ -198,7 +263,6 @@ export default function Progress() {
             )}
           </View>
 
-          {/* Most Active Days */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Most Active Days</Text>
             <Svg width={width - 80} height={120}>
@@ -270,44 +334,7 @@ export default function Progress() {
             ))}
           </View>
 
-          {/* Exercise Picker */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Select Exercise</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginTop: 6 }}
-            >
-              {exerciseNames.map((name) => (
-                <Pressable
-                  key={name}
-                  onPress={() => setExercise(name)}
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor:
-                        exercise === name ? CHIP_BG_ACTIVE : CHIP_BG,
-                      borderColor: exercise === name ? ORANGE : "#222",
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      { color: exercise === name ? ORANGE : "#ddd" },
-                    ]}
-                  >
-                    {name}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-            {!!exercise && (
-              <Text style={styles.itemSmall}>Showing: {exercise}</Text>
-            )}
-          </View>
-
-          {/* Graph with axis labels & 0 baseline */}
+          {/* Graph */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>
               Progress Over Time ({metric})
@@ -339,16 +366,7 @@ export default function Progress() {
 }
 
 // ----------------- Components -----------------
-
-function TabChip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
+function TabChip({ label, active, onPress }: any) {
   return (
     <Pressable
       onPress={onPress}
@@ -369,145 +387,58 @@ function TabChip({
   );
 }
 
-function LineChart({
-  data,
-  width,
-  height,
-  color,
-  metric,
-}: {
-  data: { x: number; y: number }[];
-  width: number;
-  height: number;
-  color: string;
-  metric: string;
-}) {
+function LineChart({ data, width, height, color, metric }: any) {
   const sorted = [...data].sort((a, b) => a.x - b.x);
   const pad = 40;
   const cw = width - pad * 2;
   const ch = height - pad * 2;
-
   const minX = sorted[0].x;
   const maxX = sorted[sorted.length - 1].x;
-  const minY = 0; // always start at 0
+  const minY = 0;
   const maxY = Math.max(...sorted.map((p) => p.y));
-
-  const mapX = (x: number) =>
-    pad + ((x - minX) / Math.max(1, maxX - minX)) * cw;
-  const mapY = (y: number) =>
-    pad + ch - ((y - minY) / Math.max(1, maxY - minY)) * ch;
-
+  const mapX = (x: number) => pad + ((x - minX) / Math.max(1, maxX - minX)) * cw;
+  const mapY = (y: number) => pad + ch - ((y - minY) / Math.max(1, maxY - minY)) * ch;
   const points = sorted.map((p) => `${mapX(p.x)},${mapY(p.y)}`).join(" ");
   const tickCount = 4;
-  const tickValues = Array.from({ length: tickCount + 1 }, (_, i) =>
-    Math.round((maxY / tickCount) * i)
-  );
+  const tickValues = Array.from({ length: tickCount + 1 }, (_, i) => Math.round((maxY / tickCount) * i));
 
   return (
     <Svg width={width} height={height}>
-      {/* Axes */}
-      <SvgLine
-        x1={pad}
-        y1={pad}
-        x2={pad}
-        y2={height - pad}
-        stroke="#444"
-        strokeWidth={1}
-      />
-      <SvgLine
-        x1={pad}
-        y1={height - pad}
-        x2={width - pad}
-        y2={height - pad}
-        stroke="#444"
-        strokeWidth={1}
-      />
-
-      {/* Y-axis labels */}
+      <SvgLine x1={pad} y1={pad} x2={pad} y2={height - pad} stroke="#444" strokeWidth={1} />
+      <SvgLine x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="#444" strokeWidth={1} />
       {tickValues.map((val, i) => {
         const y = mapY(val);
         return (
           <React.Fragment key={i}>
-            <SvgLine
-              x1={pad - 5}
-              y1={y}
-              x2={width - pad}
-              y2={y}
-              stroke="#222"
-              strokeWidth={0.5}
-            />
-            <SvgText
-              x={pad - 8}
-              y={y + 3}
-              fill="#888"
-              fontSize="10"
-              textAnchor="end"
-            >
+            <SvgLine x1={pad - 5} y1={y} x2={width - pad} y2={y} stroke="#222" strokeWidth={0.5} />
+            <SvgText x={pad - 8} y={y + 3} fill="#888" fontSize="10" textAnchor="end">
               {val}
             </SvgText>
           </React.Fragment>
         );
       })}
-
-      {/* X-axis labels (first, mid, last) */}
-      {[sorted[0], sorted[Math.floor(sorted.length / 2)], sorted.at(-1)].map(
-        (p, i) => {
-          if (!p) return null;
-          const x = mapX(p.x);
-          const label = new Date(p.x).toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-          });
-          return (
-            <SvgText
-              key={i}
-              x={x}
-              y={height - pad + 15}
-              fill="#888"
-              fontSize="10"
-              textAnchor="middle"
-            >
-              {label}
-            </SvgText>
-          );
-        }
+      {[sorted[0], sorted[Math.floor(sorted.length / 2)], sorted.at(-1)].map((p, i) =>
+        p ? (
+          <SvgText
+            key={i}
+            x={mapX(p.x)}
+            y={height - pad + 15}
+            fill="#888"
+            fontSize="10"
+            textAnchor="middle"
+          >
+            {new Date(p.x).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+          </SvgText>
+        ) : null
       )}
-
-
-      {/* Data line */}
-      <Polyline
-        points={points}
-        fill="none"
-        stroke={color}
-        strokeWidth={2}
-      />
-
-      {/* Points */}
+      <Polyline points={points} fill="none" stroke={color} strokeWidth={2} />
       {sorted.map((p, i) => (
         <Circle key={i} cx={mapX(p.x)} cy={mapY(p.y)} r={3} fill={color} />
       ))}
-
-      {/* Axis labels */}
-      <SvgText
-        x={pad - 30}
-        y={pad - 10}
-        fill="#aaa"
-        fontSize="12"
-        textAnchor="start"
-      >
-        {metric === "weight"
-          ? "Weight (lb)"
-          : metric === "volume"
-            ? "Volume"
-            : "Reps"}
+      <SvgText x={pad - 30} y={pad - 10} fill="#aaa" fontSize="12" textAnchor="start">
+        {metric === "weight" ? "Weight (lb)" : metric === "volume" ? "Volume" : "Reps"}
       </SvgText>
-      <SvgText
-        x={width / 2}
-        y={height - 5}
-        fill="#aaa"
-        fontSize="12"
-        textAnchor="middle"
-      >
+      <SvgText x={width / 2} y={height - 5} fill="#aaa" fontSize="12" textAnchor="middle">
         Date
       </SvgText>
     </Svg>
@@ -515,50 +446,21 @@ function LineChart({
 }
 
 // ----------------- Styles -----------------
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000", padding: 20 },
   header: { color: "#fff", fontSize: 28, fontWeight: "800", marginBottom: 12 },
   tabRow: { flexDirection: "row", marginBottom: 12 },
-  tabChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    marginRight: 8,
-    borderWidth: 1,
-  },
+  tabChip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, marginRight: 8, borderWidth: 1 },
   tabChipText: { fontSize: 13, fontWeight: "700" },
-  chip: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    marginRight: 8,
-    borderWidth: 1,
-  },
+  chip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, marginRight: 8, borderWidth: 1 },
   chipText: { fontSize: 13, fontWeight: "600" },
-  card: {
-    backgroundColor: "#111",
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#1f1f1f",
-    marginBottom: 16,
-  },
-  cardTitle: {
-    color: ORANGE,
-    fontWeight: "800",
-    marginBottom: 8,
-    fontSize: 18,
-  },
+  card: { backgroundColor: "#111", padding: 16, borderRadius: 14, borderWidth: 1, borderColor: "#1f1f1f", marginBottom: 16 },
+  cardTitle: { color: ORANGE, fontWeight: "800", marginBottom: 8, fontSize: 18 },
   item: { color: "#eee", marginTop: 4, fontSize: 14 },
   itemSmall: { color: "#aaa", marginTop: 6, fontSize: 12 },
   syncBadge: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#4CAF50",
-    marginRight: 6,
-  },
+  dot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
   syncText: { color: "#aaa", fontSize: 12 },
+  syncButton: { backgroundColor: "#222", padding: 10, borderRadius: 8, marginRight: 10, borderWidth: 1, borderColor: "#444" },
+  syncButtonText: { color: ORANGE, fontWeight: "700" },
 });
