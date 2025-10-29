@@ -212,12 +212,6 @@ export default function Nutrition() {
     };
 
     const serving = { label: p.serving_size || "serving", grams: safeGrams, };
-//      servingGrams && servingGrams > 0
-//        ? {
-//            label: p.serving_size || "serving",
-//            grams: servingGrams,
-//          }
-//        : null;
 
     return {
       id: String(p.code || ean),
@@ -246,7 +240,6 @@ export default function Nutrition() {
       setDetail(d);
       setServingsCount("1");
 
-//      if (!d.serving) setManualGramServing("100");
       const uiGrams = d?.serving?.grams ?? d?.servinggrams ?? 100;
       setManualGramServing(String(uiGrams));
     } catch (e: any) {
@@ -343,9 +336,6 @@ export default function Nutrition() {
     setSearchLoading(true);
     try {
       const url = new URL("https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${USDA_API_KEY}&query=${encodeURIComponent(q)}&pageSize=20");
-//      url.searchParams.set("query", text.trim());
-//      url.searchParams.set("pageSize", "15");
-//      url.searchParams.set("api_key", USDA_API_KEY);
 
       const r = await fetch(url.toString());
       if (!r.ok) throw new Error(`USDA search ${r.status}`);
@@ -454,68 +444,6 @@ export default function Nutrition() {
     setDetail(null);
     setServingsCount("1");
     setManualGramServing("100");
-
-//    if (addEntry && detail) {
-//      addEntry({
-//        name: detail.name,
-//        brand: detail.brand ?? null,
-//        servings: servingsN,
-//        gramsPerServing,
-//        macros: {
-//          kcal: macrosThisEntry.kcal,
-//          protein_g: macrosThisEntry.protein_g,
-//          carbs_g: macrosThisEntry.carbs_g,
-//          fat_g: macrosThisEntry.fat_g,
-//        },
-//        when: new Date(),
-//      });
-//    } else {
-//      addEntry((t) => ({
-//        kcal: t.kcal + macrosThisEntry.kcal,
-//        protein_g: t.protein_g + macrosThisEntry.protein_g,
-//        carbs_g: t.carbs_g + macrosThisEntry.carbs_g,
-//        fat_g: t.fat_g + macrosThisEntry.fat_g,
-//      }));
-//
-//      if (deatil) {
-//        const entry: LogEntry = {
-//          id: `${detail.id}-${Date.now()}`,
-//          name: detail.name,
-//          brand: detail.brand,
-//          servings: servingsN,
-//          gramsPerServing,
-//          macros: { ...macrosThisEntry },
-//          atISO: new Date().toISOString(),
-//        };
-//        setEntries((prev) => [entry, ...prev]);
-//      }
-//    }
-
-//    setTotals((t) => ({
-//      kcal: t.kcal + macrosThisEntry.kcal,
-//      protein_g: t.protein_g + macrosThisEntry.protein_g,
-//      carbs_g: t.carbs_g + macrosThisEntry.carbs_g,
-//      fat_g: t.fat_g + macrosThisEntry.fat_g,
-//    }));
-//
-//    // Log Entry
-//    if (detail) {
-//      const entry: LogEntry = {
-//        id: `${detail.id}-${Date.now()}`,
-//        name: detail.name,
-//        brand: detail.brand,
-//        servings: servingsN,
-//        gramsPerServing: gramsPerServing,
-//        macros: {
-//          kcal: macrosThisEntry.kcal,
-//          protein_g: macrosThisEntry.protein_g,
-//          carbs_g: macrosThisEntry.carbs_g,
-//          fat_g: macrosThisEntry.fat_g,
-//        },
-//        atISO: new Date().toISOString(),
-//      };
-//     setEntries((prev) => [entry, ...prev]);
-//    }
 
   };
 

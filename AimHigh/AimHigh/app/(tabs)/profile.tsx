@@ -166,15 +166,9 @@ export default function Profile() {
       const nextTarget = toNumbers(formTargets);
 
       const docRef = doc(db, "users", user.uid);
-      // Edit
       await setDoc(
         docRef, 
         { nutrition: {target: nextTarget } },
-        //        name: profile.name ?? "",
-        //        height: profile.height ?? "",
-        //        weightLb: profile.weightLb ?? "",
-        //        age: profile.age ?? "",
-        //        gender: profile.gender ?? "",
         { merge: true }
       );
 
