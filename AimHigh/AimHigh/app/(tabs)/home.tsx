@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"; // Import necessary components
 import { db } from "../../firebase"; // Import Firestore instance from your firebaseConfig.js
 import SettingsModal from "../settings_modal"; // Import the Settings Modal
+import { useNutrition } from "../../hooks/useNutrition";
 
 const ORANGE = "#FF6A00";
 
@@ -18,6 +19,7 @@ const images = [
 
 export default function Home() {
   const navigation = useNavigation();
+  const { loading, targets, summary } = useNutrition();
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const [workoutModalVisible, setWorkoutModalVisible] = useState(false);
@@ -28,12 +30,12 @@ export default function Home() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]); // State for recent searches
   const [completedWorkouts, setCompletedWorkouts] = useState(0); // Tracks completed workouts
   const [workoutGoal, setWorkoutGoal] = useState(5); // Default workout goal set to 5
-  const [macros, setMacros] = useState({
-    calories: { completed: 1500, goal: 2000 },
-    protein: { completed: 100, goal: 150 },
-    fats: { completed: 50, goal: 70 },
-    carbs: { completed: 200, goal: 250 },
-  });
+  const macros = {
+    kcal: { completed: summary?.kcal ?? 0, goal: targets?.kcal ?? 0 },
+    protein_g: { completed: summary?.protein_g ?? 0, goal: targets?.protein_g ?? 0 },
+    carbs_g: { completed: summary?.carbs_g ?? 0, goal: targets?.carbs_g ?? 0 },
+    fat_g: { completed: summary?.fat_g ?? 0, goal: targets?.fat_g ?? 0 },
+  };
   const [runModalVisible, setRunModalVisible] = useState(false);
   const [mealModalVisible, setMealModalVisible] = useState(false);
   const [goalTime, setGoalTime] = useState(""); // For the "Start Run" goal time input

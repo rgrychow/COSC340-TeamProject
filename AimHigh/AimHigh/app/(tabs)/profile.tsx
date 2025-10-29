@@ -9,19 +9,66 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Pressable,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { auth, db } from "../../firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { Ionicons } from "@expo/vector-icons";
+
+import { useNutrition } from "../../hooks/useNutrition";
 
 const ORANGE = "#FF6A00";
 
 export default function Profile() {
   const [profile, setProfile] = useState<any>(null);
+  const [originalProfile, setOriginalProfile] = useState<any | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const router = useRouter();
+
+  // Nutrition
+  const { targets, updateTargets, loading: nutritionLoading } = useNutrition();
+  const [kcal, setKcal] = useState("2200");
+  const [protein_g, setProtein] = useState("160");
+  const [carbs_g, setCarbs] = useState("220");
+  const [fat_g, setFat] = useState("70");
+
+  // Safe Object
+  const uiTargets = targets ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0};
+
+  // Form State
+  const [form, setForm] = useState({
+    kcal: uiTargets.kcal,
+    protein_g: uiTargets.protein_g,
+    carbs_g: uiTargets.carbs_g,
+    fat_g: uiTargets.fat_g,
+  });
+
+  // local edit buffer for macro targets
+  const [formTargets, setFormTargets] = useState({
+    kcal: 0,
+    protein_g: 0,
+    carbs_g: 0,
+    fats_g: 0,
+  });
+
+  useEffect(() => {
+    if (!targets) return;
+    setForm({
+      kcal: targets.kcal ?? 0,
+      protein_g: targets.protein_g ?? 0,
+      carbs_g: targets.carbs_g ?? 0,
+      fat_g: targets.fat_g ?? 0,
+    });
+  }, [targets]);
+
+  const toNum = (t: string) => {
+    const cleaned = t.replace(/[^\d.]/g, "");
+    return cleaned === "" ? "" : Number(cleaned);
+  };
+
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -36,9 +83,18 @@ export default function Profile() {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          setProfile(docSnap.data());
+          // Edit
+          const data = docSnap.data() || {};
+          setProfile(data);
+          const t = data?.nutrition?.target || {};
+          setFormTargets({
+            kcal: Number(t.kcal) || 0,
+            protein_g: Number(t.protein_g) || 0,
+            carbs_g: Number(t.carbs_g) || 0,
+            fat_g: Number(t.fat_g) || 0,
+          });
         } else {
-          setProfile({
+          const blank = {
             name: "",
             email: user.email || "",
             height: "",
@@ -46,20 +102,12 @@ export default function Profile() {
             age: "",
             gender: "",
             nutrition: {
-              target: {
-                kcal: "",
-                protein: "",
-                fats: "",
-                carbs: "",
-              },
-              current: {
-                kcal: 0,
-                protein: 0,
-                fats: 0,
-                carbs: 0,
-              },
+              target: { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
+              current: { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }, 
             },
-          });
+          };
+          setProfile(blank);
+          setFormTargets(blank.nutrition.target);
         }
       } catch (error) {
         console.error("Error loading profile:", error);
@@ -72,13 +120,68 @@ export default function Profile() {
     fetchProfile();
   }, []);
 
+  // New
+  const handleSaveTargets = async () => {
+    try {
+      const payload = {
+        kcal: Number(form.kcal) || 0,
+        protein_g: Number(form.protein_g) || 0,
+        carbs_g: Number(form.carbs_g) || 0,
+        fat_g: Number(form.fat_g) || 0,
+      };
+      await updateTargets(payload);
+      setEditMode(false);
+      Alert.alert("Saved", "Nutrition targets updated.");
+    } catch (e: any) {
+      Alert.alert("Save failed", e?.message ?? "Unknown error");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (targets) {
+      setForm({
+        kcal: targets.kcal,
+        protein_g: targets.protein_g,
+        carbs_g: targets.carbs_g,
+        fat_g: targets.fat_g,
+      });
+    }
+    setEditMode(false);
+  }
+
+  // Old
   const handleSave = async () => {
     try {
       const user = auth.currentUser;
       if (!user) return;
 
+      //Edit
+      const toNumbers = (t: typeof formTargets) => ({
+        kcal: Number(t.kcal) || 0,
+        protein_g: Number(t.protein_g) || 0,
+        carbs_g: Number(t.carbs_g) || 0,
+        fat_g: Number(t.fat_g) || 0,
+      });
+
+      const nextTarget = toNumbers(formTargets);
+
       const docRef = doc(db, "users", user.uid);
-      await setDoc(docRef, profile, { merge: true });
+      // Edit
+      await setDoc(
+        docRef, 
+        { nutrition: {target: nextTarget } },
+        //        name: profile.name ?? "",
+        //        height: profile.height ?? "",
+        //        weightLb: profile.weightLb ?? "",
+        //        age: profile.age ?? "",
+        //        gender: profile.gender ?? "",
+        { merge: true }
+      );
+
+      setProfile((prev: any) => ({
+        ...prev,
+        nutrition: { ...(prev?.nutrition || {}), target: nextTarget },
+      }));
 
       setEditMode(false);
       Alert.alert("✅ Success", "Profile updated successfully!");
@@ -107,13 +210,16 @@ export default function Profile() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
+        {/* Header */}
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={26} color="#fff" />
         </TouchableOpacity>
+
         <Text style={styles.headerTitle}>Profile</Text>
-        <View style={{ width: 26 }} /> {/* Spacer to center title */}
+        {/* Spacer to center title */}
+        <View style={{ width: 26 }}>
+        </View>
       </View>
 
       {/* Basic Info */}
@@ -132,39 +238,43 @@ export default function Profile() {
                 }
               />
             ) : (
-              <Text style={styles.value}>{String(profile[key] || "-")}</Text>
-            )}
+                <Text style={styles.value}>{String(profile[key] || "-")}</Text>
+              )}
           </View>
         ))}
       </View>
 
+
       {/* Nutrition Targets */}
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Nutrition Targets</Text>
-        {Object.entries(profile.nutrition.target).map(([key, val]) => (
+
+        {(["kcal", "protein_g", "carbs_g", "fat_g"] as const).map((key) => (
           <View key={key} style={styles.field}>
             <Text style={styles.label}>{key}</Text>
             {editMode ? (
               <TextInput
                 style={styles.input}
-                value={String(val)}
                 keyboardType="numeric"
-                onChangeText={(text) =>
-                  setProfile((prev: any) => ({
+                value={String(formTargets[key] ?? 0)}
+                onChangeText={(txt) =>
+                  setFormTargets((prev) => ({
                     ...prev,
-                    nutrition: {
-                      ...prev.nutrition,
-                      target: { ...prev.nutrition.target, [key]: text },
-                    },
+                    [key]: Number(txt) || 0,
                   }))
                 }
               />
             ) : (
-              <Text style={styles.value}>{String(val)}</Text>
-            )}
+                <Text style={styles.value}>
+                  {String(profile?.nutrition?.target?.[key] ?? 0)}
+                </Text>
+              )}
           </View>
         ))}
       </View>
+
+
+
 
       {/* Buttons */}
       <TouchableOpacity
@@ -185,6 +295,34 @@ export default function Profile() {
         </TouchableOpacity>
       )}
     </ScrollView>
+  );
+}
+
+function FieldRow({
+  label,
+  editable,
+  value,
+  onChange,
+}: {
+    label: string;
+    editable: boolean;
+    value: string | number,
+    onChange: (v: string) => void;
+  }) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.label}>{label}</Text>
+      {editable ? (
+        <TextInput
+          style={styles.input}
+          value={String(value ?? "")}
+          keyboardType="numeric"
+          onChangeText={onChange}
+        />
+      ) : (
+          <Text style={styles.value}>{String(value ?? "-")}</Text>
+        )}
+    </View>
   );
 }
 
@@ -253,4 +391,29 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   error: { color: "red", fontSize: 18 },
+  editBtn: {
+    backgroundColor: "#111",
+    borderColor: "#1f1f1f",
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  editBtnText: { color: "#eee", fontWeight: "700" },
+  saveBtn: {
+    backgroundColor: ORANGE,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  saveBtnText: { color: "#000", fontWeight: "800" },
+  cancelBtn: {
+    backgroundColor: "#222",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#333",
+  },
+  cancelBtnText: { color: "#eee", fonrWeight: "700" },
 });

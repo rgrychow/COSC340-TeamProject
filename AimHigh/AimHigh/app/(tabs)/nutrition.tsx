@@ -1,6 +1,4 @@
 // app/(tabs)/nutrition.tsx
-// New
-
 import React, { useRef, useState, useEffect } from "react";
 import {
   ActivityIndicator,
@@ -23,9 +21,10 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import Constants from "expo-constants";
 import { Ring } from "../../components/nutrition-ring";
 import * as Haptics from "expo-haptics";
+import { useNutrition } from "../../hooks/useNutrition";
 
 const ORANGE = "#FF6A00";
-const USDA_API_KEY = Constants.expoConfig?.extra?.USDA_API_KEY || "";
+const USDA_API_KEY = Constants.expoConfig?.extra?.USDA_API_KEY;
 const LIST_MAX = Math.min(420, Math.round(Dimensions.get("window").height * 0.5));
 const MEAL_BASE = "https://themealdb.com/api/json/v1/1";
 
@@ -89,7 +88,7 @@ type LogEntry = {
 
 export default function Nutrition() {
   const [q, setQ] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [items, setItems] = useState<Array<{ id: string; name: string; brand: string | null}>>([]);
   const [detail, setDetail] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -98,16 +97,25 @@ export default function Nutrition() {
   const [manualGramServing, setManualGramServing] = useState<string>("100"); // If USDA has now serving amt
   const [servingsCount, setServingsCount] = useState<string>("1");
 
-  // daily totals (no backend - local only)
-  const [totals, setTotals] = useState({
-    kcal: 0,
-    protein_g: 0,
-    carbs_g: 0,
-    fat_g: 0,
-  });
+  // Globals
+  const { targets, summary, loading, entries, addEntry } = useNutrition();
+
+  if (loading) {
+    return (
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator />
+        </View>
+    );
+  }
+
+//  if (!targets) {}
+
+  const goals = targets ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+  const day = summary ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
 
   // Daily Log Entries
-  const [entries, setEntries] = useState<LogEntry[]>([]);
+//  const [entries, setEntries] = useState<LogEntry[]>([]); <------------
+  
 
   // Recipe Search state
   const [recipeQ, setRecipeQ] = useState("");
@@ -160,20 +168,20 @@ export default function Nutrition() {
     if (!r.ok) throw new Error(`Open Food Facts ${r.status}`);
     const j = await r.json();
     const p = j?.product;
-    if (!p) throw new Error("Product not founf");
+    if (!p) throw new Error("Product not found");
 
     const name = p.product_name_en || p.product_name || p.generic_name_en || "Scanned Item";
     const brand = (p.brands || "").split(",")[0]?.trim() || null;
 
-    let servingGrams: number | null = null;
+    let servingGrams: number | undefined;
     if (typeof p.serving_quantity === "number") {
       servingGrams = p.serving_quantity;
     } else if (typeof p.serving_size === "string") {
-      const m = p.serving_size.match(/([\d.]+)\s*g/i);
-      if (m) servinggrams = parseFloat(m[1]);
+      const m = p.serving_size.match(/(\d+(?:\.\d+)?)\s*g/i);
+      if (m) servingGrams = Number(m[1]);
     }
 
-    const n = p.nutriments || {};
+    const n = p.nutrients || {};
 
     const kcal100 = 
       (typeof n["energy-kcal_100g"] === "number"
@@ -188,6 +196,10 @@ export default function Nutrition() {
 
     const kcalServ = Number(n["energy-kcal_serving"] ?? (typeof n["energy_serving"] === "number" ? n["energy_serving"] / 4.184: NaN));
 
+    const safeGrams = Number.isFinite(servingGrams) && (servingGrams as number) > 0
+      ? (servingGrams as number)
+      : (Number.isFinite(kcalServ) && kcalServ > 0 ? kcalServ : Math.max(0, kcal100));
+
     const protServ = Number(n["proteins_serving"]);
     const carbServ = Number(n["carbohydrates_serving"]);
     const fatServ = Number(n["fat_serving"]);
@@ -199,13 +211,13 @@ export default function Nutrition() {
       fat_g: Math.max(0, fat100),
     };
 
-    const serving = 
-      servingGrams && servingGrams > 0
-        ? {
-            label: p.serving_size || "serving",
-            grams: servingGrams,
-          }
-        : null;
+    const serving = { label: p.serving_size || "serving", grams: safeGrams, };
+//      servingGrams && servingGrams > 0
+//        ? {
+//            label: p.serving_size || "serving",
+//            grams: servingGrams,
+//          }
+//        : null;
 
     return {
       id: String(p.code || ean),
@@ -213,6 +225,7 @@ export default function Nutrition() {
       brand,
       per100,
       serving,
+      servinggrams: safeGrams
     };
   }
 
@@ -225,17 +238,21 @@ export default function Nutrition() {
       // Success Buzz
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      setLoading(true);
+      setSearchLoading(true);
       setError(null);
 
       const d = await fetchOpenFoodFactsUPC(data);
+
       setDetail(d);
       setServingsCount("1");
-      if (!d.serving) setManualGramServing("100");
+
+//      if (!d.serving) setManualGramServing("100");
+      const uiGrams = d?.serving?.grams ?? d?.servinggrams ?? 100;
+      setManualGramServing(String(uiGrams));
     } catch (e: any) {
       setError(e.message || "Scan failed");
     } finally {
-      setLoading(false);
+      setSearchLoading(false);
       setScannerOpen(false);
     }
   }; 
@@ -323,12 +340,12 @@ export default function Nutrition() {
       return;
     }
 
-    setLoading(true);
+    setSearchLoading(true);
     try {
-      const url = new URL("https://api.nal.usda.gov/fdc/v1/foods/search");
-      url.searchParams.set("query", text.trim());
-      url.searchParams.set("pageSize", "15");
-      url.searchParams.set("api_key", USDA_API_KEY);
+      const url = new URL("https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${USDA_API_KEY}&query=${encodeURIComponent(q)}&pageSize=20");
+//      url.searchParams.set("query", text.trim());
+//      url.searchParams.set("pageSize", "15");
+//      url.searchParams.set("api_key", USDA_API_KEY);
 
       const r = await fetch(url.toString());
       if (!r.ok) throw new Error(`USDA search ${r.status}`);
@@ -344,7 +361,7 @@ export default function Nutrition() {
       setError(e.message || "Search failed");
       setItems([]);
     } finally {
-      setLoading(false);
+      setSearchLoading(false);
     }
   }, 350);
 
@@ -358,7 +375,7 @@ export default function Nutrition() {
       setError("Missing USDA_API_KEY");
       return;
     }
-    setLoading(true);
+    setSearchLoading(true);
     setError(null);
     try {
       const u = `https://api.nal.usda.gov/fdc/v1/food/${fdcId}?api_key=${USDA_API_KEY}`;
@@ -388,7 +405,7 @@ export default function Nutrition() {
     } catch (e: any) {
       setError(e.message || "Failed to load detail");
     } finally {
-      setLoading(false);
+      setSearchLoading(false);
     }
   };
 
@@ -411,31 +428,95 @@ export default function Nutrition() {
   };
 
   const addToDaily = () => {
-    setTotals((t) => ({
-      kcal: t.kcal + macrosThisEntry.kcal,
-      protein_g: t.protein_g + macrosThisEntry.protein_g,
-      carbs_g: t.carbs_g + macrosThisEntry.carbs_g,
-      fat_g: t.fat_g + macrosThisEntry.fat_g,
-    }));
+    if (!detail) return;
 
-    // Log Entry
-    if (detail) {
-      const entry: LogEntry = {
-        id: `${detail.id}-${Date.now()}`,
-        name: detail.name,
-        brand: detail.brand,
-        servings: servingsN,
-        gramsPerServing: gramsPerServing,
-        macros: {
-          kcal: macrosThisEntry.kcal,
-          protein_g: macrosThisEntry.protein_g,
-          carbs_g: macrosThisEntry.carbs_g,
-          fat_g: macrosThisEntry.fat_g,
-        },
-        atISO: new Date().toISOString(),
-      };
-      setEntries((prev) => [entry, ...prev]);
-    }
+    const grams = Number(manualGramServing) || detail.serving?.grams || 100;
+    const serving = Math.max(1, Number(servingsCount) || "1");
+    const mult = (grams / 100) * serving;
+
+    const macros = {
+      kcal: Math.round((detail.per100.kcal ?? 0) * mult),
+      protein_g: Math.round((detail.per100.protein_g ?? 0) * mult),
+      carbs_g: Math.round((detail.per100.carbs_g ?? 0) * mult),
+      fat_g: Math.round((detail.per100.fat_g ?? 0) * mult),
+    };
+
+    addEntry({
+      name: detail.name,
+      brand: detail.brand ?? null,
+      kcal: macrosThisEntry.kcal,
+      protein_g: macrosThisEntry.protein_g,
+      carbs_g: macrosThisEntry.carbs_g,
+      fat_g: macrosThisEntry.fat_g,
+      createdAt: new Date().toISOString(),
+    });
+
+    setDetail(null);
+    setServingsCount("1");
+    setManualGramServing("100");
+
+//    if (addEntry && detail) {
+//      addEntry({
+//        name: detail.name,
+//        brand: detail.brand ?? null,
+//        servings: servingsN,
+//        gramsPerServing,
+//        macros: {
+//          kcal: macrosThisEntry.kcal,
+//          protein_g: macrosThisEntry.protein_g,
+//          carbs_g: macrosThisEntry.carbs_g,
+//          fat_g: macrosThisEntry.fat_g,
+//        },
+//        when: new Date(),
+//      });
+//    } else {
+//      addEntry((t) => ({
+//        kcal: t.kcal + macrosThisEntry.kcal,
+//        protein_g: t.protein_g + macrosThisEntry.protein_g,
+//        carbs_g: t.carbs_g + macrosThisEntry.carbs_g,
+//        fat_g: t.fat_g + macrosThisEntry.fat_g,
+//      }));
+//
+//      if (deatil) {
+//        const entry: LogEntry = {
+//          id: `${detail.id}-${Date.now()}`,
+//          name: detail.name,
+//          brand: detail.brand,
+//          servings: servingsN,
+//          gramsPerServing,
+//          macros: { ...macrosThisEntry },
+//          atISO: new Date().toISOString(),
+//        };
+//        setEntries((prev) => [entry, ...prev]);
+//      }
+//    }
+
+//    setTotals((t) => ({
+//      kcal: t.kcal + macrosThisEntry.kcal,
+//      protein_g: t.protein_g + macrosThisEntry.protein_g,
+//      carbs_g: t.carbs_g + macrosThisEntry.carbs_g,
+//      fat_g: t.fat_g + macrosThisEntry.fat_g,
+//    }));
+//
+//    // Log Entry
+//    if (detail) {
+//      const entry: LogEntry = {
+//        id: `${detail.id}-${Date.now()}`,
+//        name: detail.name,
+//        brand: detail.brand,
+//        servings: servingsN,
+//        gramsPerServing: gramsPerServing,
+//        macros: {
+//          kcal: macrosThisEntry.kcal,
+//          protein_g: macrosThisEntry.protein_g,
+//          carbs_g: macrosThisEntry.carbs_g,
+//          fat_g: macrosThisEntry.fat_g,
+//        },
+//        atISO: new Date().toISOString(),
+//      };
+//     setEntries((prev) => [entry, ...prev]);
+//    }
+
   };
 
   const ResultRow = ({ item }: any) => (
@@ -469,38 +550,38 @@ export default function Nutrition() {
                 <Ring
                   size={120}
                   stroke={12}
-                  value={totals.kcal}
-                  target={TARGETS.kcal}
+                  value={summary.kcal}
+                  target={targets.kcal}
                   color="#FF6A00"
                   label="Calories"
-                  sublabel={`${Math.round(totals.kcal)} / ${TARGETS.kcal} kcal`}
+                  sublabel={`${Math.round(day.kcal)} / ${goals.kcal} kcal`}
                 />
               </View>
 
               <View style={{ flexDirection: "row", justifyContent: "space-around", marginTop: 6 }}>
                 <Ring
                   size={92}
-                  value={totals.protein_g}
-                  target={TARGETS.protein_g}
+                  value={summary.protein_g}
+                  target={targets.protein_g}
                   color="#7abaff"
                   label="Protein"
-                  sublabel={`${Math.round(totals.protein_g)} / ${TARGETS.protein_g} g`}
+                  sublabel={`${Math.round(day.protein_g)} / ${goals.protein_g} g`}
                 />
                 <Ring
                   size={92}
-                  value={totals.carbs_g}
-                  target={TARGETS.carbs_g}
+                  value={summary.carbs_g}
+                  target={targets.carbs_g}
                   color="#9BE37D"
                   label="Carbs"
-                  sublabel={`${Math.round(totals.carbs_g)} / ${TARGETS.carbs_g} g`}
+                  sublabel={`${Math.round(day.carbs_g)} / ${goals.carbs_g} g`}
                 />
                 <Ring
                   size={92}
-                  value={totals.fat_g}
-                  target={TARGETS.fat_g}
+                  value={summary.fat_g}
+                  target={targets.fat_g}
                   color="#F6C945"
                   label="Fats"
-                  sublabel={`${Math.round(totals.fat_g)} / ${TARGETS.fat_g} g`}
+                  sublabel={`${Math.round(day.fat_g)} / ${goals.fat_g} g`}
                 />
               </View>
             </View>
