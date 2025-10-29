@@ -1,0 +1,341 @@
+{/* app/'(tabs)'/nutrition.tsx */}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400   2) import React, { useRef, useState, useEffect } from "react";
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400   7)   Easing,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400  20) import { CameraView, useCameraPermissions } from "expo-camera";
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400  23) import * as Haptics from "expo-haptics";
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400  38) // NutritionIX keys
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400  39) const NIX_APP_ID = Constants.expoConfig?.extra?.NUTRITIONIX_APP_ID || "";
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400  40) const NIX_APP_KEY = Constants.expoConfig?.extra?.NUTRITIONIX_APP_KEY || "";
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400  41) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400  55) function toEAN13(code: string) {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400  56)   const s = (code || "").trim();
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400  57)   if (s.length === 12) return "0" + s;
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400  58)   return s;
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400  59) }
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400  60) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400  88) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 126)   // scanner state
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 127)   const [scannerOpen, setScannerOpen] = useState(false);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 128)   const [permission, requestPermission] = useCameraPermissions();
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 129) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 130)   const scanGate = useRef(false);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 131)   const lineY = useRef(new Animated.Value(0)).current;
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 132)   const [scanHeight, setScanHeight] = useState(0);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 133) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 134)   useEffect(() => {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 135)     if (!scannerOpen) return;
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 136)     lineY.setValue(0);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 137)     const loop = Animated.loop(
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 138)       Animated.sequence([
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 139)         Animated.timing(lineY, {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 140)           toValue: 1,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 141)           duration: 1400,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 142)           easing: Easing.inOut(Easing.quad),
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 143)           useNativeDriver: true,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 144)         }),
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 145)         Animated.timing(lineY, { toValue: 0, duration: 0, useNativeDriver: true }),
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 146)       ])
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 147)     );
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 148)     loop.start();
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 149)     return () => loop.stop();
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 150)   }, [scannerOpen]);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 151) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 152)   // ask for camera permission
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 153)   const openScanner = async () => {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 154)     if (!permission || !permission.granted) {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 155)       await requestPermission();
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 156)     }
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 157)     setScannerOpen(true);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 158)   };
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 159) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 160)   // Barcode Scan Function
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 161)   async function fetchOpenFoodFactsUPC(raw: string) {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 162)     const ean = toEAN13(raw);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 163) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 164)     const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(ean)}.json`;
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 165) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 166)     const r = await fetch(url);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 167) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 168)     if (!r.ok) throw new Error(`Open Food Facts ${r.status}`);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 169)     const j = await r.json();
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 170)     const p = j?.product;
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 172) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 173)     const name = p.product_name_en || p.product_name || p.generic_name_en || "Scanned Item";
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 174)     const brand = (p.brands || "").split(",")[0]?.trim() || null;
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 175) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 177)     if (typeof p.serving_quantity === "number") {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 178)       servingGrams = p.serving_quantity;
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 179)     } else if (typeof p.serving_size === "string") {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 182)     }
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 183) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 185) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 186)     const kcal100 = 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 187)       (typeof n["energy-kcal_100g"] === "number"
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 188)         ? n["energy-kcal_100g"]
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 189)         : typeof n["energy_100g"] === "number"
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 190)         ? n["energy_100g"] / 4.184
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 191)         : 0) || 0;
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 192) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 193)     const protein100 = Number(n["proteins_100g"] ?? n["protein_100g"] ?? 0);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 194)     const carbs100 = Number(n["carbohydrates_100g"] ?? n["carbs_100g"] ?? 0);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 195)     const fat100 = Number(n["fat_100g"] ?? n["fats_100g"] ?? 0);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 196) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 197)     const kcalServ = Number(n["energy-kcal_serving"] ?? (typeof n["energy_serving"] === "number" ? n["energy_serving"] / 4.184: NaN));
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 198) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 203)     const protServ = Number(n["proteins_serving"]);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 204)     const carbServ = Number(n["carbohydrates_serving"]);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 205)     const fatServ = Number(n["fat_serving"]);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 206) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 207)     const per100 = {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 208)       kcal: Math.max(0, kcal100),
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 209)       protein_g: Math.max(0, protein100),
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 210)       carbs_g: Math.max(0, carbs100),
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 211)       fat_g: Math.max(0, fat100),
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 212)     };
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 213) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 215) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 216)     return {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 217)       id: String(p.code || ean),
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 218)       name,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 219)       brand,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 220)       per100,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 221)       serving,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 223)     };
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 224)   }
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 225) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 226)   const onUPCScanned = async ({ data }: { data: string }) => {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 227)     if (scanGate.current) return;
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 228)     scanGate.current = true;
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 229)     setTimeout(() => (scanGate.current = false), 1200);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 230) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 231)     try {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 232)       // Success Buzz
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 233)       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 234) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 236)       setError(null);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 237) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 238)       const d = await fetchOpenFoodFactsUPC(data);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 240)       setDetail(d);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 241)       setServingsCount("1");
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 245)     } catch (e: any) {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 246)       setError(e.message || "Scan failed");
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 247)     } finally {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 249)       setScannerOpen(false);
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 250)     }
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 251)   }; 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 252) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 521) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 522)               {/* Text Entry*/}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 536) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 537)               {/* OR divider */}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 538)               <View style={styles.orRow}>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 539)                 <View style={styles.orLine} />
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 540)                 <Text styles={styles.orText}>OR</Text>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 541)                 <View style={styles.orLine} />
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 542)               </View>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 543) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 544)               {/* Scan Button */}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 545)               <Pressable onPress={openScanner} style={styles.scanBtn}>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 546)                 <Text style={styles.scanBtnText}>ScanBarcode</Text>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 547)               </Pressable>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 548) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 744) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 745)         {/* Scanner Overlay */}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 746)         {scannerOpen && (
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 747)           <View style={styles.scanOverlay}>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 748)             {permission && !permission.granted ? (
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 749)               <View style={styles.scanInner}>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 750)                 <Text style={styles.item}>Camera permission required.</Text>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 751)                 <Pressable onPress={requestPermission} style={[styles.addBtn, { marginTop: 10 }]}>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 752)                   <Text style={styles.addText}>Grant Permission</Text>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 753)                 </Pressable>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 754)                 <Pressable onPress={() => setScannerOpen(false)} style={[styles.addBtn, { marginTop: 10 }]}>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 755)                   <Text style={styles.addText}>Camcel</Text>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 756)                 </Pressable>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 757)               </View>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 758)             ) : (
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 759)               <View style={styles.scanInner}>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 760)                 <Text style={styles.cardTitle}>Scan a UPC</Text>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 761)                 <View 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 762)                   style={styles.scanFrame}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 763)                   onLayout={(e) => setScanHeight(e.nativeEvent.layout.height)}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 764)                 >
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 765)                   <CameraView
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 766)                     style={{ width: "100%", height: "100%" }}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 767)                     barcodeScannerSettings={{
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 768)                       barcodeTypes: ["ean13", "upc_a", "upc_e"],
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 769)                     }}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 770)                     onBarcodeScanned={({ data }) => onUPCScanned({ data })}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 771)                   />
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 772)                   {/* dim mask at the edges to highlight the center */}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 773)                   <View pointerEvents="none" style={styles.maskTop} />
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 774)                   <View pointerEvents="none" style={styles.maskBottom} />
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 775)                   <View pointerEvents="none" style={styles.maskLeft} />
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 776)                   <View pointerEvents="none" style={styles.maskRight} />
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 777) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 778)                   {/* Orange Corner Brackets */}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 779)                   <View pointerEvents="none" style={[styles.corner, styles.cornerTL]} />
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 780)                   <View pointerEvents="none" style={[styles.corner, styles.cornerTR]} />
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 781)                   <View pointerEvents="none" style={[styles.corner, styles.cornerBL]} />
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 782)                   <View pointerEvents="none" style={[styles.corner, styles.cornerBR]} />
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 783) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 784)                   {/* Animated Scan Line */}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 785)                   <Animated.View
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 786)                     pointerEvents="none"
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 787)                     style={[
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 788)                       styles.scanLine,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 789)                       {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 790)                         transform: [
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 791)                           {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 792)                             translateY: lineY.interpolate({
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 793)                               inputRange: [0, 1],
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 794)                               outputRange: [0, Math.max(0, scanHeight - 32)],
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 795)                             }),
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 796)                           },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 797)                         ],
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 798)                       },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 799)                     ]}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 800)                   />
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 801)                 </View>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 802)                 <Pressable onPress={() => setScannerOpen(false)} style={[styles.addBtn, { marginTop: 10 }]}>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 803)                   <Text style={styles.addText}>Cancel</Text>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 804)                 </Pressable>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 805)               </View>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 806)             )}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 807)           </View>
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 808)         )}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 809) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 887) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 888)   orRow: {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 889)     flexDirection: "row",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 890)     alignItems: "center",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 891)     justifyContent: "center",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 892)     gap: 8,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 893)     marginTop: 10,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 894)     marginBottom: 6,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 895)   },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 896)   orLine: { flex: 1, height: 1, backgroundColor: "#1f1f1f" },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 897)   orText: { color: "#777", fontSize: 12, fontWeight: "700" },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 898) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 899)   scanBtn: {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 900)     backgroundColor: ORANGE,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 901)     borderRadius: 10,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 902)     paddingVertical: 10,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 903)     alignItems: "center",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 904)   },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 905)   scanBtnText: { color: "#000", fontWeight: "800" },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 906) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 907)   scanOverlay: {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 908)     position: "absolute",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 909)     left: 0, right: 0, top: 0, bottom: 0,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 910)     backgroundColor: "rgba(0,0,0,0.85)",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 911)     justifyContent: "center",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 912)     alignItems: "center",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 913)     padding: 10,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 914)   },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 915)   scanInner: {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 916)     width: "100%",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 917)     maxWidth: 440,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 918)     backgroundColor: "#111",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 919)     borderRadius: 14,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 920)     borderWidth: 1,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 921)     borderColor: "#1f1f1f",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 922)     paddingColor: 16,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 923)   },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 924)   scanFrame: {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 925)     marginTop: 10,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 926)     width: "100%",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 927)     aspectRatio: 1,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 928)     overflow: "hidden",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 929)     borderRadius : 12,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 930)     borderColor: "#333",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 931)     borderWidth: 1,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 932)     backgroundColor: "#000",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 933)     position: "relative"
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 934)   },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 935) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 936)   maskTop: { position: "absolute", left: 0, right: 0, top: 0, height: 16, backgroundColor: "rgba(0,0,0,0.35)" },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 937)   maskBottom: { position: "absolute", left: 0, right: 0, bottom: 0, height: 16, backgroundColor: "rgba(0,0,0,0.35)" },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 938)   maskLeft: { position: "absolute", left: 0, top: 0, bottom: 0, width: 16, backgroundColor: "rgba(0,0,0,0.35)" },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 939)   maskRight: { position: "absolute", right: 0, top: 0, bottom: 0, width: 16, backgroundColor: "rgba(0,0,0,0.35)" },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 940) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 941)   corner: {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 942)     position: "absolute",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 943)     width: 26,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 944)     height: 26,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 945)     borderColor: ORANGE,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 946)   },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 947) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 948)   cornerTL: { top: 8, left: 8, borderLeftWidth: 3, borderTopWidth: 3, borderTopLeftRadius: 6 },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 949)   cornerTR: { top: 8, right: 8, borderRightWidth: 3, borderTopWidth: 3, borderTopRightRadius: 6 },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 950)   cornerBL: { bottom: 8, left: 8, borderLeftWidth: 3, borderBottomWidth: 3, borderBottomLeftRadius: 6 },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 951)   cornerBR: { bottom: 8, right: 8, borderRightWidth: 3, borderBottomWidth: 3, borderBottomRightRadius: 6 },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 952) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 953)   scanLine: {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 954)     position: "absolute",
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 955)     left: 16,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 956)     right: 16,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 957)     height: 2,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 958)     backgroundColor: ORANGE,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 959)     top: 16,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 960)     opacity: 0.95,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu>   2025-10-26 14:06:28 -0400 961)   },
+
+{/* components/nutrition-ring.tsx */}
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  16)   warnColor = "#FF4D4F",
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  20)   overCap = 0.5,
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  27)   warnColor?: string;
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  31)   overCap?: number;
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  33)   const ratio = Math.max(0, target > 0 ? value / target : 0);
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  34)   const pct = Math.min(1, ratio);
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  35)   const over = Math.max(0, Math.min(ratio - 1, overCap));
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  36) 
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  41)   const mainOffset = pct <= 0 ? c - epsilon : pct >= 1 ? epsilon : c * (1 - pct);
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  42) 
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  43)   const overLen = over * c;
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  44) 
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  45)   const pctText = over > 0 ? `100% +${Math.round(over * 100)}%` : `${Math.round(pct * 100)}%`;
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  46)   const centerColor = over > 0 ? warnColor : "#eee";
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  70)               strokeDashoffset={mainOffset}
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  73) //              orginX={size / 2}
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  74) //              orginY={size / 2}
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  76) 
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  77)             {over > 0 && overLen > 0 && (
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  78)               <Circle
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  79)                 cx={size / 2}
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  80)                 cy={size / 2}
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  81)                 r={r}
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  82)                 stroke={warnColor}
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  83)                 strokeWidth={stroke}
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  84)                 fill="none"
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  85)                 strokeLinecap="round"
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  86)                 strokeDasharray={[overLen, c]}
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  87)                 strokeDashoffset={0}
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  88)                 transform={`rotate(-90 ${size / 2} ${size / 2})`}
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  89)               />
+297f2521c (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:20:17 -0400  90)             )}
+
+{/* app.config.js */}
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400  5) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400  6)   plugins: [
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400  7)     'expo-camera',
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400  8)     ...(config.plugins || []),
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400  9)   ],
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400 10) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400 11)   ios: {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400 12)     ...config.ios,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400 13)     infoPlist: {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400 14)       ...(config.ios?.infoPlist || {}),
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400 15)       NSCameraUsageDescription:
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400 16)         'AimHigh uses the camera to scan food barcodes for nutritioninfo.',
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400 17)     },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400 18)   },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400 19) 
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400 20)   android: {
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400 21)     ...config.android,
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400 22)     permissions: [...(config.android?.permissions || []), 'CAMERA'],
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400 23)   },
+c573e8cbb (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:06:28 -0400 24) 
+68fbe6bf3 (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:56:06 -0400 28)   },
+68fbe6bf3 (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:56:06 -0400 29)   expo: {
+68fbe6bf3 (<hohara2@tesla1.eecs.utk.edu> 2025-10-26 14:56:06 -0400 30)     ...config.expo,
