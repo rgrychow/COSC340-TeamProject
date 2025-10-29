@@ -9,12 +9,20 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import NutritionCalculator from './nutrition_calculator';
 
 const ORANGE = "#FF6A00";
 
 interface EditProfileModalProps {
   visible: boolean;
   onClose: () => void;
+}
+
+interface NutritionGoals {
+  calories: number;
+  protein: number;
+  fats: number;
+  carbs: number;
 }
 
 export default function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
@@ -25,11 +33,29 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
   const [weight, setWeight] = useState('180');
   const [height, setHeight] = useState('5\'10"');
   const [goal, setGoal] = useState('Build Muscle');
+  
+  // Nutrition goals state
+  const [nutritionGoals, setNutritionGoals] = useState<NutritionGoals | null>(null);
+  const [showNutritionCalculator, setShowNutritionCalculator] = useState(false);
 
   const handleSave = () => {
     // Here you would typically save to your backend/database
-    console.log('Profile saved:', { name, email, phone, age, weight, height, goal });
+    console.log('Profile saved:', { 
+      name, 
+      email, 
+      phone, 
+      age, 
+      weight, 
+      height, 
+      goal,
+      nutritionGoals 
+    });
     onClose();
+  };
+
+  const handleNutritionCalculated = (goals: NutritionGoals) => {
+    setNutritionGoals(goals);
+    console.log('Nutrition goals set:', goals);
   };
 
   return (
@@ -181,16 +207,86 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
               </View>
             </View>
 
-            {/* Delete Account Section */}
+            {/* Nutrition Goals Section */}
             <View style={styles.section}>
-              <TouchableOpacity style={styles.deleteButton}>
-                <Ionicons name="trash-outline" size={20} color="#ef4444" />
-                <Text style={styles.deleteButtonText}>Delete Account</Text>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Nutrition Goals</Text>
+                <TouchableOpacity 
+                  style={styles.calculateButton}
+                  onPress={() => setShowNutritionCalculator(true)}
+                >
+                  <Ionicons name="calculator-outline" size={18} color="#fff" />
+                  <Text style={styles.calculateButtonText}>
+                    {nutritionGoals ? 'Recalculate' : 'Calculate'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {nutritionGoals ? (
+                <View style={styles.nutritionGoalsContainer}>
+                  <View style={styles.nutritionGoalCard}>
+                    <Ionicons name="flame" size={24} color={ORANGE} />
+                    <Text style={styles.nutritionGoalValue}>{nutritionGoals.calories}</Text>
+                    <Text style={styles.nutritionGoalLabel}>Calories/day</Text>
+                  </View>
+
+                  <View style={styles.nutritionGoalCard}>
+                    <Ionicons name="fish" size={24} color="#3b82f6" />
+                    <Text style={styles.nutritionGoalValue}>{nutritionGoals.protein}g</Text>
+                    <Text style={styles.nutritionGoalLabel}>Protein</Text>
+                  </View>
+
+                  <View style={styles.nutritionGoalCard}>
+                    <Ionicons name="water" size={24} color="#10b981" />
+                    <Text style={styles.nutritionGoalValue}>{nutritionGoals.fats}g</Text>
+                    <Text style={styles.nutritionGoalLabel}>Fats</Text>
+                  </View>
+
+                  <View style={styles.nutritionGoalCard}>
+                    <Ionicons name="pizza" size={24} color="#f59e0b" />
+                    <Text style={styles.nutritionGoalValue}>{nutritionGoals.carbs}g</Text>
+                    <Text style={styles.nutritionGoalLabel}>Carbs</Text>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.noGoalsContainer}>
+                  <Ionicons name="restaurant-outline" size={48} color="#333" />
+                  <Text style={styles.noGoalsText}>No nutrition goals set</Text>
+                  <Text style={styles.noGoalsSubtext}>
+                    Calculate your personalized nutrition goals based on your fitness objectives
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Sign Out Section */}
+            <View style={styles.section}>
+              <TouchableOpacity 
+                style={styles.deleteButton}
+                onPress={() => {
+                  // Navigate back to index.tsx (login screen)
+                  // You'll need to use your navigation method here
+                  // Example: navigation.navigate('Index') or navigation.reset()
+                  console.log('Signing out...');
+                }}
+              >
+                <Ionicons name="log-out-outline" size={20} color="#ef4444" />
+                <Text style={styles.deleteButtonText}>Sign Out</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
         </View>
       </View>
+
+      {/* Nutrition Calculator Modal */}
+      <NutritionCalculator
+        visible={showNutritionCalculator}
+        onClose={() => setShowNutritionCalculator(false)}
+        onComplete={handleNutritionCalculated}
+        initialAge={age}
+        initialWeight={weight}
+        initialHeight={height}
+      />
     </Modal>
   );
 }
@@ -271,11 +367,30 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 16,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 16,
+  },
+  calculateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: ORANGE,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+  },
+  calculateButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   inputGroup: {
     marginBottom: 20,
@@ -326,6 +441,54 @@ const styles = StyleSheet.create({
   goalOptionText: {
     fontSize: 15,
     color: '#fff',
+  },
+  nutritionGoalsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  nutritionGoalCard: {
+    flex: 1,
+    minWidth: '47%',
+    backgroundColor: '#111',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  nutritionGoalValue: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginTop: 8,
+  },
+  nutritionGoalLabel: {
+    fontSize: 11,
+    color: '#999',
+    marginTop: 4,
+  },
+  noGoalsContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    backgroundColor: '#111',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  noGoalsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginTop: 12,
+  },
+  noGoalsSubtext: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 18,
   },
   deleteButton: {
     flexDirection: 'row',

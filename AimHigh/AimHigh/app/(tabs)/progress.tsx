@@ -20,10 +20,7 @@ import Svg, {
 import { useWorkouts } from "../../hooks/useWorkouts";
 import { average, total } from "../../utils/calc";
 import { formatDateTime } from "../../utils/date";
-import {
-  fetchDayData,
-  saveWorkout,
-} from "../../utils/firestoreHelpers";
+import { fetchDayData, saveWorkout } from "../../utils/firestoreHelpers";
 import { weeklyStreak } from "../../utils/streak";
 
 const ORANGE = "#FF6A00";
@@ -44,13 +41,13 @@ export default function Progress() {
   const [tab, setTab] = useState<"Overview" | "Trends">("Overview");
   const [metric, setMetric] = useState<"weight" | "volume" | "reps">("weight");
   const [cloudStatus, setCloudStatus] = useState("local");
+  const [cloudData, setCloudData] = useState<any>(null);
 
   // -------------------
-  // Sync workouts to Firestore
+  // Firestore Sync
   // -------------------
   async function syncToCloud() {
     try {
-      const today = new Date().toISOString().slice(0, 10);
       for (const w of workouts) {
         const day = w.dateISO.slice(0, 10);
         for (const ex of w.exercises) {
@@ -69,8 +66,6 @@ export default function Progress() {
     }
   }
 
-  const [cloudData, setCloudData] = useState<any>(null);
-
   async function pullFromCloud() {
     try {
       const today = new Date().toISOString().slice(0, 10);
@@ -85,7 +80,7 @@ export default function Progress() {
   }
 
   // -------------------
-  // Flatten data
+  // Flatten local data
   // -------------------
   const allSets = useMemo(() => {
     const rows: any[] = [];
@@ -110,9 +105,7 @@ export default function Progress() {
   const totalWorkouts = workouts.length;
   const totalSets = allSets.length;
   const avgReps = totalSets ? average(allSets.map((s) => s.reps)) : 0;
-  const personalBest = totalSets
-    ? Math.max(...allSets.map((s) => s.weight))
-    : 0;
+  const personalBest = totalSets ? Math.max(...allSets.map((s) => s.weight)) : 0;
 
   const bestsByExercise = useMemo(() => {
     const map = new Map<string, { weight: number; date: string }>();
@@ -148,7 +141,7 @@ export default function Progress() {
   }, [workouts]);
 
   // -------------------
-  // Trends
+  // Trends (Exercise Picker)
   // -------------------
   const exerciseNames = useMemo(() => {
     const set = new Set<string>();
@@ -165,7 +158,7 @@ export default function Progress() {
         const exMatches = w.exercises.filter((e) => e.name === exercise);
         if (!exMatches.length) return null;
         const sets = exMatches.flatMap((e) => e.sets);
-        const bestWeight = Math.max(...sets.map((s) => s.weight));
+        const bestWeight = Math.max(...sets.map((s) => s.weight), 0);
         const volume = total(sets.map((s) => s.reps * s.weight));
         const avgReps = average(sets.map((s) => s.reps));
         return { dateISO: w.dateISO, bestWeight, volume, avgReps };
@@ -177,8 +170,8 @@ export default function Progress() {
     metric === "weight"
       ? Math.max(...series.map((p) => p.bestWeight), 0)
       : metric === "volume"
-        ? Math.max(...series.map((p) => p.volume), 0)
-        : Math.max(...series.map((p) => p.avgReps), 0);
+      ? Math.max(...series.map((p) => p.volume), 0)
+      : Math.max(...series.map((p) => p.avgReps), 0);
 
   // -------------------
   // Render
@@ -190,6 +183,7 @@ export default function Progress() {
     >
       <Text style={styles.header}>Progress</Text>
 
+      {/* Cloud Sync Status */}
       <View style={styles.syncBadge}>
         <View
           style={[
@@ -199,10 +193,10 @@ export default function Progress() {
                 cloudStatus === "synced"
                   ? "#4CAF50"
                   : cloudStatus === "error"
-                    ? "#F44336"
-                    : cloudStatus === "downloaded"
-                      ? "#2196F3"
-                      : "#AAA",
+                  ? "#F44336"
+                  : cloudStatus === "downloaded"
+                  ? "#2196F3"
+                  : "#AAA",
             },
           ]}
         />
@@ -210,11 +204,12 @@ export default function Progress() {
           {cloudStatus === "synced"
             ? "Cloud Synced"
             : cloudStatus === "downloaded"
-              ? "Data Pulled"
-              : "Local Data"}
+            ? "Data Pulled"
+            : "Local Data"}
         </Text>
       </View>
 
+      {/* Cloud Buttons */}
       <View style={{ flexDirection: "row", marginBottom: 12 }}>
         <TouchableOpacity style={styles.syncButton} onPress={syncToCloud}>
           <Text style={styles.syncButtonText}>Sync → Cloud</Text>
@@ -224,6 +219,7 @@ export default function Progress() {
         </TouchableOpacity>
       </View>
 
+      {/* Tabs */}
       <View style={styles.tabRow}>
         <TabChip
           label="Overview"
@@ -298,6 +294,40 @@ export default function Progress() {
         </>
       ) : (
         <>
+          {/* Exercise Picker */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Select Exercise</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginTop: 6 }}
+            >
+              {exerciseNames.map((name) => (
+                <Pressable
+                  key={name}
+                  onPress={() => setExercise(name)}
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor:
+                        exercise === name ? CHIP_BG_ACTIVE : CHIP_BG,
+                      borderColor: exercise === name ? ORANGE : "#222",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      { color: exercise === name ? ORANGE : "#ddd" },
+                    ]}
+                  >
+                    {name}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+
           {/* Metric Toggle */}
           <View
             style={[
@@ -327,8 +357,8 @@ export default function Progress() {
                   {m === "weight"
                     ? "Best Weight"
                     : m === "volume"
-                      ? "Volume"
-                      : "Reps"}
+                    ? "Volume"
+                    : "Reps"}
                 </Text>
               </Pressable>
             ))}
@@ -349,8 +379,8 @@ export default function Progress() {
                     metric === "weight"
                       ? p.bestWeight
                       : metric === "volume"
-                        ? p.volume
-                        : p.avgReps,
+                      ? p.volume
+                      : p.avgReps,
                 }))}
                 width={Math.max(260, width - 40)}
                 height={260}
@@ -457,7 +487,6 @@ const styles = StyleSheet.create({
   card: { backgroundColor: "#111", padding: 16, borderRadius: 14, borderWidth: 1, borderColor: "#1f1f1f", marginBottom: 16 },
   cardTitle: { color: ORANGE, fontWeight: "800", marginBottom: 8, fontSize: 18 },
   item: { color: "#eee", marginTop: 4, fontSize: 14 },
-  itemSmall: { color: "#aaa", marginTop: 6, fontSize: 12 },
   syncBadge: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
   dot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
   syncText: { color: "#aaa", fontSize: 12 },

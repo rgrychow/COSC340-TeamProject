@@ -113,37 +113,23 @@ const LoginScreen: React.FC = () => {
     }
   };
 
-  const handleSkip = () => {
-    setShowOnboarding(true);
-  };
-
+  const handleSkip = () => setShowOnboarding(true);
   const handleNext = () => {
-    if (step < steps.length - 1) {
-      setStep(step + 1);
-    } else {
+    if (step < steps.length - 1) setStep((s) => s + 1);
+    else {
       setShowOnboarding(false);
-      router.replace('/(tabs)/home');
+      router.replace("/(tabs)/home");
     }
   };
 
-  const steps = [
-    {
-      title: 'Welcome to the Home Tab!',
-      description: 'Your dashboard for an overview of your fitness journey, quick access to features, and personalized recommendations.',
-    },
-    {
-      title: 'Fitness Tab',
-      description: 'Track your workouts, add exercises, and log sets with reps and weights to stay consistent with your training goals.',
-    },
-    {
-      title: 'Nutrition Tab',
-      description: 'Monitor your daily meals, track calories and macros, and update your nutrition targets for balanced eating.',
-    },
-    {
-      title: 'Progress Tab',
-      description: 'View your progress stats, like weekly workouts and average calories, to see how far you’ve come and stay motivated.',
-    },
-  ];
+  if (busy) {
+    return (
+      <View style={[styles.container, { justifyContent: "center" }]}>
+        <ActivityIndicator />
+        <Text style={{ marginTop: 12 }}>Checking session…</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -183,7 +169,7 @@ const LoginScreen: React.FC = () => {
         </TouchableOpacity>
         <TouchableOpacity style={styles.toggleButton} onPress={() => setIsSignUp(!isSignUp)}>
           <Text style={styles.toggleButtonText}>
-            {isSignUp ? 'Already have an account? Log In' : 'No account? Sign Up'}
+            {isSignUp ? "Already have an account? Log In" : "No account? Sign Up"}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
@@ -280,7 +266,7 @@ const LoginScreen: React.FC = () => {
             <Text style={styles.stepTitle}>{steps[step].title}</Text>
             <Text style={styles.description}>{steps[step].description}</Text>
             <TouchableOpacity style={styles.button} onPress={handleNext}>
-              <Text style={styles.buttonText}>{step < steps.length - 1 ? 'Next' : 'Done'}</Text>
+              <Text style={styles.buttonText}>{step < steps.length - 1 ? "Next" : "Done"}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -290,22 +276,9 @@ const LoginScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    marginBottom: 32,
-    color: '#000000',
-  },
-  inputContainer: {
-    width: '80%',
-  },
+  container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#FFFFFF", paddingHorizontal: 20 },
+  title: { fontSize: 30, fontWeight: "bold", marginBottom: 32, color: "#000000" },
+  inputContainer: { width: "80%" },
   input: {
     borderWidth: 1,
     borderColor: '#000000',
@@ -382,6 +355,16 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     color: '#4B4B4B',
   },
+  button: { backgroundColor: "#F97316", borderRadius: 8, padding: 12, width: "100%", alignItems: "center", marginBottom: 16 },
+  buttonText: { color: "#FFFFFF", fontSize: 18, fontWeight: "600" },
+  toggleButton: { alignItems: "center", marginBottom: 16 },
+  toggleButtonText: { color: "#F97316", fontSize: 14, fontWeight: "500" },
+  skipButton: { alignItems: "center" },
+  skipButtonText: { color: "#F97316", fontSize: 16, fontWeight: "500" },
+  modalContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0, 0, 0, 0.5)" },
+  modalContent: { backgroundColor: "#FFFFFF", borderRadius: 16, padding: 24, width: "80%", alignItems: "center" },
+  stepTitle: { fontSize: 24, fontWeight: "bold", marginBottom: 16, textAlign: "center", color: "#000000" },
+  description: { fontSize: 16, textAlign: "center", marginBottom: 24, color: "#4B4B4B" },
 });
 
 export default LoginScreen;
