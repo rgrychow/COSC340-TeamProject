@@ -1,12 +1,16 @@
 // app/index.tsx
 import { useRouter } from 'expo-router';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { initializeAuth, getReactNativePersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import React, { useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { auth, db } from '../firebase'; // Adjust path to your firebaseConfig.js
 
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+
 const LoginScreen: React.FC = () => {
+  // Fixes
+
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
@@ -23,8 +27,20 @@ const LoginScreen: React.FC = () => {
   const [targetFats, setTargetFats] = useState<string>('');
   const [targetCarbs, setTargetCarbs] = useState<string>('');
   const [step, setStep] = useState(0);
+
+  const steps = [
+    { title : "Welcome to the Home Tab!", description: "Your dashboard for an overview of your fitness journey." },
+    { title : "Fitness Tab", description: "Your dashboard for an overview of your fitness journey." },
+    { title : "Nutrition Tab", description: "Your dashboard for an overview of your fitness journey." },
+    { title : "Progress tab", description: "Your dashboard for an overview of your fitness journey." },
+    ];
+
   const router = useRouter();
   const [newUserId, setNewUserId] = useState<string | null>(null);
+
+  // Fixes
+  // const [busy, setBusy] = useState<boolean>(true);
+  // const auth = initializeAuth(app, { persistence: getReactNativePersistance(ReactNativeAsyncStorage) });
 
   const handleLoginOrSignUp = async () => {
     if (isSignUp) {
@@ -122,6 +138,7 @@ const LoginScreen: React.FC = () => {
     }
   };
 
+  /*
   if (busy) {
     return (
       <View style={[styles.container, { justifyContent: "center" }]}>
@@ -130,6 +147,7 @@ const LoginScreen: React.FC = () => {
       </View>
     );
   }
+  */
 
   return (
     <View style={styles.container}>
