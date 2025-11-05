@@ -24,7 +24,8 @@ import * as Haptics from "expo-haptics";
 import { useNutrition } from "../../hooks/useNutrition";
 
 const ORANGE = "#FF6A00";
-const USDA_API_KEY = Constants.expoConfig?.extra?.USDA_API_KEY;
+//const USDA_API_KEY = Constants.expoConfig?.extra?.USDA_API_KEY;
+const USDA_API_KEY = process.env.EXPO_PUBLIC_USDA_API_KEY;
 const LIST_MAX = Math.min(420, Math.round(Dimensions.get("window").height * 0.5));
 const MEAL_BASE = "https://themealdb.com/api/json/v1/1";
 
@@ -100,23 +101,6 @@ export default function Nutrition() {
   // Globals
   const { targets, summary, loading, entries, addEntry } = useNutrition();
 
-  if (loading) {
-    return (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator />
-        </View>
-    );
-  }
-
-//  if (!targets) {}
-
-  const goals = targets ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
-  const day = summary ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
-
-  // Daily Log Entries
-//  const [entries, setEntries] = useState<LogEntry[]>([]); <------------
-  
-
   // Recipe Search state
   const [recipeQ, setRecipeQ] = useState("");
   const [recipes, setRecipes] = useState<any[]>([]);
@@ -127,9 +111,29 @@ export default function Nutrition() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
 
+  const [scanHeight, setScanHeight] = useState(0);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  //  if (!targets) {}
+
+  const goals = targets ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+  const day = summary ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+
+  // Daily Log Entries
+  //  const [entries, setEntries] = useState<LogEntry[]>([]); <------------
+
+
+
+
   const scanGate = useRef(false);
   const lineY = useRef(new Animated.Value(0)).current;
-  const [scanHeight, setScanHeight] = useState(0);
 
   useEffect(() => {
     if (!scannerOpen) return;
@@ -181,8 +185,46 @@ export default function Nutrition() {
       if (m) servingGrams = Number(m[1]);
     }
 
-    const n = p.nutrients || {};
+    const n = p.nutriments || {};
 
+
+    // NEW
+    const num = (v: any) => (typeof v === "number" ? v : Number(v));
+    const fromKJ = (kj: number | undefined) => (Number.isFinite(kj) ? kj! / 4.184 : undefined);
+
+    const derivePer100 = (servingVal?: number, grams?: number) =>
+      Number.isFinite(servingVal) && Number.isFinite(grams) && grams! > 0
+        ? (servingVal! * 100) / grams!
+        : undefined;
+
+    // calories
+    const kcal100 =
+      (Number.isFinite(num(n["energy-kcal_100g"])) && num(n["energy-kcal_100g"])) ??
+        (Number.isFinite(num(n["energy_100g"])) && fromKJ(num(n["energy_100g"]))) ??
+        derivePer100(num(n["energy-kcal_serving"]) ?? fromKJ(num(n["energy_serving"])), servingGrams) ??
+        0;
+
+    // protein
+    const protein100 =
+      (Number.isFinite(num(n["proteins_100g"])) && num(n["proteins_100g"])) ??
+        derivePer100(num(n["proteins_serving"]), servingGrams) ??
+        0;
+
+    // carbs
+    const carbs100 =
+      (Number.isFinite(num(n["carbohydrates_100g"])) && num(n["carbohydrates_100g"])) ??
+        derivePer100(num(n["carbohydrates_serving"]), servingGrams) ??
+        0;
+
+    // fat
+    const fat100 =
+      (Number.isFinite(num(n["fat_100g"])) && num(n["fat_100g"])) ??
+        derivePer100(num(n["fat_serving"]), servingGrams) ??
+        0;
+
+
+
+    /*
     const kcal100 = 
       (typeof n["energy-kcal_100g"] === "number"
         ? n["energy-kcal_100g"]
@@ -193,6 +235,7 @@ export default function Nutrition() {
     const protein100 = Number(n["proteins_100g"] ?? n["protein_100g"] ?? 0);
     const carbs100 = Number(n["carbohydrates_100g"] ?? n["carbs_100g"] ?? 0);
     const fat100 = Number(n["fat_100g"] ?? n["fats_100g"] ?? 0);
+    */
 
     const kcalServ = Number(n["energy-kcal_serving"] ?? (typeof n["energy_serving"] === "number" ? n["energy_serving"] / 4.184: NaN));
 
@@ -211,6 +254,32 @@ export default function Nutrition() {
       fat_g: Math.max(0, fat100),
     };
 
+    // --- per-serving macros (prefer native *_serving, else derive from per100) ---
+    const kcalServing =
+      (Number.isFinite(num(n["energy-kcal_serving"])) && num(n["energy-kcal_serving"])) ??
+        (Number.isFinite(num(n["energy_serving"])) && fromKJ(num(n["energy_serving"]))) ??
+        (Number.isFinite(kcal100) && Number.isFinite(safeGrams) ? (kcal100 * safeGrams) / 100 : 0);
+
+    const proteinServing =
+      (Number.isFinite(num(n["proteins_serving"])) && num(n["proteins_serving"])) ??
+        (Number.isFinite(protein100) && Number.isFinite(safeGrams) ? (protein100 * safeGrams) / 100 : 0);
+
+    const carbsServing =
+      (Number.isFinite(num(n["carbohydrates_serving"])) && num(n["carbohydrates_serving"])) ??
+        (Number.isFinite(carbs100) && Number.isFinite(safeGrams) ? (carbs100 * safeGrams) / 100 : 0);
+
+    const fatServing =
+      (Number.isFinite(num(n["fat_serving"])) && num(n["fat_serving"])) ??
+        (Number.isFinite(fat100) && Number.isFinite(safeGrams) ? (fat100 * safeGrams) / 100 : 0);
+
+    const servingMacros = {
+      kcal: Math.max(0, kcalServing),
+      protein_g: Math.max(0, proteinServing),
+      carbs_g: Math.max(0, carbsServing),
+      fat_g: Math.max(0, fatServing),
+    };
+
+
     const serving = { label: p.serving_size || "serving", grams: safeGrams, };
 
     return {
@@ -219,7 +288,8 @@ export default function Nutrition() {
       brand,
       per100,
       serving,
-      servinggrams: safeGrams
+      //servinggrams: safeGrams
+      macros: servingMacros,
     };
   }
 
@@ -240,8 +310,12 @@ export default function Nutrition() {
       setDetail(d);
       setServingsCount("1");
 
-      const uiGrams = d?.serving?.grams ?? d?.servinggrams ?? 100;
-      setManualGramServing(String(uiGrams));
+      const grams = Number(d?.serving?.grams);
+      if (Number.isFinite(grams) && grams > 0) {
+        setManualGramServing(String(grams));
+      } else {
+        setManualGramServing("100");
+      }
     } catch (e: any) {
       setError(e.message || "Scan failed");
     } finally {
@@ -335,9 +409,20 @@ export default function Nutrition() {
 
     setSearchLoading(true);
     try {
-      const url = new URL("https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${USDA_API_KEY}&query=${encodeURIComponent(q)}&pageSize=20");
+      // const url = new URL("https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${USDA_API_KEY}&query=${encodeURIComponent(q)}&pageSize=20");
+      const url = new URL("https://api.nal.usda.gov/fdc/v1/foods/search");
+      url.searchParams.set("query", q);
+      url.searchParams.set("pageSize", "20");
 
-      const r = await fetch(url.toString());
+      //const r = await fetch(url.toString());
+      const r = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          "X-Api-Key": String(USDA_API_KEY ?? ""),
+          "Accept": "application/json",
+        },
+      });
+
       if (!r.ok) throw new Error(`USDA search ${r.status}`);
 
       const data = await r.json();
@@ -665,7 +750,7 @@ export default function Nutrition() {
                           - {item.name}{item.brand ? ` - ${item.brand}` : ""}
                         </Text>
                         <Text style={styles.subItem}>
-                          {item.servings} * {Math.round(item.gramsPerServing)} g -- kcal {Math.round(item.macros.kcal)} - P {Math.round(item.macros.protein_g)} g - C {Math.round(item.macros.carbs_g)} g - F {Math.round(item.macros.fat_g)} g
+                          {item.servings} * {Math.round(item.gramsPerServing)} g -- kcal {Math.round(item.kcal)} - P {Math.round(item.protein_g)} g - C {Math.round(item.carbs_g)} g - F {Math.round(item.fat_g)} g
                         </Text>
                         <Text style={[styles.subItem, { fontSize: 12, opacity: 0.7 }]}>
                           {new Date(item.atISO).toLocaleTimeString()}
@@ -756,54 +841,54 @@ export default function Nutrition() {
                 </Pressable>
               </View>
             ) : (
-              <View style={styles.scanInner}>
-                <Text style={styles.cardTitle}>Scan a UPC</Text>
-                <View 
-                  style={styles.scanFrame}
-                  onLayout={(e) => setScanHeight(e.nativeEvent.layout.height)}
-                >
-                  <CameraView
-                    style={{ width: "100%", height: "100%" }}
-                    barcodeScannerSettings={{
-                      barcodeTypes: ["ean13", "upc_a", "upc_e"],
-                    }}
-                    onBarcodeScanned={({ data }) => onUPCScanned({ data })}
-                  />
-                  {/* dim mask at the edges to highlight the center */}
-                  <View pointerEvents="none" style={styles.maskTop} />
-                  <View pointerEvents="none" style={styles.maskBottom} />
-                  <View pointerEvents="none" style={styles.maskLeft} />
-                  <View pointerEvents="none" style={styles.maskRight} />
+                <View style={styles.scanInner}>
+                  <Text style={styles.cardTitle}>Scan a UPC</Text>
+                  <View 
+                    style={styles.scanFrame}
+                    onLayout={(e) => setScanHeight(e.nativeEvent.layout.height)}
+                  >
+                    <CameraView
+                      style={{ width: "100%", height: "100%" }}
+                      barcodeScannerSettings={{
+                        barcodeTypes: ["ean13", "upc_a", "upc_e"],
+                      }}
+                      onBarcodeScanned={({ data }) => onUPCScanned({ data })}
+                    />
+                    {/* dim mask at the edges to highlight the center */}
+                    <View pointerEvents="none" style={styles.maskTop} />
+                    <View pointerEvents="none" style={styles.maskBottom} />
+                    <View pointerEvents="none" style={styles.maskLeft} />
+                    <View pointerEvents="none" style={styles.maskRight} />
 
-                  {/* Orange Corner Brackets */}
-                  <View pointerEvents="none" style={[styles.corner, styles.cornerTL]} />
-                  <View pointerEvents="none" style={[styles.corner, styles.cornerTR]} />
-                  <View pointerEvents="none" style={[styles.corner, styles.cornerBL]} />
-                  <View pointerEvents="none" style={[styles.corner, styles.cornerBR]} />
+                    {/* Orange Corner Brackets */}
+                    <View pointerEvents="none" style={[styles.corner, styles.cornerTL]} />
+                    <View pointerEvents="none" style={[styles.corner, styles.cornerTR]} />
+                    <View pointerEvents="none" style={[styles.corner, styles.cornerBL]} />
+                    <View pointerEvents="none" style={[styles.corner, styles.cornerBR]} />
 
-                  {/* Animated Scan Line */}
-                  <Animated.View
-                    pointerEvents="none"
-                    style={[
-                      styles.scanLine,
-                      {
-                        transform: [
-                          {
-                            translateY: lineY.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [0, Math.max(0, scanHeight - 32)],
-                            }),
-                          },
-                        ],
-                      },
-                    ]}
-                  />
+                    {/* Animated Scan Line */}
+                    <Animated.View
+                      pointerEvents="none"
+                      style={[
+                        styles.scanLine,
+                        {
+                          transform: [
+                            {
+                              translateY: lineY.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0, Math.max(0, scanHeight - 32)],
+                              }),
+                            },
+                          ],
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Pressable onPress={() => setScannerOpen(false)} style={[styles.addBtn, { marginTop: 10 }]}>
+                    <Text style={styles.addText}>Cancel</Text>
+                  </Pressable>
                 </View>
-                <Pressable onPress={() => setScannerOpen(false)} style={[styles.addBtn, { marginTop: 10 }]}>
-                  <Text style={styles.addText}>Cancel</Text>
-                </Pressable>
-              </View>
-            )}
+              )}
           </View>
         )}
 

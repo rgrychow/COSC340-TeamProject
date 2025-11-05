@@ -130,7 +130,7 @@ export function NutritionProvider({ children }: { children: React.ReactNode }) {
         protein_g: Number(e.protein_g) || 0,
         carbs_g: Number(e.carbs_g) || 0,
         fat_g: Number(e.fat_g) || 0,
-        cretaedAt: now,
+        createdAt: now,
       };
 
       setEntries((prev) => [...prev, normalized]);
