@@ -86,6 +86,18 @@ type LogEntry = {
   atISO: string;
 };
 
+function toDate(val: any): Date | null {
+  if (!val) return null;
+  if (val instanceof Date) return val;
+  if (typeof val === 'number') return new Date(val);
+  if (typeof val === 'string') return new Date(val);
+  if (typeof val === 'object' && ('seconds' in val)) {
+    const ms = val.seconds * 1000 + Math.floor((val.nanoseconds || 0) / 1e6);
+    return new Date(ms);
+  }
+  return null;
+}
+
 
 export default function Nutrition() {
   const [q, setQ] = useState("");
@@ -133,6 +145,11 @@ export default function Nutrition() {
     loop.start();
     return () => loop.stop();
   }, [scannerOpen]);
+
+
+  // Animated add button
+  const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+  const btnScale = useRef(new Animated.Value(1)).current;
 
   if (loading) {
     return (
@@ -199,6 +216,13 @@ export default function Nutrition() {
     const p = j?.product;
     if (!p) throw new Error("Product not found");
 
+    // Debug
+//    console.log("=== DEBUG: OFF Data ===");
+//    console.log("Product name:", p.product_name);
+//    console.log("Serving size:", p.serving_size);
+//    console.log("Serving quantity:", p.serving_quantity);
+//    console.log("Nutriments:", JSON.stringify(p.nutriments, null, 2));
+//    console.log("===================================");
     // --- basic identity ---
     const name =
       p.product_name_en ||
@@ -272,7 +296,8 @@ export default function Nutrition() {
       brand,
       per100,          // for reference/backup in your UI
       serving,         // label + grams if OFF provided them
-      macros: servingMacros, // EXACT per-serving values from OFF; undefined if missing
+      servingMacros, // EXACT per-serving values from OFF; undefined if missing
+      isPerServingFinal: !!servingMacros,
     };
   }
 
@@ -356,17 +381,26 @@ export default function Nutrition() {
         name: d.name,
         brand: d.brand ?? null,
         per100: d.per100,
-        serving: d.serving ?? null
+        serving: d.serving ?? null,
+        servingMaros: d.servingMacros ?? null,
+        isScanned: true,
       });
 
       setServingsCount("1");
-
-      const grams = Number(d?.serving?.grams);
-      if (Number.isFinite(grams) && grams > 0) {
-        setManualGramServing(String(grams));
+      setManualGramServing("");
+      /*
+      if (d.isPerServingFinal) {
+        setManualGramServing(d.serving?.grams ? String(d.serving.grams) : "");
       } else {
-        setManualGramServing("100");
+        const grams = Number(d?.serving?.grams);
+        if (Number.isFinite(grams) && grams > 0) {
+          setManualGramServing(String(grams));
+        } else {
+          setManualGramServing("100");
+        }
       }
+      */
+
     } catch (e: any) {
       setError(e.message || "Scan failed");
     } finally {
@@ -428,9 +462,6 @@ export default function Nutrition() {
     }
   };
 
-  // Animated add button
-  const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-  const btnScale = useRef(new Animated.Value(1)).current;
 
   const pulse = () => {
     btnScale.setValue(1);
@@ -535,14 +566,27 @@ export default function Nutrition() {
   };
 
   // computed macros for UI
-  const hasServing = !!detail?.serving;
-  const gramsPerServing = hasServing
-    ? detail.serving.grams
-    : Math.max(1, parseFloat(manualGramServing) || 0);
-  const macrosPerServing = 
-    detail && gramsPerServing 
+  // computed macros for UI
+
+  // Determine macros per serving
+  let macrosPerServing;
+  let gramsPerServing;
+
+  if (detail?.isScanned && detail?.servingMacros) {
+    // We have final per-serving macros - use them directly, no calculation needed
+    macrosPerServing = detail.servingMacros;
+    gramsPerServing = detail.serving?.grams || 0; // Just for display
+  } else {
+    // Calculate from per100
+    const hasServing = !!detail?.serving;
+    gramsPerServing = hasServing
+      ? detail.serving.grams
+      : Math.max(1, parseFloat(manualGramServing) || 0);
+
+    macrosPerServing = detail && gramsPerServing 
       ? scale(detail.per100, gramsPerServing) 
       : { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0};
+  }
 
   const servingsN = Math.max(0, parseFloat(servingsCount) || 0);
   const macrosThisEntry = {
@@ -551,24 +595,59 @@ export default function Nutrition() {
     carbs_g: macrosPerServing.carbs_g * servingsN, 
     fat_g: macrosPerServing.fat_g * servingsN, 
   };
+  /*
+  const hasServing = !!detail?.serving;
+
+  const macrosPerServing = detail?.isPerServingFinal && detail?.servingMacros
+    ? detail.servingMacros
+    : (() => {
+      const gramsPerServing = hasServing
+        ? detail.serving.grams
+        : Math.max(1, parseFloat(manualGramServing) || 0);
+      return detail && gramsPerServing
+        ? scale(detail.per100, gramsPerServing)
+        : { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0};
+    })();
+
+//  const gramsPerServing = hasServing
+//    ? detail.serving.grams
+//    : Math.max(1, parseFloat(manualGramServing) || 0);
+
+//  const macrosPerServing = 
+//    detail?.macros
+//    ? detail.macros
+//    : detail && gramsPerServing 
+//      ? scale(detail.per100, gramsPerServing) 
+//      : { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0};
+
+  const servingsN = Math.max(0, parseFloat(servingsCount) || 0);
+  const macrosThisEntry = {
+    kcal: macrosPerServing.kcal * servingsN, 
+    protein_g: macrosPerServing.protein_g * servingsN, 
+    carbs_g: macrosPerServing.carbs_g * servingsN, 
+    fat_g: macrosPerServing.fat_g * servingsN, 
+  };
+  */
 
   const addToDaily = () => {
     if (!detail) return;
 
-    const grams = Number(manualGramServing) || detail.serving?.grams || 100;
-    const serving = Math.max(1, Number(servingsCount) || "1");
-    const mult = (grams / 100) * serving;
+    //const grams = Number(manualGramServing) || detail.serving?.grams || 100;
+    //const serving = Math.max(1, Number(servingsCount) || "1");
+    //const mult = (grams / 100) * serving;
 
-    const macros = {
-      kcal: Math.round((detail.per100.kcal ?? 0) * mult),
-      protein_g: Math.round((detail.per100.protein_g ?? 0) * mult),
-      carbs_g: Math.round((detail.per100.carbs_g ?? 0) * mult),
-      fat_g: Math.round((detail.per100.fat_g ?? 0) * mult),
-    };
+    //    const macros = {
+    //      kcal: Math.round((detail.per100.kcal ?? 0) * mult),
+    //      protein_g: Math.round((detail.per100.protein_g ?? 0) * mult),
+    //      carbs_g: Math.round((detail.per100.carbs_g ?? 0) * mult),
+    //      fat_g: Math.round((detail.per100.fat_g ?? 0) * mult),
+    //    };
 
     addEntry({
       name: detail.name,
       brand: detail.brand ?? null,
+      servings: servingsN,
+      gramsPerServing: gramsPerServing,
       kcal: macrosThisEntry.kcal,
       protein_g: macrosThisEntry.protein_g,
       carbs_g: macrosThisEntry.carbs_g,
@@ -717,23 +796,28 @@ export default function Nutrition() {
 
                   {/* Serving Picker*/}
                   <View style={styles.block}>
-                    {hasServing ? (
+                    {detail?.isScanned ? (
                       <Text style={styles.subItem}>
-                        Serving: {detail.serving.label} = {detail.serving.grams} g
+                        Serving: {detail.serving?.label || "1 serving"}
+                        {detail.serving?.grams ? ` (${detail.serving.grams}g)` : ""}
                       </Text>
-                    ) : (
-                        <View style={{ marginTop: 4 }}>
-                          <Text style={styles.subItem}>Serving (grams):</Text>
-                          <TextInput
-                            style={styles.inputSm}
-                            inputMode="numeric"
-                            value={manualGramServing}
-                            onChangeText={(t) => setManualGramServing(t.replace(/[^0-9.]/g, ""))}
-                            placeholder="grams"
-                            placeholderTextColor="#777"
-                          />
-                        </View>
-                      )}
+                    ) : hasServing ? (
+                        <Text style={styles.subItem}>
+                          Serving: {detail.serving.label} = {detail.serving.grams} g
+                        </Text>
+                      ) : (
+                          <View style={{ marginTop: 4 }}>
+                            <Text style={styles.subItem}>Serving (grams):</Text>
+                            <TextInput
+                              style={styles.inputSm}
+                              inputMode="numeric"
+                              value={manualGramServing}
+                              onChangeText={(t) => setManualGramServing(t.replace(/[^0-9.]/g, ""))}
+                              placeholder="grams"
+                              placeholderTextColor="#777"
+                            />
+                          </View>
+                        )}
 
                     {/* Per-serving macros*/}
                     <Text style={[styles.item, { marginTop: 8 }]}>Per serving</Text>
@@ -747,11 +831,18 @@ export default function Nutrition() {
                       <Text style={styles.subItem}>Servings consumed:</Text>
                       <TextInput
                         style={styles.inputSm}
-                        inputMode="numeric"
+                        keyboardType={Platform.OS === "ios" ? "deciaml-pad" : "numeric"}
                         value={servingsCount}
-                        onChangeText={(t) => setServingsCount(t.replace(/[^0-9.]/g, ""))}
+                        onChangeText={(t) => {
+                          const cleaned = t
+                            .replace(/,/g, ".")
+                            .replace(/[^0-9.]/g, "")
+                            .replace(/(\..*)\./, "$1");
+                          setServingsCount(cleaned);
+                        }}
                         placeholder="e.g., 1.5"
                         placeholderTextColor="#777"
+                        returnKeyType="done"
                       />
                       <Text style={styles.subItem}>
                         This entry total -- kcal: {r1(macrosThisEntry.kcal)} | P:{" "}
@@ -800,10 +891,19 @@ export default function Nutrition() {
                           - {item.name}{item.brand ? ` - ${item.brand}` : ""}
                         </Text>
                         <Text style={styles.subItem}>
-                          {item.servings} * {Math.round(item.gramsPerServing)} g -- kcal {Math.round(item.kcal)} - P {Math.round(item.protein_g)} g - C {Math.round(item.carbs_g)} g - F {Math.round(item.fat_g)} g
+                          kcal: {Math.round(item.kcal)} | P: {Math.round(item.protein_g)} g | C: {Math.round(item.carbs_g)} g | F: {Math.round(item.fat_g)} g
                         </Text>
                         <Text style={[styles.subItem, { fontSize: 12, opacity: 0.7 }]}>
-                          {new Date(item.atISO).toLocaleTimeString()}
+                          {(() => {
+                            const raw = 
+                              item.createdAt ??
+                              item.atISO ??
+                              item.created_at ??
+                              item.timestamp ??
+                              null;
+                            const d = toDate(raw);
+                            return d ? d.toLocaleString() : '';
+                          })()}
                         </Text>
                       </View> 
                     ))}
