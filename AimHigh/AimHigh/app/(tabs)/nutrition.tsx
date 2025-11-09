@@ -113,25 +113,6 @@ export default function Nutrition() {
 
   const [scanHeight, setScanHeight] = useState(0);
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
-
-  //  if (!targets) {}
-
-  const goals = targets ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
-  const day = summary ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
-
-  // Daily Log Entries
-  //  const [entries, setEntries] = useState<LogEntry[]>([]); <------------
-
-
-
-
   const scanGate = useRef(false);
   const lineY = useRef(new Animated.Value(0)).current;
 
@@ -153,6 +134,48 @@ export default function Nutrition() {
     return () => loop.stop();
   }, [scannerOpen]);
 
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  //  if (!targets) {}
+
+  const goals = targets ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+  const day = summary ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+
+  // Daily Log Entries
+  //  const [entries, setEntries] = useState<LogEntry[]>([]); <------------
+
+
+
+
+  // const scanGate = useRef(false);
+  // const lineY = useRef(new Animated.Value(0)).current;
+
+  /*
+  useEffect(() => {
+    if (!scannerOpen) return;
+    lineY.setValue(0);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(lineY, {
+          toValue: 1,
+          duration: 1400,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(lineY, { toValue: 0, duration: 0, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [scannerOpen]);
+  */
+
   // ask for camera permission
   const openScanner = async () => {
     if (!permission || !permission.granted) {
@@ -162,6 +185,98 @@ export default function Nutrition() {
   };
 
   // Barcode Scan Function
+  // Barcode Scan Function — per-serving only (no scaling)
+  async function fetchOpenFoodFactsUPC(raw: string) {
+    const ean = toEAN13(raw);
+
+    const url =
+      `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(ean)}.json`;
+
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`Open Food Facts ${r.status}`);
+    const j = await r.json();
+
+    const p = j?.product;
+    if (!p) throw new Error("Product not found");
+
+    // --- basic identity ---
+    const name =
+      p.product_name_en ||
+        p.product_name ||
+        p.generic_name_en ||
+        "Scanned Item";
+    const brand = (p.brands || "").split(",")[0]?.trim() || null;
+
+    // --- serving meta (label + grams if available) ---
+    let servingGrams: number | undefined;
+    if (typeof p.serving_quantity === "number") {
+      servingGrams = p.serving_quantity;
+    } else if (typeof p.serving_size === "string") {
+      // e.g., "30 g", "2 oz (56 g)"
+      const m = p.serving_size.match(/(\d+(?:\.\d+)?)\s*g/i);
+      if (m) servingGrams = Number(m[1]);
+    }
+    const serving =
+      servingGrams && Number.isFinite(servingGrams)
+        ? { label: p.serving_size || "serving", grams: servingGrams }
+        : null;
+
+    // --- nutrients map from OFF ---
+    const n: Record<string, any> = p.nutriments || {};
+
+    const fromKJ = (kj: any) =>
+      Number.isFinite(kj) ? Number(kj) / 4.184 : undefined;
+    const num = (v: any) => (Number.isFinite(v) ? Number(v) : undefined);
+
+    // --- per 100g (kept for your UI, but not used to scale here) ---
+    const kcal100 =
+      num(n["energy-kcal_100g"]) ??
+        fromKJ(num(n["energy_100g"]));
+    const protein100 = num(n["proteins_100g"]) ?? 0;
+    const carbs100   = num(n["carbohydrates_100g"]) ?? 0;
+    const fat100     = num(n["fat_100g"]) ?? 0;
+
+    const per100 = {
+      kcal: Math.max(0, kcal100 ?? 0),
+      protein_g: Math.max(0, protein100),
+      carbs_g: Math.max(0, carbs100),
+      fat_g: Math.max(0, fat100),
+    };
+
+    // --- native per-serving macros (NO SCALING) ---
+    const kcalServing =
+      num(n["energy-kcal_serving"]) ??
+        fromKJ(num(n["energy_serving"]));
+    const proteinServing = num(n["proteins_serving"]);
+    const carbsServing   = num(n["carbohydrates_serving"]);
+    const fatServing     = num(n["fat_serving"]);
+
+    // Only return macros if all four are present as numbers
+    const hasAllServing =
+    [kcalServing, proteinServing, carbsServing, fatServing].every(
+      (v) => typeof v === "number"
+    );
+
+    const servingMacros = hasAllServing
+      ? {
+        kcal: Math.max(0, kcalServing as number),
+        protein_g: Math.max(0, proteinServing as number),
+        carbs_g: Math.max(0, carbsServing as number),
+        fat_g: Math.max(0, fatServing as number),
+      }
+      : undefined;
+
+    return {
+      id: String(p.code || ean),
+      name,
+      brand,
+      per100,          // for reference/backup in your UI
+      serving,         // label + grams if OFF provided them
+      macros: servingMacros, // EXACT per-serving values from OFF; undefined if missing
+    };
+  }
+
+  /*
   async function fetchOpenFoodFactsUPC(raw: string) {
     const ean = toEAN13(raw);
 
@@ -185,102 +300,32 @@ export default function Nutrition() {
       if (m) servingGrams = Number(m[1]);
     }
 
-    const n = p.nutriments || {};
+    // New
+    const serving: { label: string; grams: number } | null =
+      Number.isFinite(servingGrams!) && (servingGrams as number) > 0
+        ? { label: p.serving_size || "serving", grams: servingGrams as number }
+        : null;
 
+    const n = (p.nutriments || {}) as Record<string, unknown>;
+    const num = (v: unknown) => 
+      typeof v === "number" ? v : Number.isFinite(Number(v)) ? Number(v) : undefined;
+    const fromKJ = (kj?: number) => (typeof kj === "number" ? kj / 4.184 : undefined);
 
-    // NEW
-    const num = (v: any) => (typeof v === "number" ? v : Number(v));
-    const fromKJ = (kj: number | undefined) => (Number.isFinite(kj) ? kj! / 4.184 : undefined);
-
-    const derivePer100 = (servingVal?: number, grams?: number) =>
-      Number.isFinite(servingVal) && Number.isFinite(grams) && grams! > 0
-        ? (servingVal! * 100) / grams!
-        : undefined;
-
-    // calories
     const kcal100 =
-      (Number.isFinite(num(n["energy-kcal_100g"])) && num(n["energy-kcal_100g"])) ??
-        (Number.isFinite(num(n["energy_100g"])) && fromKJ(num(n["energy_100g"]))) ??
-        derivePer100(num(n["energy-kcal_serving"]) ?? fromKJ(num(n["energy_serving"])), servingGrams) ??
-        0;
+      num(n["energy-kcal_100g"]) ??
+      fromKJ(num(n["energy_100g"])) ??
+      0;
 
-    // protein
-    const protein100 =
-      (Number.isFinite(num(n["proteins_100g"])) && num(n["proteins_100g"])) ??
-        derivePer100(num(n["proteins_serving"]), servingGrams) ??
-        0;
-
-    // carbs
-    const carbs100 =
-      (Number.isFinite(num(n["carbohydrates_100g"])) && num(n["carbohydrates_100g"])) ??
-        derivePer100(num(n["carbohydrates_serving"]), servingGrams) ??
-        0;
-
-    // fat
-    const fat100 =
-      (Number.isFinite(num(n["fat_100g"])) && num(n["fat_100g"])) ??
-        derivePer100(num(n["fat_serving"]), servingGrams) ??
-        0;
-
-
-
-    /*
-    const kcal100 = 
-      (typeof n["energy-kcal_100g"] === "number"
-        ? n["energy-kcal_100g"]
-        : typeof n["energy_100g"] === "number"
-        ? n["energy_100g"] / 4.184
-        : 0) || 0;
-
-    const protein100 = Number(n["proteins_100g"] ?? n["protein_100g"] ?? 0);
-    const carbs100 = Number(n["carbohydrates_100g"] ?? n["carbs_100g"] ?? 0);
-    const fat100 = Number(n["fat_100g"] ?? n["fats_100g"] ?? 0);
-    */
-
-    const kcalServ = Number(n["energy-kcal_serving"] ?? (typeof n["energy_serving"] === "number" ? n["energy_serving"] / 4.184: NaN));
-
-    const safeGrams = Number.isFinite(servingGrams) && (servingGrams as number) > 0
-      ? (servingGrams as number)
-      : (Number.isFinite(kcalServ) && kcalServ > 0 ? kcalServ : Math.max(0, kcal100));
-
-    const protServ = Number(n["proteins_serving"]);
-    const carbServ = Number(n["carbohydrates_serving"]);
-    const fatServ = Number(n["fat_serving"]);
+    const protein100 = num(n["proteins_100g"]) ?? 0;
+    const carbs100 = num(n["carbohydrates_100g"]) ?? 0;
+    const fat100 = num(n["fat_100g"]) ?? 0;
 
     const per100 = {
-      kcal: Math.max(0, kcal100),
-      protein_g: Math.max(0, protein100),
-      carbs_g: Math.max(0, carbs100),
-      fat_g: Math.max(0, fat100),
+      kcal: Math.max(0, Math.round(kcal100)),
+      protein_g: Math.max(0, Math.round(protein100)),
+      carbs_g: Math.max(0, Math.round(carbs100)),
+      fat_g: Math.max(0, Math.round(fat100)),
     };
-
-    // --- per-serving macros (prefer native *_serving, else derive from per100) ---
-    const kcalServing =
-      (Number.isFinite(num(n["energy-kcal_serving"])) && num(n["energy-kcal_serving"])) ??
-        (Number.isFinite(num(n["energy_serving"])) && fromKJ(num(n["energy_serving"]))) ??
-        (Number.isFinite(kcal100) && Number.isFinite(safeGrams) ? (kcal100 * safeGrams) / 100 : 0);
-
-    const proteinServing =
-      (Number.isFinite(num(n["proteins_serving"])) && num(n["proteins_serving"])) ??
-        (Number.isFinite(protein100) && Number.isFinite(safeGrams) ? (protein100 * safeGrams) / 100 : 0);
-
-    const carbsServing =
-      (Number.isFinite(num(n["carbohydrates_serving"])) && num(n["carbohydrates_serving"])) ??
-        (Number.isFinite(carbs100) && Number.isFinite(safeGrams) ? (carbs100 * safeGrams) / 100 : 0);
-
-    const fatServing =
-      (Number.isFinite(num(n["fat_serving"])) && num(n["fat_serving"])) ??
-        (Number.isFinite(fat100) && Number.isFinite(safeGrams) ? (fat100 * safeGrams) / 100 : 0);
-
-    const servingMacros = {
-      kcal: Math.max(0, kcalServing),
-      protein_g: Math.max(0, proteinServing),
-      carbs_g: Math.max(0, carbsServing),
-      fat_g: Math.max(0, fatServing),
-    };
-
-
-    const serving = { label: p.serving_size || "serving", grams: safeGrams, };
 
     return {
       id: String(p.code || ean),
@@ -288,10 +333,9 @@ export default function Nutrition() {
       brand,
       per100,
       serving,
-      //servinggrams: safeGrams
-      macros: servingMacros,
     };
   }
+  */
 
   const onUPCScanned = async ({ data }: { data: string }) => {
     if (scanGate.current) return;
@@ -307,7 +351,14 @@ export default function Nutrition() {
 
       const d = await fetchOpenFoodFactsUPC(data);
 
-      setDetail(d);
+      setDetail({
+        id: String(d.id),
+        name: d.name,
+        brand: d.brand ?? null,
+        per100: d.per100,
+        serving: d.serving ?? null
+      });
+
       setServingsCount("1");
 
       const grams = Number(d?.serving?.grams);
@@ -409,7 +460,6 @@ export default function Nutrition() {
 
     setSearchLoading(true);
     try {
-      // const url = new URL("https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${USDA_API_KEY}&query=${encodeURIComponent(q)}&pageSize=20");
       const url = new URL("https://api.nal.usda.gov/fdc/v1/foods/search");
       url.searchParams.set("query", q);
       url.searchParams.set("pageSize", "20");
@@ -462,7 +512,7 @@ export default function Nutrition() {
       const portion = (d.foodPortions || []).find((p: any) => p.gramWeight) || null;
       const serving = portion 
         ? { 
-          label: portion.portionDEscription || portion.modifier || "serving",
+          label: portion.portionDescription || portion.modifier || "serving",
           grams: portion.gramWeight,
         }
         : null;
@@ -837,7 +887,7 @@ export default function Nutrition() {
                   <Text style={styles.addText}>Grant Permission</Text>
                 </Pressable>
                 <Pressable onPress={() => setScannerOpen(false)} style={[styles.addBtn, { marginTop: 10 }]}>
-                  <Text style={styles.addText}>Camcel</Text>
+                  <Text style={styles.addText}>Cancel</Text>
                 </Pressable>
               </View>
             ) : (
