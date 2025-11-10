@@ -1,87 +1,295 @@
 // app/(tabs)/progress.tsx
-import React, { useMemo, useState } from "react";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Dimensions,
+  LayoutAnimation,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
-  useWindowDimensions,
+  UIManager,
   View,
 } from "react-native";
-import Svg, {
-  Circle,
-  Polyline,
-  Rect,
-  Line as SvgLine,
-  Text as SvgText,
-} from "react-native-svg";
+import { LineChart } from "react-native-chart-kit";
+import { auth, db } from "../../firebase";
 import { useWorkouts } from "../../hooks/useWorkouts";
 import { average, total } from "../../utils/calc";
-import { formatDateTime } from "../../utils/date";
-import { fetchDayData, saveWorkout } from "../../utils/firestoreHelpers";
 import { weeklyStreak } from "../../utils/streak";
 
-const ORANGE = "#FF6A00";
-const CHIP_BG = "#151515";
-const CHIP_BG_ACTIVE = "#1E1E1E";
-const GRAY = "#888";
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
-type Point = {
-  dateISO: string;
-  bestWeight: number;
-  volume: number;
-  avgReps: number;
+const ORANGE = "#FF6A00";
+const GRAY = "#888";
+const screenWidth = Dimensions.get("window").width;
+
+// -------- date helpers --------
+const pad2 = (n: number) => String(n).padStart(2, "0");
+const toDayId = (d: Date) =>
+  `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const compareISO = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+const todayISO = toDayId(new Date());
+
+type PlannedWorkout = {
+  id: string;
+  name: string;
+  notes?: string;
+  targetReps?: number;
+  targetWeight?: number;
+  completed: boolean;
+  createdAt?: any;
 };
 
 export default function Progress() {
-  const { workouts } = useWorkouts();
-  const { width } = useWindowDimensions();
+  // -------- core state --------
+  const { workouts } = useWorkouts(); // local context used for charts/metrics
   const [tab, setTab] = useState<"Overview" | "Trends">("Overview");
   const [metric, setMetric] = useState<"weight" | "volume" | "reps">("weight");
-  const [cloudStatus, setCloudStatus] = useState("local");
-  const [cloudData, setCloudData] = useState<any>(null);
+  const [exercise, setExercise] = useState<string>("");
 
-  // -------------------
-  // Firestore Sync
-  // -------------------
-  async function syncToCloud() {
-    try {
-      for (const w of workouts) {
-        const day = w.dateISO.slice(0, 10);
-        for (const ex of w.exercises) {
-          for (let i = 0; i < ex.sets.length; i++) {
-            const s = ex.sets[i];
-            await saveWorkout(day, ex.name, i + 1, s.reps, s.weight);
-          }
-        }
+  // Calendar UI
+  const [calendarOpen, setCalendarOpen] = useState(true);
+  const [selectedDayISO, setSelectedDayISO] = useState<string>(todayISO);
+
+  // Month grid (simple current-month calendar)
+  const [monthCursor, setMonthCursor] = useState<Date>(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+  );
+
+  // Firestore marker maps
+  const [plannedDays, setPlannedDays] = useState<string[]>([]);
+  const [completedDays, setCompletedDays] = useState<string[]>([]);
+
+  // Planned items for selected day
+  const [plannedItems, setPlannedItems] = useState<PlannedWorkout[]>([]);
+
+  // Plan/Edit modal
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editDraft, setEditDraft] = useState<{
+    id?: string;
+    name: string;
+    notes: string;
+    targetReps: string;
+    targetWeight: string;
+  }>({ name: "", notes: "", targetReps: "", targetWeight: "" });
+
+  // -------- collapsing calendar --------
+  const toggleCalendar = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setCalendarOpen((s) => !s);
+  };
+
+  // -------- Firestore listeners: planned days + completed days --------
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const unsubPlanned = onSnapshot(
+      collection(db, "users", user.uid, "plannedDays"),
+      (snap) => {
+        const days: string[] = [];
+        snap.forEach((d) => days.push(d.id));
+        setPlannedDays(days.sort(compareISO));
       }
-      setCloudStatus("synced");
-      Alert.alert("✅ Synced", "Workouts saved to Firestore!");
-    } catch (err: any) {
-      console.error("Sync Error:", err);
-      Alert.alert("Error", "Failed to sync workouts.");
-      setCloudStatus("error");
-    }
-  }
+    );
 
-  async function pullFromCloud() {
+    const unsubCompleted = onSnapshot(
+      collection(db, "users", user.uid, "workoutDays"),
+      (snap) => {
+        const days: string[] = [];
+        snap.forEach((d) => days.push(d.id));
+        setCompletedDays(days.sort(compareISO));
+      }
+    );
+
+    return () => {
+      unsubPlanned();
+      unsubCompleted();
+    };
+  }, []);
+
+  // -------- Firestore listener: planned workouts for selected day --------
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user || !selectedDayISO) return;
+
+    const unsub = onSnapshot(
+      collection(
+        db,
+        "users",
+        user.uid,
+        "plannedDays",
+        selectedDayISO,
+        "plannedWorkouts"
+      ),
+      (snap) => {
+        const arr: PlannedWorkout[] = [];
+        snap.forEach((d) => {
+          const data = d.data() as any;
+          arr.push({
+            id: d.id,
+            name: String(data.name || ""),
+            notes: data.notes || "",
+            targetReps:
+              typeof data.targetReps === "number" ? data.targetReps : undefined,
+            targetWeight:
+              typeof data.targetWeight === "number"
+                ? data.targetWeight
+                : undefined,
+            completed: !!data.completed,
+            createdAt: data.createdAt,
+          });
+        });
+        setPlannedItems(arr);
+      }
+    );
+
+    return () => unsub();
+  }, [selectedDayISO]);
+
+  // -------- calendar computations --------
+  const daysInMonth = new Date(
+    monthCursor.getFullYear(),
+    monthCursor.getMonth() + 1,
+    0
+  ).getDate();
+  const firstDow = new Date(
+    monthCursor.getFullYear(),
+    monthCursor.getMonth(),
+    1
+  ).getDay();
+  const grid: (string | null)[] = [];
+  for (let i = 0; i < firstDow; i++) grid.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = `${monthCursor.getFullYear()}-${pad2(
+      monthCursor.getMonth() + 1
+    )}-${pad2(d)}`;
+    grid.push(iso);
+  }
+  while (grid.length % 7 !== 0) grid.push(null);
+  const weeks: (string | null)[][] = [];
+  for (let i = 0; i < grid.length; i += 7) weeks.push(grid.slice(i, i + 7));
+
+  // -------- planning helpers --------
+  const isFuture = (iso: string) => compareISO(iso, todayISO) === 1;
+  const openPlanModal = (existing?: PlannedWorkout) => {
+    if (existing) {
+      setEditDraft({
+        id: existing.id,
+        name: existing.name,
+        notes: existing.notes || "",
+        targetReps:
+          existing.targetReps != null ? String(existing.targetReps) : "",
+        targetWeight:
+          existing.targetWeight != null ? String(existing.targetWeight) : "",
+      });
+    } else {
+      setEditDraft({
+        id: undefined,
+        name: "",
+        notes: "",
+        targetReps: "",
+        targetWeight: "",
+      });
+    }
+    setModalOpen(true);
+  };
+
+  const savePlan = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    const name = editDraft.name.trim();
+    if (!name) {
+      Alert.alert("Please enter a workout name.");
+      return;
+    }
+    const payload = {
+      name,
+      notes: editDraft.notes.trim(),
+      targetReps:
+        editDraft.targetReps !== "" ? Number(editDraft.targetReps) : null,
+      targetWeight:
+        editDraft.targetWeight !== "" ? Number(editDraft.targetWeight) : null,
+      completed: false,
+      createdAt: serverTimestamp(),
+    };
     try {
-      const today = new Date().toISOString().slice(0, 10);
-      const data = await fetchDayData(today);
-      setCloudData(data);
-      setCloudStatus("downloaded");
-      Alert.alert("📥 Pulled Data", "Fetched workouts from Firestore!");
-    } catch (err: any) {
-      console.error("Fetch Error:", err);
-      Alert.alert("Error", "Failed to fetch from Firestore.");
+      const colRef = collection(
+        db,
+        "users",
+        user.uid,
+        "plannedDays",
+        selectedDayISO,
+        "plannedWorkouts"
+      );
+      if (editDraft.id) {
+        await updateDoc(doc(colRef, editDraft.id), payload as any);
+      } else {
+        await setDoc(doc(colRef), payload as any);
+      }
+      setModalOpen(false);
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Error", "Failed to save plan.");
     }
-  }
+  };
 
-  // -------------------
-  // Flatten local data
-  // -------------------
+  const markPlanComplete = async (plan: PlannedWorkout) => {
+    const user = auth.currentUser;
+    if (!user) return;
+    try {
+      const ref = doc(
+        db,
+        "users",
+        user.uid,
+        "plannedDays",
+        selectedDayISO,
+        "plannedWorkouts",
+        plan.id
+      );
+      await updateDoc(ref, { completed: true, completedAt: serverTimestamp() });
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Error", "Failed to mark complete.");
+    }
+  };
+
+  const deletePlan = async (plan: PlannedWorkout) => {
+    const user = auth.currentUser;
+    if (!user) return;
+    try {
+      const ref = doc(
+        db,
+        "users",
+        user.uid,
+        "plannedDays",
+        selectedDayISO,
+        "plannedWorkouts",
+        plan.id
+      );
+      await deleteDoc(ref);
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Error", "Failed to delete plan.");
+    }
+  };
+
+  // -------- derive metrics for Overview --------
   const allSets = useMemo(() => {
     const rows: any[] = [];
     for (const w of workouts) {
@@ -99,226 +307,372 @@ export default function Progress() {
     return rows;
   }, [workouts]);
 
-  // -------------------
-  // Overview metrics
-  // -------------------
   const totalWorkouts = workouts.length;
   const totalSets = allSets.length;
   const avgReps = totalSets ? average(allSets.map((s) => s.reps)) : 0;
   const personalBest = totalSets ? Math.max(...allSets.map((s) => s.weight)) : 0;
 
-  const bestsByExercise = useMemo(() => {
-    const map = new Map<string, { weight: number; date: string }>();
-    for (const s of allSets) {
-      if (!map.has(s.exercise) || s.weight > map.get(s.exercise)!.weight) {
-        map.set(s.exercise, { weight: s.weight, date: s.dateISO });
-      }
-    }
-    return Array.from(map.entries()).map(([exercise, info]) => ({
-      exercise,
-      ...info,
-    }));
+  const exerciseNames = useMemo(() => {
+    const set = new Set<string>();
+    allSets.forEach((s) => set.add(s.exercise));
+    return Array.from(set).sort();
   }, [allSets]);
+
+  useEffect(() => {
+    if (!exercise && exerciseNames.length > 0) setExercise(exerciseNames[0]);
+  }, [exerciseNames.length]);
+
+  // --- adaptive aggregation for large datasets ---
+const series = useMemo(() => {
+  if (!exercise) return [];
+
+  const filtered = allSets.filter((s) => s.exercise === exercise);
+  const grouped: Record<string, any[]> = {};
+
+  filtered.forEach((s) => {
+    const day = s.dateISO;
+    if (!grouped[day]) grouped[day] = [];
+    grouped[day].push(s);
+  });
+
+  // daily averages
+  const daily = Object.entries(grouped).map(([dateISO, sets]) => {
+    const reps = average(sets.map((s) => s.reps));
+    const vol = total(sets.map((s) => s.reps * s.weight));
+    const best = Math.max(...sets.map((s) => s.weight));
+    return { dateISO, bestWeight: best, volume: vol, avgReps: reps };
+  });
+
+  // sort chronologically
+  daily.sort((a, b) => compareISO(a.dateISO, b.dateISO));
+
+  return daily;
+}, [allSets, exercise]);
+
+// --- chartData with adaptive smoothing and fixed axis ---
+const chartData = useMemo(() => {
+  if (!series.length) return null;
+
+  const MAX_POINTS = 40;
+  let points = [...series];
+
+  if (points.length > MAX_POINTS) {
+    // Smooth by averaging chunks
+    const chunkSize = Math.ceil(points.length / MAX_POINTS);
+    const smoothed: any[] = [];
+    for (let i = 0; i < points.length; i += chunkSize) {
+      const chunk = points.slice(i, i + chunkSize);
+      const avgVal = {
+        dateISO: chunk[Math.floor(chunk.length / 2)].dateISO,
+        bestWeight: average(chunk.map((p) => p.bestWeight)),
+        volume: average(chunk.map((p) => p.volume)),
+        avgReps: average(chunk.map((p) => p.avgReps)),
+      };
+      smoothed.push(avgVal);
+    }
+    points = smoothed;
+  }
+
+  const labels = points.map((p, i) => {
+    const d = new Date(p.dateISO);
+    // show only a few evenly spaced labels
+    return i % Math.ceil(points.length / 6) === 0
+      ? `${d.getMonth() + 1}/${d.getDate()}`
+      : "";
+  });
+
+  const values =
+    metric === "weight"
+      ? points.map((p) => p.bestWeight)
+      : metric === "volume"
+      ? points.map((p) => p.volume)
+      : points.map((p) => p.avgReps);
+
+  return { labels, values };
+}, [series, metric]);
+
+
 
   const weeklyGoal = 4;
   const streak = weeklyStreak(workouts, weeklyGoal);
 
-  const avgGap = useMemo(() => {
-    if (workouts.length < 2) return 0;
-    const times = workouts
-      .map((w) => new Date(w.dateISO).getTime())
-      .sort((a, b) => a - b);
-    const diffs = [];
-    for (let i = 1; i < times.length; i++)
-      diffs.push((times[i] - times[i - 1]) / (1000 * 60 * 60 * 24));
-    return average(diffs);
-  }, [workouts]);
+  // -------- demo data visibility (show only if no completed days) --------
+  const showDemoButton = completedDays.length === 0;
 
-  const weekdayStats = useMemo(() => {
-    const counts = Array(7).fill(0);
-    workouts.forEach((w) => counts[new Date(w.dateISO).getDay()]++);
-    return counts;
-  }, [workouts]);
+  const loadDemoData = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
 
-  // -------------------
-  // Trends (Exercise Picker)
-  // -------------------
-  const exerciseNames = useMemo(() => {
-    const set = new Set<string>();
-    workouts.forEach((w) => w.exercises.forEach((ex) => set.add(ex.name)));
-    return Array.from(set).sort();
-  }, [workouts]);
+      const sample = [
+        {
+          date: "2025-11-01",
+          items: [
+            {
+              name: "Bench Press",
+              sets: [
+                { reps: 10, weight: 135 },
+                { reps: 8, weight: 145 },
+                { reps: 6, weight: 155 },
+              ],
+            },
+          ],
+        },
+        {
+          date: "2025-11-03",
+          items: [
+            {
+              name: "Squat",
+              sets: [
+                { reps: 10, weight: 185 },
+                { reps: 8, weight: 205 },
+                { reps: 6, weight: 225 },
+              ],
+            },
+          ],
+        },
+        {
+          date: "2025-11-05",
+          items: [
+            {
+              name: "Deadlift",
+              sets: [
+                { reps: 8, weight: 225 },
+                { reps: 6, weight: 245 },
+                { reps: 4, weight: 265 },
+              ],
+            },
+          ],
+        },
+      ];
 
-  const [exercise, setExercise] = useState<string>(exerciseNames[0] ?? "");
+      for (const day of sample) {
+        const workoutsCol = collection(
+          db,
+          "users",
+          user.uid,
+          "workoutDays",
+          day.date,
+          "workouts"
+        );
+        for (const w of day.items) {
+          const workoutRef = doc(workoutsCol);
+          await setDoc(workoutRef, {
+            workoutType: w.name,
+            createdAt: serverTimestamp(),
+          });
+          for (const s of w.sets) {
+            await setDoc(
+              doc(
+                db,
+                "users",
+                user.uid,
+                "workoutDays",
+                day.date,
+                "workouts",
+                workoutRef.id,
+                "sets",
+                crypto.randomUUID()
+              ),
+              { reps: s.reps, weight: s.weight, createdAt: serverTimestamp() }
+            );
+          }
+        }
+      }
 
-  const series: Point[] = useMemo(() => {
-    if (!exercise) return [];
-    return workouts
-      .map((w) => {
-        const exMatches = w.exercises.filter((e) => e.name === exercise);
-        if (!exMatches.length) return null;
-        const sets = exMatches.flatMap((e) => e.sets);
-        const bestWeight = Math.max(...sets.map((s) => s.weight), 0);
-        const volume = total(sets.map((s) => s.reps * s.weight));
-        const avgReps = average(sets.map((s) => s.reps));
-        return { dateISO: w.dateISO, bestWeight, volume, avgReps };
-      })
-      .filter(Boolean) as Point[];
-  }, [workouts, exercise]);
+      Alert.alert("✅ Demo Data Loaded", "Sample workouts added to your account.");
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Error", "Failed to load demo data.");
+    }
+  };
 
-  const maxVal =
-    metric === "weight"
-      ? Math.max(...series.map((p) => p.bestWeight), 0)
-      : metric === "volume"
-      ? Math.max(...series.map((p) => p.volume), 0)
-      : Math.max(...series.map((p) => p.avgReps), 0);
+  // -------- render calendar --------
+  const renderCalendar = () => (
+    <View style={styles.card}>
+      <View style={styles.calendarHeader}>
+        <TouchableOpacity
+          onPress={() =>
+            setMonthCursor(
+              new Date(monthCursor.getFullYear(), monthCursor.getMonth() - 1, 1)
+            )
+          }
+        >
+          <Text style={styles.monthBtn}>‹</Text>
+        </TouchableOpacity>
+        <Text style={styles.cardTitle}>
+          {monthCursor.toLocaleString(undefined, {
+            month: "long",
+            year: "numeric",
+          })}
+        </Text>
+        <TouchableOpacity
+          onPress={() =>
+            setMonthCursor(
+              new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 1)
+            )
+          }
+        >
+          <Text style={styles.monthBtn}>›</Text>
+        </TouchableOpacity>
+      </View>
 
-  // -------------------
-  // Render
-  // -------------------
+      <View style={styles.weekRow}>
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+          <Text key={d} style={[styles.weekDay, { color: "#777" }]}>
+            {d}
+          </Text>
+        ))}
+      </View>
+
+      {weeks.map((w, wi) => (
+        <View key={wi} style={styles.weekRow}>
+          {w.map((iso, di) => {
+            if (!iso)
+              return (
+                <View
+                  key={`empty-${wi}-${di}`}
+                  style={[styles.dayCell, { backgroundColor: "transparent" }]}
+                />
+              );
+            const planned = plannedDays.includes(iso);
+            const completed = completedDays.includes(iso);
+            const selected = selectedDayISO === iso;
+            const bg = selected ? "#1A1A1A" : "#0D0D0D";
+            const border = selected ? ORANGE : "#222";
+
+            return (
+              <Pressable
+                key={iso}
+                onPress={() => setSelectedDayISO(iso)}
+                style={[styles.dayCell, { backgroundColor: bg, borderColor: border }]}
+              >
+                <Text style={styles.dayNum}>{parseInt(iso.slice(-2))}</Text>
+                <View style={styles.dotRow}>
+                  {planned && (
+                    <View style={[styles.dotSmall, { backgroundColor: "#3BA3FF" }]} />
+                  )}
+                  {completed && (
+                    <View style={[styles.dotSmall, { backgroundColor: ORANGE }]} />
+                  )}
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      ))}
+
+      {/* Day actions & planned list */}
+      <View style={{ marginTop: 10 }}>
+        {isFuture(selectedDayISO) ? (
+          <TouchableOpacity
+            style={styles.primaryBtn}
+            onPress={() => openPlanModal()}
+          >
+            <Text style={styles.primaryBtnText}>
+              Plan Workout for {selectedDayISO}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={styles.muted}>
+            {selectedDayISO === todayISO ? "Today" : "Past Day"} — view and
+            check off planned items below.
+          </Text>
+        )}
+      </View>
+
+      <View style={{ marginTop: 10 }}>
+        <Text style={styles.sectionTitle}>Planned Workouts ({selectedDayISO})</Text>
+        {plannedItems.length === 0 ? (
+          <Text style={styles.muted}>No plans yet.</Text>
+        ) : (
+          plannedItems.map((p) => (
+            <View key={p.id} style={styles.planRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.planTitle}>
+                  {p.name} {p.completed ? "✓" : ""}
+                </Text>
+                {!!p.notes && <Text style={styles.planNotes}>{p.notes}</Text>}
+                <Text style={styles.planMeta}>
+                  {p.targetReps != null ? `Target Reps: ${p.targetReps}   ` : ""}
+                  {p.targetWeight != null ? `Target Wt: ${p.targetWeight} lb` : ""}
+                </Text>
+              </View>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                {!p.completed && !isFuture(selectedDayISO) && (
+                  <TouchableOpacity
+                    style={[styles.smallBtn, { borderColor: "#52D273" }]}
+                    onPress={() => markPlanComplete(p)}
+                  >
+                    <Text style={styles.smallBtnText}>Check Off</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={styles.smallBtn}
+                  onPress={() => openPlanModal(p)}
+                >
+                  <Text style={styles.smallBtnText}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.smallBtn, { borderColor: "#C44" }]}
+                  onPress={() => deletePlan(p)}
+                >
+                  <Text style={styles.smallBtnText}>Del</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
+        )}
+      </View>
+    </View>
+  );
+
+  // -------- render --------
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: 40 }}
-    >
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 80 }}>
       <Text style={styles.header}>Progress</Text>
 
-      {/* Cloud Sync Status */}
-      <View style={styles.syncBadge}>
-        <View
-          style={[
-            styles.dot,
-            {
-              backgroundColor:
-                cloudStatus === "synced"
-                  ? "#4CAF50"
-                  : cloudStatus === "error"
-                  ? "#F44336"
-                  : cloudStatus === "downloaded"
-                  ? "#2196F3"
-                  : "#AAA",
-            },
-          ]}
-        />
-        <Text style={styles.syncText}>
-          {cloudStatus === "synced"
-            ? "Cloud Synced"
-            : cloudStatus === "downloaded"
-            ? "Data Pulled"
-            : "Local Data"}
-        </Text>
-      </View>
-
-      {/* Cloud Buttons */}
-      <View style={{ flexDirection: "row", marginBottom: 12 }}>
-        <TouchableOpacity style={styles.syncButton} onPress={syncToCloud}>
-          <Text style={styles.syncButtonText}>Sync → Cloud</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.syncButton} onPress={pullFromCloud}>
-          <Text style={styles.syncButtonText}>Pull ← Cloud</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Collapsible Calendar Header */}
+      <TouchableOpacity onPress={toggleCalendar} style={styles.collapseHeader}>
+        <Text style={styles.cardTitle}>Calendar</Text>
+        <Text style={styles.toggleArrow}>{calendarOpen ? "▲" : "▼"}</Text>
+      </TouchableOpacity>
+      {calendarOpen && renderCalendar()}
 
       {/* Tabs */}
       <View style={styles.tabRow}>
-        <TabChip
-          label="Overview"
-          active={tab === "Overview"}
-          onPress={() => setTab("Overview")}
-        />
-        <TabChip
-          label="Trends"
-          active={tab === "Trends"}
-          onPress={() => setTab("Trends")}
-        />
+        <TabChip label="Overview" active={tab === "Overview"} onPress={() => setTab("Overview")} />
+        <TabChip label="Trends" active={tab === "Trends"} onPress={() => setTab("Trends")} />
       </View>
 
       {tab === "Overview" ? (
-        <>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Consistency</Text>
-            <Text style={styles.item}>Weekly Goal: {weeklyGoal} workouts</Text>
-            <Text style={styles.item}>Current Streak: {streak} weeks 🔥</Text>
-            {avgGap > 0 && (
-              <Text style={styles.item}>
-                Avg gap between workouts: {avgGap.toFixed(1)} days
-              </Text>
-            )}
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Personal Bests</Text>
-            {bestsByExercise.length === 0 ? (
-              <Text style={styles.item}>No data yet</Text>
-            ) : (
-              bestsByExercise.map((b, i) => (
-                <Text key={i} style={styles.item}>
-                  {b.exercise}: {b.weight} lb ({formatDateTime(b.date)})
-                </Text>
-              ))
-            )}
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Most Active Days</Text>
-            <Svg width={width - 80} height={120}>
-              {weekdayStats.map((count, i) => {
-                const max = Math.max(...weekdayStats);
-                const h = max ? (count / max) * 100 : 0;
-                const barX = 20 + i * 40;
-                const dayLabels = ["S", "M", "T", "W", "T", "F", "S"];
-                return (
-                  <React.Fragment key={i}>
-                    <Rect
-                      x={barX}
-                      y={110 - h}
-                      width={20}
-                      height={h}
-                      fill={ORANGE}
-                      rx={4}
-                    />
-                    <SvgText
-                      x={barX + 10}
-                      y={115}
-                      fill={GRAY}
-                      fontSize="10"
-                      textAnchor="middle"
-                    >
-                      {dayLabels[i]}
-                    </SvgText>
-                  </React.Fragment>
-                );
-              })}
-            </Svg>
-          </View>
-        </>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Overview</Text>
+          <Text style={styles.item}>Workouts Logged: {totalWorkouts}</Text>
+          <Text style={styles.item}>Personal Best: {personalBest} lb</Text>
+          <Text style={styles.item}>Avg Reps: {avgReps.toFixed(1)}</Text>
+          <Text style={styles.item}>Streak: {streak} weeks 🔥</Text>
+        </View>
       ) : (
-        <>
-          {/* Exercise Picker */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Select Exercise</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginTop: 6 }}
-            >
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Trends</Text>
+
+          {/* Load Demo Data — shows only if no completed workouts exist */}
+          
+
+          {/* Organized controls */}
+          <View style={styles.trendSelectors}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {exerciseNames.map((name) => (
                 <Pressable
                   key={name}
                   onPress={() => setExercise(name)}
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor:
-                        exercise === name ? CHIP_BG_ACTIVE : CHIP_BG,
-                      borderColor: exercise === name ? ORANGE : "#222",
-                    },
-                  ]}
+                  style={[styles.trendPill, exercise === name && styles.trendPillActive]}
                 >
                   <Text
                     style={[
-                      styles.chipText,
-                      { color: exercise === name ? ORANGE : "#ddd" },
+                      styles.trendPillText,
+                      exercise === name && styles.trendPillTextActive,
                     ]}
                   >
                     {name}
@@ -326,170 +680,309 @@ export default function Progress() {
                 </Pressable>
               ))}
             </ScrollView>
-          </View>
-
-          {/* Metric Toggle */}
-          <View
-            style={[
-              styles.card,
-              { flexDirection: "row", justifyContent: "space-around" },
-            ]}
-          >
-            {["weight", "volume", "reps"].map((m) => (
-              <Pressable
-                key={m}
-                onPress={() => setMetric(m as any)}
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor:
-                      metric === m ? CHIP_BG_ACTIVE : CHIP_BG,
-                    borderColor: metric === m ? ORANGE : "#222",
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.chipText,
-                    { color: metric === m ? ORANGE : "#ddd" },
-                  ]}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {(["weight", "volume", "reps"] as const).map((m) => (
+                <Pressable
+                  key={m}
+                  onPress={() => setMetric(m)}
+                  style={[styles.trendPill, metric === m && styles.trendPillActive]}
                 >
-                  {m === "weight"
-                    ? "Best Weight"
-                    : m === "volume"
-                    ? "Volume"
-                    : "Reps"}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text
+                    style={[
+                      styles.trendPillText,
+                      metric === m && styles.trendPillTextActive,
+                    ]}
+                  >
+                    {m.toUpperCase()}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
           </View>
 
-          {/* Graph */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>
-              Progress Over Time ({metric})
-            </Text>
-            {series.length < 2 ? (
-              <Text style={styles.item}>Not enough data yet</Text>
-            ) : (
-              <LineChart
-                data={series.map((p) => ({
-                  x: new Date(p.dateISO).getTime(),
-                  y:
-                    metric === "weight"
-                      ? p.bestWeight
-                      : metric === "volume"
-                      ? p.volume
-                      : p.avgReps,
-                }))}
-                width={Math.max(260, width - 40)}
-                height={260}
-                color={ORANGE}
-                metric={metric}
-              />
-            )}
-          </View>
-        </>
+          {/* Chart */}
+          {chartData ? (
+            <LineChart
+              data={{
+                labels: chartData.labels,
+                datasets: [
+                  {
+                    data: chartData.values,
+                    color: () => ORANGE,
+                    strokeWidth: 2,
+                  },
+                ],
+              }}
+              width={screenWidth - 40}
+              height={240}
+              yAxisLabel=""
+              fromZero
+              withDots={chartData.values.length <= 30}
+              yAxisInterval={1}
+              chartConfig={{
+                backgroundGradientFrom: "#000",
+                backgroundGradientTo: "#000",
+                decimalPlaces: 1,
+                color: (opacity = 1) => `rgba(255, 106, 0, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(255,255,255,${opacity})`,
+                propsForDots: { r: "3", strokeWidth: "1", stroke: "#FF6A00" },
+              }}
+              bezier
+              style={{ marginTop: 10, borderRadius: 10 }}
+            />
+          ) : (
+            <Text style={styles.muted}>No data yet.</Text>
+          )}
+
+        </View>
       )}
+
+      {/* Plan/Edit Modal */}
+      <Modal
+        visible={modalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalOpen(false)}
+      >
+        <View style={styles.modalWrap}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>
+              {editDraft.id ? "Edit Planned Workout" : "Plan Workout"} — {selectedDayISO}
+            </Text>
+
+            <Text style={styles.label}>Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., Push/Pull Day"
+              placeholderTextColor="#666"
+              value={editDraft.name}
+              onChangeText={(t) => setEditDraft((s) => ({ ...s, name: t }))}
+            />
+
+            <Text style={styles.label}>Notes (optional)</Text>
+            <TextInput
+              style={[styles.input, { height: 68 }]}
+              placeholder="Notes, focus, time, etc."
+              placeholderTextColor="#666"
+              multiline
+              value={editDraft.notes}
+              onChangeText={(t) => setEditDraft((s) => ({ ...s, notes: t }))}
+            />
+
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Target Reps</Text>
+                <TextInput
+                  style={styles.input}
+                  keyboardType="numeric"
+                  placeholder="e.g., 30"
+                  placeholderTextColor="#666"
+                  value={editDraft.targetReps}
+                  onChangeText={(t) =>
+                    setEditDraft((s) => ({ ...s, targetReps: t.replace(/[^\d]/g, "") }))
+                  }
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Target Weight (lb)</Text>
+                <TextInput
+                  style={styles.input}
+                  keyboardType="numeric"
+                  placeholder="e.g., 135"
+                  placeholderTextColor="#666"
+                  value={editDraft.targetWeight}
+                  onChangeText={(t) =>
+                    setEditDraft((s) => ({
+                      ...s,
+                      targetWeight: t.replace(/[^\d.]/g, ""),
+                    }))
+                  }
+                />
+              </View>
+            </View>
+
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 12, gap: 8 }}>
+              <TouchableOpacity style={styles.outlineBtn} onPress={() => setModalOpen(false)}>
+                <Text style={styles.outlineBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.primaryBtn} onPress={savePlan}>
+                <Text style={styles.primaryBtnText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
 
-// ----------------- Components -----------------
-function TabChip({ label, active, onPress }: any) {
+function TabChip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        styles.tabChip,
-        {
-          backgroundColor: active ? CHIP_BG_ACTIVE : CHIP_BG,
-          borderColor: active ? ORANGE : "#222",
-        },
-      ]}
-    >
-      <Text
-        style={[styles.tabChipText, { color: active ? ORANGE : "#ddd" }]}
-      >
-        {label}
-      </Text>
+    <Pressable style={[styles.pill, active && styles.pillActive]} onPress={onPress}>
+      <Text style={[styles.pillText, active && styles.pillTextActive]}>{label}</Text>
     </Pressable>
   );
 }
 
-function LineChart({ data, width, height, color, metric }: any) {
-  const sorted = [...data].sort((a, b) => a.x - b.x);
-  const pad = 40;
-  const cw = width - pad * 2;
-  const ch = height - pad * 2;
-  const minX = sorted[0].x;
-  const maxX = sorted[sorted.length - 1].x;
-  const minY = 0;
-  const maxY = Math.max(...sorted.map((p) => p.y));
-  const mapX = (x: number) => pad + ((x - minX) / Math.max(1, maxX - minX)) * cw;
-  const mapY = (y: number) => pad + ch - ((y - minY) / Math.max(1, maxY - minY)) * ch;
-  const points = sorted.map((p) => `${mapX(p.x)},${mapY(p.y)}`).join(" ");
-  const tickCount = 4;
-  const tickValues = Array.from({ length: tickCount + 1 }, (_, i) => Math.round((maxY / tickCount) * i));
-
-  return (
-    <Svg width={width} height={height}>
-      <SvgLine x1={pad} y1={pad} x2={pad} y2={height - pad} stroke="#444" strokeWidth={1} />
-      <SvgLine x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="#444" strokeWidth={1} />
-      {tickValues.map((val, i) => {
-        const y = mapY(val);
-        return (
-          <React.Fragment key={i}>
-            <SvgLine x1={pad - 5} y1={y} x2={width - pad} y2={y} stroke="#222" strokeWidth={0.5} />
-            <SvgText x={pad - 8} y={y + 3} fill="#888" fontSize="10" textAnchor="end">
-              {val}
-            </SvgText>
-          </React.Fragment>
-        );
-      })}
-      {[sorted[0], sorted[Math.floor(sorted.length / 2)], sorted.at(-1)].map((p, i) =>
-        p ? (
-          <SvgText
-            key={i}
-            x={mapX(p.x)}
-            y={height - pad + 15}
-            fill="#888"
-            fontSize="10"
-            textAnchor="middle"
-          >
-            {new Date(p.x).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-          </SvgText>
-        ) : null
-      )}
-      <Polyline points={points} fill="none" stroke={color} strokeWidth={2} />
-      {sorted.map((p, i) => (
-        <Circle key={i} cx={mapX(p.x)} cy={mapY(p.y)} r={3} fill={color} />
-      ))}
-      <SvgText x={pad - 30} y={pad - 10} fill="#aaa" fontSize="12" textAnchor="start">
-        {metric === "weight" ? "Weight (lb)" : metric === "volume" ? "Volume" : "Reps"}
-      </SvgText>
-      <SvgText x={width / 2} y={height - 5} fill="#aaa" fontSize="12" textAnchor="middle">
-        Date
-      </SvgText>
-    </Svg>
-  );
-}
-
-// ----------------- Styles -----------------
+// -------- styles --------
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000", padding: 20 },
-  header: { color: "#fff", fontSize: 28, fontWeight: "800", marginBottom: 12 },
-  tabRow: { flexDirection: "row", marginBottom: 12 },
-  tabChip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, marginRight: 8, borderWidth: 1 },
-  tabChipText: { fontSize: 13, fontWeight: "700" },
-  chip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, marginRight: 8, borderWidth: 1 },
-  chipText: { fontSize: 13, fontWeight: "600" },
-  card: { backgroundColor: "#111", padding: 16, borderRadius: 14, borderWidth: 1, borderColor: "#1f1f1f", marginBottom: 16 },
-  cardTitle: { color: ORANGE, fontWeight: "800", marginBottom: 8, fontSize: 18 },
-  item: { color: "#eee", marginTop: 4, fontSize: 14 },
-  syncBadge: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
-  dot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
-  syncText: { color: "#aaa", fontSize: 12 },
-  syncButton: { backgroundColor: "#222", padding: 10, borderRadius: 8, marginRight: 10, borderWidth: 1, borderColor: "#444" },
-  syncButtonText: { color: ORANGE, fontWeight: "700" },
+  header: { color: "#fff", fontSize: 22, fontWeight: "700", marginBottom: 10 },
+
+  // Cards
+  card: {
+    backgroundColor: "#0D0D0D",
+    padding: 14,
+    borderRadius: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#161616",
+  },
+  cardTitle: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  sectionTitle: { color: "#fff", fontWeight: "700", marginBottom: 6 },
+  item: { color: "#ccc", marginTop: 6 },
+  muted: { color: GRAY, marginTop: 6 },
+
+  // Collapsible header
+  collapseHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#0D0D0D",
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 6,
+  },
+  toggleArrow: { color: "#fff", fontSize: 16 },
+
+  // Calendar
+  calendarHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  monthBtn: { color: "#fff", fontSize: 22, paddingHorizontal: 8 },
+  weekRow: { flexDirection: "row", gap: 6, marginBottom: 6 },
+  weekDay: { flex: 1, textAlign: "center", color: "#999" },
+  dayCell: {
+    flex: 1,
+    height: 54,
+    backgroundColor: "#0D0D0D",
+    borderWidth: 1,
+    borderColor: "#222",
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 2,
+  },
+  dayNum: { color: "#fff", fontWeight: "700", marginBottom: 4 },
+  dotRow: { flexDirection: "row", gap: 4 },
+
+  dotSmall: { width: 6, height: 6, borderRadius: 999 },
+
+  // Tabs & Pills
+  tabRow: { flexDirection: "row", gap: 8, marginTop: 8, marginBottom: 8 },
+  pill: {
+    backgroundColor: "#151515",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#222",
+  },
+  pillActive: { backgroundColor: "#1E1E1E", borderColor: ORANGE },
+  pillText: { color: "#aaa", fontWeight: "600" },
+  pillTextActive: { color: "#fff" },
+
+  // Trend selectors
+  trendSelectors: { gap: 8, marginBottom: 10 },
+  trendPill: {
+    backgroundColor: "#151515",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#222",
+    marginRight: 8,
+  },
+  trendPillActive: { backgroundColor: "#1E1E1E", borderColor: ORANGE },
+  trendPillText: { color: "#aaa", fontWeight: "600" },
+  trendPillTextActive: { color: "#fff" },
+
+  // Buttons
+  primaryBtn: {
+    backgroundColor: ORANGE,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    alignSelf: "flex-start",
+  },
+  primaryBtnText: { color: "#000", fontWeight: "700" },
+  outlineBtn: {
+    borderColor: "#333",
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  outlineBtnText: { color: "#fff" },
+
+  // Planned list
+  planRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    paddingVertical: 10,
+    borderBottomColor: "#181818",
+    borderBottomWidth: 1,
+  },
+  planTitle: { color: "#fff", fontWeight: "700" },
+  planNotes: { color: "#bbb", marginTop: 2 },
+  planMeta: { color: "#aaa", marginTop: 2, fontSize: 12 },
+
+  smallBtn: {
+    borderWidth: 1,
+    borderColor: "#444",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  smallBtnText: { color: "#fff", fontSize: 12 },
+
+  // Modal
+  modalWrap: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: "#0E0E0E",
+    borderRadius: 14,
+    padding: 14,
+    borderColor: "#1A1A1A",
+    borderWidth: 1,
+    width: "100%",
+  },
+  modalTitle: { color: "#fff", fontSize: 16, fontWeight: "700", marginBottom: 10 },
+  label: { color: "#bbb", marginTop: 8, marginBottom: 6 },
+  input: {
+    backgroundColor: "#141414",
+    color: "#fff",
+    borderWidth: 1,
+    borderColor: "#222",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
 });
