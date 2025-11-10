@@ -20,8 +20,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import Constants from "expo-constants";
 import { Ring } from "../../components/nutrition-ring";
+import DayCalendar from "../../components/day-calender"
 import * as Haptics from "expo-haptics";
 import { useNutrition } from "../../hooks/useNutrition";
+import { getAuth } from "firebase/auth";
+import { addEntry } from "lib/nutrition-store";
+import { db } from "../../firebase"
+import { addEntryToDay, dayKey, getDayLog, subscribeDayLog, MealEntry } from "../../lib/nutrition-store";
+import { serverTimestamp } from "firebase/firestore"
 
 const ORANGE = "#FF6A00";
 //const USDA_API_KEY = Constants.expoConfig?.extra?.USDA_API_KEY;
@@ -110,8 +116,10 @@ export default function Nutrition() {
   const [manualGramServing, setManualGramServing] = useState<string>("100"); // If USDA has now serving amt
   const [servingsCount, setServingsCount] = useState<string>("1");
 
+  const [calendarMonth, setCalenderMonth] = useState<Date>(new Date());
+
   // Globals
-  const { targets, summary, loading, entries, addEntry } = useNutrition();
+  const { targets, summary, loading, addEntry, selectedDayId, setSelectedDate } = useNutrition();
 
   // Recipe Search state
   const [recipeQ, setRecipeQ] = useState("");
@@ -127,6 +135,33 @@ export default function Nutrition() {
 
   const scanGate = useRef(false);
   const lineY = useRef(new Animated.Value(0)).current;
+
+  const [entries, setEntries] = useState<MealEntry[]>([]);
+  const auth = getAuth();
+  const uid = auth.currentUser?.uid;
+  const dayId = dayKey(new Date());
+
+  useEffect(() => {
+    if (!uid) return;
+    let alive = true;
+    (async () => {
+      try {
+        const list = await getDayLog(db, uid, dayId);
+        if (alive) setEntries(list);
+      } catch (e) {
+        console.log("[getDayLog] failed:", e);
+      }
+    })();
+    return () => { alive = false; };
+  }, [uid, dayId]);
+
+
+  //  const uid = auth.currentUser?.uid;
+  //  const dayId = new Date().toISOString().slice(0,10);
+  //  console.log("[addEntry] writing to",
+  //    `users/${uid}days/${dayId}`,
+  //    `users/${uid}/days/${dayId}/entries/<auto>`
+  //  );
 
   useEffect(() => {
     if (!scannerOpen) return;
@@ -159,39 +194,8 @@ export default function Nutrition() {
     );
   }
 
-  //  if (!targets) {}
-
   const goals = targets ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
   const day = summary ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
-
-  // Daily Log Entries
-  //  const [entries, setEntries] = useState<LogEntry[]>([]); <------------
-
-
-
-
-  // const scanGate = useRef(false);
-  // const lineY = useRef(new Animated.Value(0)).current;
-
-  /*
-  useEffect(() => {
-    if (!scannerOpen) return;
-    lineY.setValue(0);
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(lineY, {
-          toValue: 1,
-          duration: 1400,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(lineY, { toValue: 0, duration: 0, useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [scannerOpen]);
-  */
 
   // ask for camera permission
   const openScanner = async () => {
@@ -217,12 +221,12 @@ export default function Nutrition() {
     if (!p) throw new Error("Product not found");
 
     // Debug
-//    console.log("=== DEBUG: OFF Data ===");
-//    console.log("Product name:", p.product_name);
-//    console.log("Serving size:", p.serving_size);
-//    console.log("Serving quantity:", p.serving_quantity);
-//    console.log("Nutriments:", JSON.stringify(p.nutriments, null, 2));
-//    console.log("===================================");
+    //    console.log("=== DEBUG: OFF Data ===");
+    //    console.log("Product name:", p.product_name);
+    //    console.log("Serving size:", p.serving_size);
+    //    console.log("Serving quantity:", p.serving_quantity);
+    //    console.log("Nutriments:", JSON.stringify(p.nutriments, null, 2));
+    //    console.log("===================================");
     // --- basic identity ---
     const name =
       p.product_name_en ||
@@ -301,67 +305,6 @@ export default function Nutrition() {
     };
   }
 
-  /*
-  async function fetchOpenFoodFactsUPC(raw: string) {
-    const ean = toEAN13(raw);
-
-    const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(ean)}.json`;
-
-    const r = await fetch(url);
-
-    if (!r.ok) throw new Error(`Open Food Facts ${r.status}`);
-    const j = await r.json();
-    const p = j?.product;
-    if (!p) throw new Error("Product not found");
-
-    const name = p.product_name_en || p.product_name || p.generic_name_en || "Scanned Item";
-    const brand = (p.brands || "").split(",")[0]?.trim() || null;
-
-    let servingGrams: number | undefined;
-    if (typeof p.serving_quantity === "number") {
-      servingGrams = p.serving_quantity;
-    } else if (typeof p.serving_size === "string") {
-      const m = p.serving_size.match(/(\d+(?:\.\d+)?)\s*g/i);
-      if (m) servingGrams = Number(m[1]);
-    }
-
-    // New
-    const serving: { label: string; grams: number } | null =
-      Number.isFinite(servingGrams!) && (servingGrams as number) > 0
-        ? { label: p.serving_size || "serving", grams: servingGrams as number }
-        : null;
-
-    const n = (p.nutriments || {}) as Record<string, unknown>;
-    const num = (v: unknown) => 
-      typeof v === "number" ? v : Number.isFinite(Number(v)) ? Number(v) : undefined;
-    const fromKJ = (kj?: number) => (typeof kj === "number" ? kj / 4.184 : undefined);
-
-    const kcal100 =
-      num(n["energy-kcal_100g"]) ??
-      fromKJ(num(n["energy_100g"])) ??
-      0;
-
-    const protein100 = num(n["proteins_100g"]) ?? 0;
-    const carbs100 = num(n["carbohydrates_100g"]) ?? 0;
-    const fat100 = num(n["fat_100g"]) ?? 0;
-
-    const per100 = {
-      kcal: Math.max(0, Math.round(kcal100)),
-      protein_g: Math.max(0, Math.round(protein100)),
-      carbs_g: Math.max(0, Math.round(carbs100)),
-      fat_g: Math.max(0, Math.round(fat100)),
-    };
-
-    return {
-      id: String(p.code || ean),
-      name,
-      brand,
-      per100,
-      serving,
-    };
-  }
-  */
-
   const onUPCScanned = async ({ data }: { data: string }) => {
     if (scanGate.current) return;
     scanGate.current = true;
@@ -388,18 +331,6 @@ export default function Nutrition() {
 
       setServingsCount("1");
       setManualGramServing("");
-      /*
-      if (d.isPerServingFinal) {
-        setManualGramServing(d.serving?.grams ? String(d.serving.grams) : "");
-      } else {
-        const grams = Number(d?.serving?.grams);
-        if (Number.isFinite(grams) && grams > 0) {
-          setManualGramServing(String(grams));
-        } else {
-          setManualGramServing("100");
-        }
-      }
-      */
 
     } catch (e: any) {
       setError(e.message || "Scan failed");
@@ -572,13 +503,15 @@ export default function Nutrition() {
   let macrosPerServing;
   let gramsPerServing;
 
+  let hasServing = false;
+
   if (detail?.isScanned && detail?.servingMacros) {
     // We have final per-serving macros - use them directly, no calculation needed
     macrosPerServing = detail.servingMacros;
     gramsPerServing = detail.serving?.grams || 0; // Just for display
   } else {
     // Calculate from per100
-    const hasServing = !!detail?.serving;
+    hasServing = !!detail?.serving;
     gramsPerServing = hasServing
       ? detail.serving.grams
       : Math.max(1, parseFloat(manualGramServing) || 0);
@@ -595,70 +528,70 @@ export default function Nutrition() {
     carbs_g: macrosPerServing.carbs_g * servingsN, 
     fat_g: macrosPerServing.fat_g * servingsN, 
   };
-  /*
-  const hasServing = !!detail?.serving;
 
-  const macrosPerServing = detail?.isPerServingFinal && detail?.servingMacros
-    ? detail.servingMacros
-    : (() => {
-      const gramsPerServing = hasServing
-        ? detail.serving.grams
-        : Math.max(1, parseFloat(manualGramServing) || 0);
-      return detail && gramsPerServing
-        ? scale(detail.per100, gramsPerServing)
-        : { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0};
-    })();
-
-//  const gramsPerServing = hasServing
-//    ? detail.serving.grams
-//    : Math.max(1, parseFloat(manualGramServing) || 0);
-
-//  const macrosPerServing = 
-//    detail?.macros
-//    ? detail.macros
-//    : detail && gramsPerServing 
-//      ? scale(detail.per100, gramsPerServing) 
-//      : { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0};
-
-  const servingsN = Math.max(0, parseFloat(servingsCount) || 0);
-  const macrosThisEntry = {
-    kcal: macrosPerServing.kcal * servingsN, 
-    protein_g: macrosPerServing.protein_g * servingsN, 
-    carbs_g: macrosPerServing.carbs_g * servingsN, 
-    fat_g: macrosPerServing.fat_g * servingsN, 
-  };
-  */
-
-  const addToDaily = () => {
+  const addToDaily = async () => {
     if (!detail) return;
 
-    //const grams = Number(manualGramServing) || detail.serving?.grams || 100;
-    //const serving = Math.max(1, Number(servingsCount) || "1");
-    //const mult = (grams / 100) * serving;
 
-    //    const macros = {
-    //      kcal: Math.round((detail.per100.kcal ?? 0) * mult),
-    //      protein_g: Math.round((detail.per100.protein_g ?? 0) * mult),
-    //      carbs_g: Math.round((detail.per100.carbs_g ?? 0) * mult),
-    //      fat_g: Math.round((detail.per100.fat_g ?? 0) * mult),
-    //    };
+    //const auth = getAuth();
+//    const uid = auth.currentUser?.uid;
+//    if (!uid) { setError("Not signed in"); return; }
+//    const dayId = dayKey(new Date());
+    console.log("[addEntry] writing to",
+      `users/${uid}days/${dayId}`,
+      `users/${uid}/days/${dayId}/entries/<auto>`
+    );
 
-    addEntry({
+    const servings = Number.isFinite(parseFloat(servingsCount))
+      ? parseFloat(servingsCount)
+      : 1;
+
+    const gramPerServing = typeof detail.serving?.grams === "number"
+      ? detail.serving!.grams
+      : null;
+
+    const entry = {
       name: detail.name,
       brand: detail.brand ?? null,
-      servings: servingsN,
-      gramsPerServing: gramsPerServing,
-      kcal: macrosThisEntry.kcal,
-      protein_g: macrosThisEntry.protein_g,
-      carbs_g: macrosThisEntry.carbs_g,
-      fat_g: macrosThisEntry.fat_g,
-      createdAt: new Date().toISOString(),
-    });
+      kcal: Number(macrosThisEntry.kcal) || 0,
+      protein_g: Number(macrosThisEntry.protein_g) || 0,
+      carbs_g: Number(macrosThisEntry.carbs_g) || 0,
+      fat_g:Number( macrosThisEntry.fat_g) || 0,
+      grams: Number(detail.serving?.grams ?? manualGramServing ?? 0) || 0,
+      servings: Number(servingsCount) || 1,
+    };
 
-    setDetail(null);
-    setServingsCount("1");
-    setManualGramServing("100");
+    const t = targets ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0, water_oz: 0 };
+    const dayTargets = {
+      target_kcal: Number(t.kcal) || 0,
+      target_protein_g: Number(t.protein_g) || 0,
+      target_carbs_g: Number(t.carbs_g) || 0,
+      target_fat_g: Number(t.fat_g) || 0,
+      target_water_oz: 0,
+    };
 
+    try {
+      const temp = {
+        id: `temp-${Date.now()}`,
+        ...entry,
+        createdAt: { toDate: () => new Date() },
+      };
+
+      setEntries((prev) => [temp, ...prev]);
+
+      await addEntryToDay({
+        db, uid, dayId,
+        entry,
+        targets: dayTargets,
+        water_oz: 0,
+      });
+
+      setDetail(null);
+      setServingsCount("1");
+      setManualGramServing("100");
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to add to daily log");
+    }
   };
 
   const ResultRow = ({ item }: any) => (
@@ -667,7 +600,6 @@ export default function Nutrition() {
       {!!item.brand && <Text style={styles.subItem}>{item.brand}</Text>}
     </Pressable>
   );
-
 
   return (
     <SafeAreaView style={styles.container}>
@@ -835,9 +767,9 @@ export default function Nutrition() {
                         value={servingsCount}
                         onChangeText={(t) => {
                           const cleaned = t
-                            .replace(/,/g, ".")
-                            .replace(/[^0-9.]/g, "")
-                            .replace(/(\..*)\./, "$1");
+                          .replace(/,/g, ".")
+                          .replace(/[^0-9.]/g, "")
+                          .replace(/(\..*)\./, "$1");
                           setServingsCount(cleaned);
                         }}
                         placeholder="e.g., 1.5"
@@ -894,16 +826,9 @@ export default function Nutrition() {
                           kcal: {Math.round(item.kcal)} | P: {Math.round(item.protein_g)} g | C: {Math.round(item.carbs_g)} g | F: {Math.round(item.fat_g)} g
                         </Text>
                         <Text style={[styles.subItem, { fontSize: 12, opacity: 0.7 }]}>
-                          {(() => {
-                            const raw = 
-                              item.createdAt ??
-                              item.atISO ??
-                              item.created_at ??
-                              item.timestamp ??
-                              null;
-                            const d = toDate(raw);
-                            return d ? d.toLocaleString() : '';
-                          })()}
+                          {item.createdAt?.seconds
+                            ? new Date(item.createdAt.seconds * 1000).toLocaleTimeString()
+                            : "-"}
                         </Text>
                       </View> 
                     ))}
@@ -974,6 +899,15 @@ export default function Nutrition() {
                 <Text style={styles.subItem}>&nbsp;</Text>
               )}
             </View>
+            <DayCalendar
+              monthBase={calendarMonth}
+              selectedDayId={selectedDayId}
+              onSelectDate={(d) => {
+                setSelectedDate(d);
+              }}
+              onPrevMonth={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}
+              onNextMonth={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}
+            />
           </View>
         </ScrollView>
 

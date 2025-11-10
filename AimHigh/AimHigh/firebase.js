@@ -41,8 +41,8 @@ try {
 // Initialize services
 // Edit: export const auth = getAuth(app);
 // Edit: export 
-const db = getFirestore(app);
+export const db = getFirestore(app);
 // Edit: export 
 const storage = getStorage(app);
 
-export { app, auth, db, storage}
+export { app, auth, storage}
