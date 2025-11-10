@@ -105,7 +105,7 @@ function WorkoutCard({
       let runningSetNumber = 0;
       await Promise.all(
         exercises.flatMap((ex) =>
-          ex.sets.map((s, idx) => {
+          ex.sets.map((s) => {
             runningSetNumber += 1;
             return setDoc(doc(setsColPath), {
               setNumber: runningSetNumber,             // per rules: number
@@ -128,8 +128,15 @@ function WorkoutCard({
 
   return (
     <View style={styles.card}>
-      {/* Delete workout */}
-      <TouchableOpacity style={styles.deletePillTopRight} onPress={() => onDeleteWorkout(workoutId)}>
+      {/* Delete workout (make it always tappable + above everything) */}
+      <TouchableOpacity
+        style={styles.deletePillTopRight}
+        onPress={() => onDeleteWorkout(workoutId)}
+        hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+        accessibilityRole="button"
+        accessibilityLabel="Delete workout"
+        testID={`delete-workout-${workoutId}`}
+      >
         <Text style={styles.deletePillText}>Delete</Text>
       </TouchableOpacity>
 
@@ -139,6 +146,8 @@ function WorkoutCard({
       <TouchableOpacity
         style={[styles.outlineBtn, { alignSelf: "flex-start", marginTop: 6 }]}
         onPress={() => setShowExerciseForm((s) => !s)}
+        accessibilityRole="button"
+        accessibilityLabel={showExerciseForm ? "Cancel add exercise" : "Add exercise"}
       >
         <Text style={styles.outlineBtnText}>{showExerciseForm ? "Cancel" : "Add Exercise"}</Text>
       </TouchableOpacity>
@@ -160,6 +169,8 @@ function WorkoutCard({
               setExerciseName("Push Ups");
               setShowExerciseForm(false);
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Save exercise"
           >
             <Text style={styles.primaryBtnText}>Save Exercise</Text>
           </TouchableOpacity>
@@ -182,12 +193,15 @@ function WorkoutCard({
           />
         ))
       )}
+
       {/* Save to DB button */}
       {exercises.length > 0 && (
         <TouchableOpacity
           style={[styles.primaryBtn, { alignSelf: "flex-end", marginTop: 12, opacity: isSaving ? 0.7 : 1 }]}
           onPress={handleSaveWorkoutToDb}
           disabled={isSaving}
+          accessibilityRole="button"
+          accessibilityLabel="Save workout to calendar day"
         >
           <Text style={styles.primaryBtnText}>{isSaving ? "Saving..." : "Save"}</Text>
         </TouchableOpacity>
@@ -218,10 +232,25 @@ function ExerciseBlock({
         <Text style={styles.exerciseName}>{name}</Text>
 
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.smallOutlineBtn} onPress={() => setShowSetForm((s) => !s)}>
+          <TouchableOpacity
+            style={styles.smallOutlineBtn}
+            onPress={() => setShowSetForm((s) => !s)}
+            hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel={showSetForm ? "Cancel add set" : "Add set"}
+          >
             <Text style={styles.outlineBtnText}>{showSetForm ? "Cancel" : "Add Set"}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.smallDeleteBtn} onPress={() => onDeleteExercise(workoutId, exerciseId)}>
+
+          {/* Exercise delete: bigger hit area for reliability */}
+          <TouchableOpacity
+            style={styles.smallDeleteBtn}
+            onPress={() => onDeleteExercise(workoutId, exerciseId)}
+            hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel={`Delete exercise ${name}`}
+            testID={`delete-exercise-${exerciseId}`}
+          >
             <Text style={styles.deletePillText}>Delete</Text>
           </TouchableOpacity>
         </View>
@@ -237,7 +266,14 @@ function ExerciseBlock({
               <Text style={styles.setText}>
                 Reps: <Text style={styles.white}>{s.reps}</Text> • Wt: <Text style={styles.white}>{s.weight}</Text> lb
               </Text>
-              <TouchableOpacity style={styles.smallDeleteBtn} onPress={() => onDeleteSet(workoutId, exerciseId, s.id)}>
+              <TouchableOpacity
+                style={styles.smallDeleteBtn}
+                onPress={() => onDeleteSet(workoutId, exerciseId, s.id)}
+                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel={`Delete set ${idx + 1}`}
+                testID={`delete-set-${s.id}`}
+              >
                 <Text style={styles.deletePillText}>Delete</Text>
               </TouchableOpacity>
             </View>
@@ -279,6 +315,8 @@ function ExerciseBlock({
               setReps("12");
               setWeight("45");
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Save set"
           >
             <Text style={styles.primaryBtnText}>Save Set</Text>
           </TouchableOpacity>
@@ -312,6 +350,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: ORANGE,
     borderRadius: 10,
+    zIndex: 1000,   // <-- keep on top (iOS)
+    elevation: 8,   // <-- keep on top (Android)
   },
   deletePillText: { color: ORANGE, fontWeight: "700" },
 
@@ -356,11 +396,26 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
 
-  primaryBtn: { backgroundColor: ORANGE, paddingVertical: 12, paddingHorizontal: 18, borderRadius: 14, alignSelf: "flex-start", marginTop: 6 },
+  primaryBtn: {
+    backgroundColor: ORANGE,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    alignSelf: "flex-start",
+    marginTop: 6
+  },
   primaryBtnText: { color: "#000", fontWeight: "800", fontSize: 16 },
 
   outlineBtn: { borderWidth: 1, borderColor: ORANGE, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10 },
   smallOutlineBtn: { borderWidth: 1, borderColor: ORANGE, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10 },
-  smallDeleteBtn: { borderWidth: 1, borderColor: ORANGE, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10, marginLeft: 8 },
+  smallDeleteBtn: {
+    borderWidth: 1,
+    borderColor: ORANGE,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    marginLeft: 8,
+  },
   outlineBtnText: { color: ORANGE, fontWeight: "700" },
 });
+
