@@ -120,13 +120,6 @@ export async function addEntry(db: Firestore, uid: string, dayId: string, e: Ent
   await setDoc(entryRef, { ...e, createdAt: serverTimestamp() });
 
   return entryId;
-  //const dayId = new Date().toISOString().slice(0,10);
-  //await ensureSummary(uid, dayId);
-
-  //const entriesRef = collection(db, "users", uid, "days", dayId, "entries");
-  //const dayRef = doc(db, "users", uid, "days", dayId);
-  
-
 }
 
 export async function addToTodayTotals(delta: Partial<Totals>) {

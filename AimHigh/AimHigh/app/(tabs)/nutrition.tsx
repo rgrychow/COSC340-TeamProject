@@ -156,12 +156,6 @@ export default function Nutrition() {
   }, [uid, dayId]);
 
 
-  //  const uid = auth.currentUser?.uid;
-  //  const dayId = new Date().toISOString().slice(0,10);
-  //  console.log("[addEntry] writing to",
-  //    `users/${uid}days/${dayId}`,
-  //    `users/${uid}/days/${dayId}/entries/<auto>`
-  //  );
 
   useEffect(() => {
     if (!scannerOpen) return;
@@ -206,7 +200,6 @@ export default function Nutrition() {
   };
 
   // Barcode Scan Function
-  // Barcode Scan Function — per-serving only (no scaling)
   async function fetchOpenFoodFactsUPC(raw: string) {
     const ean = toEAN13(raw);
 
@@ -220,13 +213,6 @@ export default function Nutrition() {
     const p = j?.product;
     if (!p) throw new Error("Product not found");
 
-    // Debug
-    //    console.log("=== DEBUG: OFF Data ===");
-    //    console.log("Product name:", p.product_name);
-    //    console.log("Serving size:", p.serving_size);
-    //    console.log("Serving quantity:", p.serving_quantity);
-    //    console.log("Nutriments:", JSON.stringify(p.nutriments, null, 2));
-    //    console.log("===================================");
     // --- basic identity ---
     const name =
       p.product_name_en ||
@@ -496,9 +482,6 @@ export default function Nutrition() {
     }
   };
 
-  // computed macros for UI
-  // computed macros for UI
-
   // Determine macros per serving
   let macrosPerServing;
   let gramsPerServing;
@@ -531,16 +514,6 @@ export default function Nutrition() {
 
   const addToDaily = async () => {
     if (!detail) return;
-
-
-    //const auth = getAuth();
-//    const uid = auth.currentUser?.uid;
-//    if (!uid) { setError("Not signed in"); return; }
-//    const dayId = dayKey(new Date());
-    console.log("[addEntry] writing to",
-      `users/${uid}days/${dayId}`,
-      `users/${uid}/days/${dayId}/entries/<auto>`
-    );
 
     const servings = Number.isFinite(parseFloat(servingsCount))
       ? parseFloat(servingsCount)

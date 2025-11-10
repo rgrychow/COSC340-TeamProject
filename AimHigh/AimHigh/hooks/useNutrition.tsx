@@ -36,19 +36,6 @@ export const NutritionCtx = createContext<NutritionContextValue | undefined>(und
 // Provider: subscribes once and shares to all screens
 export function NutritionProvider({ children }: { children: React.ReactNode }) {
 
-  /*
-  type Targets = { kcal: number; protein_g: number; carbs_g: number; fat_g: number };
-  type LogEntry = {
-    id: string;
-    name: string;
-    brand?: string | null;
-    kcal: number;
-    protein_g: number;
-    carbs_g: number;
-    fat_g: number;
-    createdAt: number;
-  };
-  */
   const ZERO: Targets = { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
   const DEFAULTS: Targets = { kcal: 2200, protein_g: 160, carbs_g: 220, fat_g: 70 };
 
@@ -197,42 +184,6 @@ export function NutritionProvider({ children }: { children: React.ReactNode }) {
 
     return off;
   }, [uid, selectedDayId]);
-  /*
-    const ref = doc(db, "users", uid);
-    //         const snap = await getDoc(ref);
-    const off = onSnapshot(
-      ref,
-      (snap) => {
-
-        const d = (snap.data() as any) || {};
-        const t = d?.nutrition?.target as Partial<Targets> | undefined;
-        setTargets({
-          kcal: t?.kcal ?? DEFAULTS.kcal,
-          protein_g: t?.protein_g ?? DEFAULTS.protein_g,
-          carbs_g: t?.carbs_g ?? DEFAULTS.carbs_g,
-          fat_g: t?.fat_g ?? DEFAULTS.fat_g,
-        });
-        setLoading(false);
-      },
-      () => setLoading(false)
-    );
-    return off;
-  }, [uid]);
-  */
-
-  /*
-  const summary = useMemo<Targets>(() => {
-    return entries.reduce(
-      (acc, e) => ({
-        kcal: acc.kcal + (e.kcal ?? 0),
-        protein_g: acc.protein_g + (e.protein_g ?? 0),
-        carbs_g: acc.carbs_g + (e.carbs_g ?? 0),
-        fat_g: acc.fat_g + (e.fat_g ?? 0),
-      }),
-      { ...ZERO }
-    );
-  }, [entries]);
-*/
 
   const updateTargets = useCallback(
     async (patch: Partial<Targets>) => {
@@ -241,15 +192,6 @@ export function NutritionProvider({ children }: { children: React.ReactNode }) {
       setTargets((prev) => ({ ...(prev ?? DEFAULTS), ...patch}));
 
       await upsertTargets(uid, patch);
-      /*
-      const ref = doc(db, "users", user.uid);
-      const next = { ...(targets ?? DEFAULTS), ...patch };
-      await setDoc(
-        ref, 
-        { nutrition: { target: next } }, 
-        { merge: true }
-      );
-      */
 
     },
     [uid]
@@ -259,42 +201,11 @@ export function NutritionProvider({ children }: { children: React.ReactNode }) {
     async (e: Omit<Entry, "id" | "createdAt">) => {
       if (!uid) return;
       await addEntryFs(uid, e);
-      /*
-      const now = Date.now();
-      const id = `${now}`;
-      const normalized: Entry = {
-        id,
-        name: e.name ?? "Food",
-        brand: e.brand ?? null,
-        kcal: Number(e.kcal) || 0,
-        protein_g: Number(e.protein_g) || 0,
-        carbs_g: Number(e.carbs_g) || 0,
-        fat_g: Number(e.fat_g) || 0,
-        createdAt: now,
-      };
-
-      setEntries((prev) => [...prev, normalized]);
-      */
     },
     [uid]
   );
 
-  /*
-  const value = useMemo(
-    () => ({
-      targets: targets ?? DEFAULTS, 
-      summary: _summary,
-      entries,
-      loading,
-      addEntry,
-      updateTargets,
-    }),
-    [targets, summary, entries, loading, addEntry, updateTargets]
-  );
-  */
 
-
-  // Keep?
   const ctxValue: NutritionContextValue = {
     targets: (targets ?? DEFAULTS),
     summary,
