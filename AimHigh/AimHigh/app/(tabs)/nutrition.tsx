@@ -1,6 +1,4 @@
 // app/(tabs)/nutrition.tsx
-// New
-
 import React, { useRef, useState, useEffect } from "react";
 import {
   ActivityIndicator,
@@ -22,10 +20,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import Constants from "expo-constants";
 import { Ring } from "../../components/nutrition-ring";
+import DayCalendar from "../../components/day-calender"
 import * as Haptics from "expo-haptics";
+import { useNutrition } from "../../hooks/useNutrition";
+import { getAuth } from "firebase/auth";
+import { addEntry } from "lib/nutrition-store";
+import { db } from "../../firebase"
+import { addEntryToDay, dayKey, getDayLog, subscribeDayLog, MealEntry } from "../../lib/nutrition-store";
+import { serverTimestamp } from "firebase/firestore"
 
 const ORANGE = "#FF6A00";
-const USDA_API_KEY = Constants.expoConfig?.extra?.USDA_API_KEY || "";
+//const USDA_API_KEY = Constants.expoConfig?.extra?.USDA_API_KEY;
+const USDA_API_KEY = process.env.EXPO_PUBLIC_USDA_API_KEY;
 const LIST_MAX = Math.min(420, Math.round(Dimensions.get("window").height * 0.5));
 const MEAL_BASE = "https://themealdb.com/api/json/v1/1";
 
@@ -86,10 +92,22 @@ type LogEntry = {
   atISO: string;
 };
 
+function toDate(val: any): Date | null {
+  if (!val) return null;
+  if (val instanceof Date) return val;
+  if (typeof val === 'number') return new Date(val);
+  if (typeof val === 'string') return new Date(val);
+  if (typeof val === 'object' && ('seconds' in val)) {
+    const ms = val.seconds * 1000 + Math.floor((val.nanoseconds || 0) / 1e6);
+    return new Date(ms);
+  }
+  return null;
+}
+
 
 export default function Nutrition() {
   const [q, setQ] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [items, setItems] = useState<Array<{ id: string; name: string; brand: string | null}>>([]);
   const [detail, setDetail] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -98,16 +116,10 @@ export default function Nutrition() {
   const [manualGramServing, setManualGramServing] = useState<string>("100"); // If USDA has now serving amt
   const [servingsCount, setServingsCount] = useState<string>("1");
 
-  // daily totals (no backend - local only)
-  const [totals, setTotals] = useState({
-    kcal: 0,
-    protein_g: 0,
-    carbs_g: 0,
-    fat_g: 0,
-  });
+  const [calendarMonth, setCalenderMonth] = useState<Date>(new Date());
 
-  // Daily Log Entries
-  const [entries, setEntries] = useState<LogEntry[]>([]);
+  // Globals
+  const { targets, summary, loading, addEntry, selectedDayId, setSelectedDate } = useNutrition();
 
   // Recipe Search state
   const [recipeQ, setRecipeQ] = useState("");
@@ -119,9 +131,31 @@ export default function Nutrition() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
 
+  const [scanHeight, setScanHeight] = useState(0);
+
   const scanGate = useRef(false);
   const lineY = useRef(new Animated.Value(0)).current;
-  const [scanHeight, setScanHeight] = useState(0);
+
+  const [entries, setEntries] = useState<MealEntry[]>([]);
+  const auth = getAuth();
+  const uid = auth.currentUser?.uid;
+  const dayId = dayKey(new Date());
+
+  useEffect(() => {
+    if (!uid) return;
+    let alive = true;
+    (async () => {
+      try {
+        const list = await getDayLog(db, uid, dayId);
+        if (alive) setEntries(list);
+      } catch (e) {
+        console.log("[getDayLog] failed:", e);
+      }
+    })();
+    return () => { alive = false; };
+  }, [uid, dayId]);
+
+
 
   useEffect(() => {
     if (!scannerOpen) return;
@@ -141,6 +175,22 @@ export default function Nutrition() {
     return () => loop.stop();
   }, [scannerOpen]);
 
+
+  // Animated add button
+  const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+  const btnScale = useRef(new Animated.Value(1)).current;
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  const goals = targets ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+  const day = summary ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+
   // ask for camera permission
   const openScanner = async () => {
     if (!permission || !permission.granted) {
@@ -153,66 +203,91 @@ export default function Nutrition() {
   async function fetchOpenFoodFactsUPC(raw: string) {
     const ean = toEAN13(raw);
 
-    const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(ean)}.json`;
+    const url =
+      `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(ean)}.json`;
 
     const r = await fetch(url);
-
     if (!r.ok) throw new Error(`Open Food Facts ${r.status}`);
     const j = await r.json();
-    const p = j?.product;
-    if (!p) throw new Error("Product not founf");
 
-    const name = p.product_name_en || p.product_name || p.generic_name_en || "Scanned Item";
+    const p = j?.product;
+    if (!p) throw new Error("Product not found");
+
+    // --- basic identity ---
+    const name =
+      p.product_name_en ||
+        p.product_name ||
+        p.generic_name_en ||
+        "Scanned Item";
     const brand = (p.brands || "").split(",")[0]?.trim() || null;
 
-    let servingGrams: number | null = null;
+    // --- serving meta (label + grams if available) ---
+    let servingGrams: number | undefined;
     if (typeof p.serving_quantity === "number") {
       servingGrams = p.serving_quantity;
     } else if (typeof p.serving_size === "string") {
-      const m = p.serving_size.match(/([\d.]+)\s*g/i);
-      if (m) servinggrams = parseFloat(m[1]);
+      // e.g., "30 g", "2 oz (56 g)"
+      const m = p.serving_size.match(/(\d+(?:\.\d+)?)\s*g/i);
+      if (m) servingGrams = Number(m[1]);
     }
+    const serving =
+      servingGrams && Number.isFinite(servingGrams)
+        ? { label: p.serving_size || "serving", grams: servingGrams }
+        : null;
 
-    const n = p.nutriments || {};
+    // --- nutrients map from OFF ---
+    const n: Record<string, any> = p.nutriments || {};
 
-    const kcal100 = 
-      (typeof n["energy-kcal_100g"] === "number"
-        ? n["energy-kcal_100g"]
-        : typeof n["energy_100g"] === "number"
-        ? n["energy_100g"] / 4.184
-        : 0) || 0;
+    const fromKJ = (kj: any) =>
+      Number.isFinite(kj) ? Number(kj) / 4.184 : undefined;
+    const num = (v: any) => (Number.isFinite(v) ? Number(v) : undefined);
 
-    const protein100 = Number(n["proteins_100g"] ?? n["protein_100g"] ?? 0);
-    const carbs100 = Number(n["carbohydrates_100g"] ?? n["carbs_100g"] ?? 0);
-    const fat100 = Number(n["fat_100g"] ?? n["fats_100g"] ?? 0);
-
-    const kcalServ = Number(n["energy-kcal_serving"] ?? (typeof n["energy_serving"] === "number" ? n["energy_serving"] / 4.184: NaN));
-
-    const protServ = Number(n["proteins_serving"]);
-    const carbServ = Number(n["carbohydrates_serving"]);
-    const fatServ = Number(n["fat_serving"]);
+    // --- per 100g (kept for your UI, but not used to scale here) ---
+    const kcal100 =
+      num(n["energy-kcal_100g"]) ??
+        fromKJ(num(n["energy_100g"]));
+    const protein100 = num(n["proteins_100g"]) ?? 0;
+    const carbs100   = num(n["carbohydrates_100g"]) ?? 0;
+    const fat100     = num(n["fat_100g"]) ?? 0;
 
     const per100 = {
-      kcal: Math.max(0, kcal100),
+      kcal: Math.max(0, kcal100 ?? 0),
       protein_g: Math.max(0, protein100),
       carbs_g: Math.max(0, carbs100),
       fat_g: Math.max(0, fat100),
     };
 
-    const serving = 
-      servingGrams && servingGrams > 0
-        ? {
-            label: p.serving_size || "serving",
-            grams: servingGrams,
-          }
-        : null;
+    // --- native per-serving macros (NO SCALING) ---
+    const kcalServing =
+      num(n["energy-kcal_serving"]) ??
+        fromKJ(num(n["energy_serving"]));
+    const proteinServing = num(n["proteins_serving"]);
+    const carbsServing   = num(n["carbohydrates_serving"]);
+    const fatServing     = num(n["fat_serving"]);
+
+    // Only return macros if all four are present as numbers
+    const hasAllServing =
+    [kcalServing, proteinServing, carbsServing, fatServing].every(
+      (v) => typeof v === "number"
+    );
+
+    const servingMacros = hasAllServing
+      ? {
+        kcal: Math.max(0, kcalServing as number),
+        protein_g: Math.max(0, proteinServing as number),
+        carbs_g: Math.max(0, carbsServing as number),
+        fat_g: Math.max(0, fatServing as number),
+      }
+      : undefined;
 
     return {
       id: String(p.code || ean),
       name,
       brand,
-      per100,
-      serving,
+      per100,          // for reference/backup in your UI
+      serving,         // label + grams if OFF provided them
+      servingMacros, // EXACT per-serving values from OFF; undefined if missing
+      isPerServingFinal: !!servingMacros,
     };
   }
 
@@ -225,17 +300,28 @@ export default function Nutrition() {
       // Success Buzz
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      setLoading(true);
+      setSearchLoading(true);
       setError(null);
 
       const d = await fetchOpenFoodFactsUPC(data);
-      setDetail(d);
+
+      setDetail({
+        id: String(d.id),
+        name: d.name,
+        brand: d.brand ?? null,
+        per100: d.per100,
+        serving: d.serving ?? null,
+        servingMaros: d.servingMacros ?? null,
+        isScanned: true,
+      });
+
       setServingsCount("1");
-      if (!d.serving) setManualGramServing("100");
+      setManualGramServing("");
+
     } catch (e: any) {
       setError(e.message || "Scan failed");
     } finally {
-      setLoading(false);
+      setSearchLoading(false);
       setScannerOpen(false);
     }
   }; 
@@ -293,9 +379,6 @@ export default function Nutrition() {
     }
   };
 
-  // Animated add button
-  const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-  const btnScale = useRef(new Animated.Value(1)).current;
 
   const pulse = () => {
     btnScale.setValue(1);
@@ -323,14 +406,21 @@ export default function Nutrition() {
       return;
     }
 
-    setLoading(true);
+    setSearchLoading(true);
     try {
       const url = new URL("https://api.nal.usda.gov/fdc/v1/foods/search");
-      url.searchParams.set("query", text.trim());
-      url.searchParams.set("pageSize", "15");
-      url.searchParams.set("api_key", USDA_API_KEY);
+      url.searchParams.set("query", q);
+      url.searchParams.set("pageSize", "20");
 
-      const r = await fetch(url.toString());
+      //const r = await fetch(url.toString());
+      const r = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          "X-Api-Key": String(USDA_API_KEY ?? ""),
+          "Accept": "application/json",
+        },
+      });
+
       if (!r.ok) throw new Error(`USDA search ${r.status}`);
 
       const data = await r.json();
@@ -344,7 +434,7 @@ export default function Nutrition() {
       setError(e.message || "Search failed");
       setItems([]);
     } finally {
-      setLoading(false);
+      setSearchLoading(false);
     }
   }, 350);
 
@@ -358,7 +448,7 @@ export default function Nutrition() {
       setError("Missing USDA_API_KEY");
       return;
     }
-    setLoading(true);
+    setSearchLoading(true);
     setError(null);
     try {
       const u = `https://api.nal.usda.gov/fdc/v1/food/${fdcId}?api_key=${USDA_API_KEY}`;
@@ -370,7 +460,7 @@ export default function Nutrition() {
       const portion = (d.foodPortions || []).find((p: any) => p.gramWeight) || null;
       const serving = portion 
         ? { 
-          label: portion.portionDEscription || portion.modifier || "serving",
+          label: portion.portionDescription || portion.modifier || "serving",
           grams: portion.gramWeight,
         }
         : null;
@@ -388,19 +478,31 @@ export default function Nutrition() {
     } catch (e: any) {
       setError(e.message || "Failed to load detail");
     } finally {
-      setLoading(false);
+      setSearchLoading(false);
     }
   };
 
-  // computed macros for UI
-  const hasServing = !!detail?.serving;
-  const gramsPerServing = hasServing
-    ? detail.serving.grams
-    : Math.max(1, parseFloat(manualGramServing) || 0);
-  const macrosPerServing = 
-    detail && gramsPerServing 
+  // Determine macros per serving
+  let macrosPerServing;
+  let gramsPerServing;
+
+  let hasServing = false;
+
+  if (detail?.isScanned && detail?.servingMacros) {
+    // We have final per-serving macros - use them directly, no calculation needed
+    macrosPerServing = detail.servingMacros;
+    gramsPerServing = detail.serving?.grams || 0; // Just for display
+  } else {
+    // Calculate from per100
+    hasServing = !!detail?.serving;
+    gramsPerServing = hasServing
+      ? detail.serving.grams
+      : Math.max(1, parseFloat(manualGramServing) || 0);
+
+    macrosPerServing = detail && gramsPerServing 
       ? scale(detail.per100, gramsPerServing) 
       : { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0};
+  }
 
   const servingsN = Math.max(0, parseFloat(servingsCount) || 0);
   const macrosThisEntry = {
@@ -410,31 +512,58 @@ export default function Nutrition() {
     fat_g: macrosPerServing.fat_g * servingsN, 
   };
 
-  const addToDaily = () => {
-    setTotals((t) => ({
-      kcal: t.kcal + macrosThisEntry.kcal,
-      protein_g: t.protein_g + macrosThisEntry.protein_g,
-      carbs_g: t.carbs_g + macrosThisEntry.carbs_g,
-      fat_g: t.fat_g + macrosThisEntry.fat_g,
-    }));
+  const addToDaily = async () => {
+    if (!detail) return;
 
-    // Log Entry
-    if (detail) {
-      const entry: LogEntry = {
-        id: `${detail.id}-${Date.now()}`,
-        name: detail.name,
-        brand: detail.brand,
-        servings: servingsN,
-        gramsPerServing: gramsPerServing,
-        macros: {
-          kcal: macrosThisEntry.kcal,
-          protein_g: macrosThisEntry.protein_g,
-          carbs_g: macrosThisEntry.carbs_g,
-          fat_g: macrosThisEntry.fat_g,
-        },
-        atISO: new Date().toISOString(),
+    const servings = Number.isFinite(parseFloat(servingsCount))
+      ? parseFloat(servingsCount)
+      : 1;
+
+    const gramPerServing = typeof detail.serving?.grams === "number"
+      ? detail.serving!.grams
+      : null;
+
+    const entry = {
+      name: detail.name,
+      brand: detail.brand ?? null,
+      kcal: Number(macrosThisEntry.kcal) || 0,
+      protein_g: Number(macrosThisEntry.protein_g) || 0,
+      carbs_g: Number(macrosThisEntry.carbs_g) || 0,
+      fat_g:Number( macrosThisEntry.fat_g) || 0,
+      grams: Number(detail.serving?.grams ?? manualGramServing ?? 0) || 0,
+      servings: Number(servingsCount) || 1,
+    };
+
+    const t = targets ?? { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0, water_oz: 0 };
+    const dayTargets = {
+      target_kcal: Number(t.kcal) || 0,
+      target_protein_g: Number(t.protein_g) || 0,
+      target_carbs_g: Number(t.carbs_g) || 0,
+      target_fat_g: Number(t.fat_g) || 0,
+      target_water_oz: 0,
+    };
+
+    try {
+      const temp = {
+        id: `temp-${Date.now()}`,
+        ...entry,
+        createdAt: { toDate: () => new Date() },
       };
-      setEntries((prev) => [entry, ...prev]);
+
+      setEntries((prev) => [temp, ...prev]);
+
+      await addEntryToDay({
+        db, uid, dayId,
+        entry,
+        targets: dayTargets,
+        water_oz: 0,
+      });
+
+      setDetail(null);
+      setServingsCount("1");
+      setManualGramServing("100");
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to add to daily log");
     }
   };
 
@@ -444,7 +573,6 @@ export default function Nutrition() {
       {!!item.brand && <Text style={styles.subItem}>{item.brand}</Text>}
     </Pressable>
   );
-
 
   return (
     <SafeAreaView style={styles.container}>
@@ -469,38 +597,38 @@ export default function Nutrition() {
                 <Ring
                   size={120}
                   stroke={12}
-                  value={totals.kcal}
-                  target={TARGETS.kcal}
+                  value={summary.kcal}
+                  target={targets.kcal}
                   color="#FF6A00"
                   label="Calories"
-                  sublabel={`${Math.round(totals.kcal)} / ${TARGETS.kcal} kcal`}
+                  sublabel={`${Math.round(day.kcal)} / ${goals.kcal} kcal`}
                 />
               </View>
 
               <View style={{ flexDirection: "row", justifyContent: "space-around", marginTop: 6 }}>
                 <Ring
                   size={92}
-                  value={totals.protein_g}
-                  target={TARGETS.protein_g}
+                  value={summary.protein_g}
+                  target={targets.protein_g}
                   color="#7abaff"
                   label="Protein"
-                  sublabel={`${Math.round(totals.protein_g)} / ${TARGETS.protein_g} g`}
+                  sublabel={`${Math.round(day.protein_g)} / ${goals.protein_g} g`}
                 />
                 <Ring
                   size={92}
-                  value={totals.carbs_g}
-                  target={TARGETS.carbs_g}
+                  value={summary.carbs_g}
+                  target={targets.carbs_g}
                   color="#9BE37D"
                   label="Carbs"
-                  sublabel={`${Math.round(totals.carbs_g)} / ${TARGETS.carbs_g} g`}
+                  sublabel={`${Math.round(day.carbs_g)} / ${goals.carbs_g} g`}
                 />
                 <Ring
                   size={92}
-                  value={totals.fat_g}
-                  target={TARGETS.fat_g}
+                  value={summary.fat_g}
+                  target={targets.fat_g}
                   color="#F6C945"
                   label="Fats"
-                  sublabel={`${Math.round(totals.fat_g)} / ${TARGETS.fat_g} g`}
+                  sublabel={`${Math.round(day.fat_g)} / ${goals.fat_g} g`}
                 />
               </View>
             </View>
@@ -573,23 +701,28 @@ export default function Nutrition() {
 
                   {/* Serving Picker*/}
                   <View style={styles.block}>
-                    {hasServing ? (
+                    {detail?.isScanned ? (
                       <Text style={styles.subItem}>
-                        Serving: {detail.serving.label} = {detail.serving.grams} g
+                        Serving: {detail.serving?.label || "1 serving"}
+                        {detail.serving?.grams ? ` (${detail.serving.grams}g)` : ""}
                       </Text>
-                    ) : (
-                        <View style={{ marginTop: 4 }}>
-                          <Text style={styles.subItem}>Serving (grams):</Text>
-                          <TextInput
-                            style={styles.inputSm}
-                            inputMode="numeric"
-                            value={manualGramServing}
-                            onChangeText={(t) => setManualGramServing(t.replace(/[^0-9.]/g, ""))}
-                            placeholder="grams"
-                            placeholderTextColor="#777"
-                          />
-                        </View>
-                      )}
+                    ) : hasServing ? (
+                        <Text style={styles.subItem}>
+                          Serving: {detail.serving.label} = {detail.serving.grams} g
+                        </Text>
+                      ) : (
+                          <View style={{ marginTop: 4 }}>
+                            <Text style={styles.subItem}>Serving (grams):</Text>
+                            <TextInput
+                              style={styles.inputSm}
+                              inputMode="numeric"
+                              value={manualGramServing}
+                              onChangeText={(t) => setManualGramServing(t.replace(/[^0-9.]/g, ""))}
+                              placeholder="grams"
+                              placeholderTextColor="#777"
+                            />
+                          </View>
+                        )}
 
                     {/* Per-serving macros*/}
                     <Text style={[styles.item, { marginTop: 8 }]}>Per serving</Text>
@@ -603,11 +736,18 @@ export default function Nutrition() {
                       <Text style={styles.subItem}>Servings consumed:</Text>
                       <TextInput
                         style={styles.inputSm}
-                        inputMode="numeric"
+                        keyboardType={Platform.OS === "ios" ? "deciaml-pad" : "numeric"}
                         value={servingsCount}
-                        onChangeText={(t) => setServingsCount(t.replace(/[^0-9.]/g, ""))}
+                        onChangeText={(t) => {
+                          const cleaned = t
+                          .replace(/,/g, ".")
+                          .replace(/[^0-9.]/g, "")
+                          .replace(/(\..*)\./, "$1");
+                          setServingsCount(cleaned);
+                        }}
                         placeholder="e.g., 1.5"
                         placeholderTextColor="#777"
+                        returnKeyType="done"
                       />
                       <Text style={styles.subItem}>
                         This entry total -- kcal: {r1(macrosThisEntry.kcal)} | P:{" "}
@@ -656,10 +796,12 @@ export default function Nutrition() {
                           - {item.name}{item.brand ? ` - ${item.brand}` : ""}
                         </Text>
                         <Text style={styles.subItem}>
-                          {item.servings} * {Math.round(item.gramsPerServing)} g -- kcal {Math.round(item.macros.kcal)} - P {Math.round(item.macros.protein_g)} g - C {Math.round(item.macros.carbs_g)} g - F {Math.round(item.macros.fat_g)} g
+                          kcal: {Math.round(item.kcal)} | P: {Math.round(item.protein_g)} g | C: {Math.round(item.carbs_g)} g | F: {Math.round(item.fat_g)} g
                         </Text>
                         <Text style={[styles.subItem, { fontSize: 12, opacity: 0.7 }]}>
-                          {new Date(item.atISO).toLocaleTimeString()}
+                          {item.createdAt?.seconds
+                            ? new Date(item.createdAt.seconds * 1000).toLocaleTimeString()
+                            : "-"}
                         </Text>
                       </View> 
                     ))}
@@ -730,6 +872,15 @@ export default function Nutrition() {
                 <Text style={styles.subItem}>&nbsp;</Text>
               )}
             </View>
+            <DayCalendar
+              monthBase={calendarMonth}
+              selectedDayId={selectedDayId}
+              onSelectDate={(d) => {
+                setSelectedDate(d);
+              }}
+              onPrevMonth={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}
+              onNextMonth={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}
+            />
           </View>
         </ScrollView>
 
@@ -743,58 +894,58 @@ export default function Nutrition() {
                   <Text style={styles.addText}>Grant Permission</Text>
                 </Pressable>
                 <Pressable onPress={() => setScannerOpen(false)} style={[styles.addBtn, { marginTop: 10 }]}>
-                  <Text style={styles.addText}>Camcel</Text>
-                </Pressable>
-              </View>
-            ) : (
-              <View style={styles.scanInner}>
-                <Text style={styles.cardTitle}>Scan a UPC</Text>
-                <View 
-                  style={styles.scanFrame}
-                  onLayout={(e) => setScanHeight(e.nativeEvent.layout.height)}
-                >
-                  <CameraView
-                    style={{ width: "100%", height: "100%" }}
-                    barcodeScannerSettings={{
-                      barcodeTypes: ["ean13", "upc_a", "upc_e"],
-                    }}
-                    onBarcodeScanned={({ data }) => onUPCScanned({ data })}
-                  />
-                  {/* dim mask at the edges to highlight the center */}
-                  <View pointerEvents="none" style={styles.maskTop} />
-                  <View pointerEvents="none" style={styles.maskBottom} />
-                  <View pointerEvents="none" style={styles.maskLeft} />
-                  <View pointerEvents="none" style={styles.maskRight} />
-
-                  {/* Orange Corner Brackets */}
-                  <View pointerEvents="none" style={[styles.corner, styles.cornerTL]} />
-                  <View pointerEvents="none" style={[styles.corner, styles.cornerTR]} />
-                  <View pointerEvents="none" style={[styles.corner, styles.cornerBL]} />
-                  <View pointerEvents="none" style={[styles.corner, styles.cornerBR]} />
-
-                  {/* Animated Scan Line */}
-                  <Animated.View
-                    pointerEvents="none"
-                    style={[
-                      styles.scanLine,
-                      {
-                        transform: [
-                          {
-                            translateY: lineY.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [0, Math.max(0, scanHeight - 32)],
-                            }),
-                          },
-                        ],
-                      },
-                    ]}
-                  />
-                </View>
-                <Pressable onPress={() => setScannerOpen(false)} style={[styles.addBtn, { marginTop: 10 }]}>
                   <Text style={styles.addText}>Cancel</Text>
                 </Pressable>
               </View>
-            )}
+            ) : (
+                <View style={styles.scanInner}>
+                  <Text style={styles.cardTitle}>Scan a UPC</Text>
+                  <View 
+                    style={styles.scanFrame}
+                    onLayout={(e) => setScanHeight(e.nativeEvent.layout.height)}
+                  >
+                    <CameraView
+                      style={{ width: "100%", height: "100%" }}
+                      barcodeScannerSettings={{
+                        barcodeTypes: ["ean13", "upc_a", "upc_e"],
+                      }}
+                      onBarcodeScanned={({ data }) => onUPCScanned({ data })}
+                    />
+                    {/* dim mask at the edges to highlight the center */}
+                    <View pointerEvents="none" style={styles.maskTop} />
+                    <View pointerEvents="none" style={styles.maskBottom} />
+                    <View pointerEvents="none" style={styles.maskLeft} />
+                    <View pointerEvents="none" style={styles.maskRight} />
+
+                    {/* Orange Corner Brackets */}
+                    <View pointerEvents="none" style={[styles.corner, styles.cornerTL]} />
+                    <View pointerEvents="none" style={[styles.corner, styles.cornerTR]} />
+                    <View pointerEvents="none" style={[styles.corner, styles.cornerBL]} />
+                    <View pointerEvents="none" style={[styles.corner, styles.cornerBR]} />
+
+                    {/* Animated Scan Line */}
+                    <Animated.View
+                      pointerEvents="none"
+                      style={[
+                        styles.scanLine,
+                        {
+                          transform: [
+                            {
+                              translateY: lineY.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0, Math.max(0, scanHeight - 32)],
+                              }),
+                            },
+                          ],
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Pressable onPress={() => setScannerOpen(false)} style={[styles.addBtn, { marginTop: 10 }]}>
+                    <Text style={styles.addText}>Cancel</Text>
+                  </Pressable>
+                </View>
+              )}
           </View>
         )}
 

@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { getAuth } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 import {
   Modal,
   ScrollView,
@@ -9,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { db } from '../firebase';
 import EditProfileModal from './edit_profile_modal';
 
 const ORANGE = "#FF6A00";
@@ -23,6 +26,37 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [editProfileVisible, setEditProfileVisible] = useState(false);
+
+  const handleToggleDarkMode = async (value: boolean) => {
+    setDarkModeEnabled(value);
+    try {
+      const uid = getAuth().currentUser?.uid;
+      if (!uid) return;
+      const ref = doc(db, 'users', uid);
+      await setDoc(ref, { darkBackground: value }, { merge: true });
+    } catch (e) {
+      console.error('Failed to update dark mode in Firestore:', e);
+      setDarkModeEnabled((prev) => !value); // revert UI on failure
+    }
+  };
+
+  // Load dark mode from Firestore when the modal becomes visible
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const uid = getAuth().currentUser?.uid;
+        if (!uid) return;
+        const snap = await getDoc(doc(db, 'users', uid));
+        if (snap.exists()) {
+          const data = snap.data() as any;
+          setDarkModeEnabled(Boolean(data.darkBackground));
+        }
+      } catch (e) {
+        console.error('Failed to load dark mode from Firestore:', e);
+      }
+    };
+    if (visible) load();
+  }, [visible]);
 
   return (
     <Modal
@@ -82,7 +116,7 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
                 <Text style={styles.settingText}>Dark Mode</Text>
                 <Switch
                   value={darkModeEnabled}
-                  onValueChange={setDarkModeEnabled}
+                  onValueChange={handleToggleDarkMode}
                   trackColor={{ false: '#333', true: ORANGE }}
                   thumbColor="#fff"
                 />

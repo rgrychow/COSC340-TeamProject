@@ -1,6 +1,8 @@
 // app/(tabs)/fitness.tsx
-import React, { useState } from "react";
+import { collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { useState } from "react";
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { auth, db } from "../../firebase";
 import { useWorkouts } from "../../hooks/useWorkouts";
 
 const ORANGE = "#FF6A00";
@@ -61,9 +63,68 @@ function WorkoutCard({
 }) {
   const [showExerciseForm, setShowExerciseForm] = useState(false);
   const [exerciseName, setExerciseName] = useState("Push Ups");
+  const [isSaving, setIsSaving] = useState(false);
 
   const dt = new Date(dateISO);
   const dateLabel = `${dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}  ${dt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+
+  const toDayId = (iso: string) => {
+    // Convert ISO date string to YYYY-MM-DD (local date) for rules' isValidDay
+    const d = new Date(iso);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const handleSaveWorkoutToDb = async () => {
+    try {
+      if (!auth?.currentUser?.uid) {
+        alert("You must be signed in to save.");
+        return;
+      }
+      if (!exercises || exercises.length === 0) {
+        alert("Add at least one exercise before saving.");
+        return;
+      }
+      setIsSaving(true);
+      const uid = auth.currentUser.uid;
+      const dayId = toDayId(dateISO);
+      // Create a SINGLE workout for this card/day and write ALL sets under it.
+      const workoutsCol = collection(db, "users", uid, "workoutDays", dayId, "workouts");
+      const workoutRef = doc(workoutsCol); // auto-id
+      const workoutTypeLabel =
+        exercises.length === 1
+          ? exercises[0].name
+          : exercises.map((e) => e.name).join(", ").slice(0, 60); // brief label
+      await setDoc(workoutRef, {
+        workoutType: workoutTypeLabel,  // per rules: string
+        createdAt: serverTimestamp(),   // per rules: timestamp
+      });
+      const setsColPath = collection(db, "users", uid, "workoutDays", dayId, "workouts", workoutRef.id, "sets");
+      let runningSetNumber = 0;
+      await Promise.all(
+        exercises.flatMap((ex) =>
+          ex.sets.map((s, idx) => {
+            runningSetNumber += 1;
+            return setDoc(doc(setsColPath), {
+              setNumber: runningSetNumber,             // per rules: number
+              reps: Number(s.reps) || 0,               // per rules: number
+              weightLb: Number(s.weight) || 0,         // per rules: number
+              createdAt: serverTimestamp(),            // per rules: timestamp
+              exerciseName: ex.name,                   // extra field allowed by rules (keys().hasAll)
+            });
+          })
+        )
+      );
+      alert("Workout saved to your calendar day!");
+    } catch (e: any) {
+      console.error(e);
+      alert("Failed to save. Check your connection and rules.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <View style={styles.card}>
@@ -120,6 +181,16 @@ function WorkoutCard({
             onDeleteSet={onDeleteSet}
           />
         ))
+      )}
+      {/* Save to DB button */}
+      {exercises.length > 0 && (
+        <TouchableOpacity
+          style={[styles.primaryBtn, { alignSelf: "flex-end", marginTop: 12, opacity: isSaving ? 0.7 : 1 }]}
+          onPress={handleSaveWorkoutToDb}
+          disabled={isSaving}
+        >
+          <Text style={styles.primaryBtnText}>{isSaving ? "Saving..." : "Save"}</Text>
+        </TouchableOpacity>
       )}
     </View>
   );

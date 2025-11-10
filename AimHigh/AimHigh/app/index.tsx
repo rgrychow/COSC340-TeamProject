@@ -3,10 +3,13 @@ import { useRouter } from 'expo-router';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { auth, db } from '../firebase'; // Adjust path to your firebaseConfig.js
 
+
 const LoginScreen: React.FC = () => {
+  // Fixes
+
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
@@ -14,7 +17,9 @@ const LoginScreen: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [name, setName] = useState<string>('');
-  const [height, setHeight] = useState<string>(''); // In inches
+  const [height, setHeight] = useState<string>(''); // Deprecated direct inches input; using feet+inches, total computed on submit
+  const [heightFeet, setHeightFeet] = useState<string>('');
+  const [heightInches, setHeightInches] = useState<string>('');
   const [weightLb, setWeightLb] = useState<string>(''); // In pounds
   const [age, setAge] = useState<string>('');
   const [gender, setGender] = useState<string>('');
@@ -23,8 +28,40 @@ const LoginScreen: React.FC = () => {
   const [targetFats, setTargetFats] = useState<string>('');
   const [targetCarbs, setTargetCarbs] = useState<string>('');
   const [step, setStep] = useState(0);
+
+  const [profileStep, setProfileStep] = useState<number>(0);
+
+  const isStepValid = (s: number) => {
+    if (s === 0) {
+      return name.trim().length > 0 && age.trim().length > 0 && gender.trim().length > 0;
+    }
+    if (s === 1) {
+      return heightFeet.trim().length > 0 && heightInches.trim().length > 0 && weightLb.trim().length > 0;
+    }
+    if (s === 2) {
+      return (
+        targetKcal.trim().length > 0 &&
+        targetProtein.trim().length > 0 &&
+        targetFats.trim().length > 0 &&
+        targetCarbs.trim().length > 0
+      );
+    }
+    return false;
+  };
+
+  const steps = [
+    { title : "Welcome to the Home Tab!", description: "Your dashboard for an overview of your fitness journey." },
+    { title : "Fitness Tab", description: "Your dashboard for an overview of your fitness journey." },
+    { title : "Nutrition Tab", description: "Your dashboard for an overview of your fitness journey." },
+    { title : "Progress tab", description: "Your dashboard for an overview of your fitness journey." },
+    ];
+
   const router = useRouter();
   const [newUserId, setNewUserId] = useState<string | null>(null);
+
+  // Fixes
+  // const [busy, setBusy] = useState<boolean>(true);
+  // const auth = initializeAuth(app, { persistence: getReactNativePersistance(ReactNativeAsyncStorage) });
 
   const handleLoginOrSignUp = async () => {
     if (isSignUp) {
@@ -52,16 +89,30 @@ const LoginScreen: React.FC = () => {
   };
 
   const handleProfileSubmit = async () => {
-    if (!name.trim() || !height || !weightLb || !age || !gender || !targetKcal || !targetProtein || !targetFats || !targetCarbs) {
+    if (!name.trim() || !heightFeet || !heightInches || !weightLb || !age || !gender || !targetKcal || !targetProtein || !targetFats || !targetCarbs) {
       Alert.alert('Error', 'Please fill all fields');
       return;
     }
-    if (isNaN(parseFloat(height)) || isNaN(parseFloat(weightLb)) || isNaN(parseInt(age)) ||
-        isNaN(parseFloat(targetKcal)) || isNaN(parseFloat(targetProtein)) ||
-        isNaN(parseFloat(targetFats)) || isNaN(parseFloat(targetCarbs))) {
+    if (
+      isNaN(parseInt(heightFeet)) ||
+      isNaN(parseInt(heightInches)) ||
+      isNaN(parseFloat(weightLb)) ||
+      isNaN(parseInt(age)) ||
+      isNaN(parseFloat(targetKcal)) ||
+      isNaN(parseFloat(targetProtein)) ||
+      isNaN(parseFloat(targetFats)) ||
+      isNaN(parseFloat(targetCarbs))
+    ) {
       Alert.alert('Error', 'Please enter valid numbers for height, weight, age, and nutrition targets');
       return;
     }
+    const feet = parseInt(heightFeet, 10);
+    const inches = parseInt(heightInches, 10);
+    if (inches < 0 || inches > 11 || feet < 0) {
+      Alert.alert('Error', 'Inches must be between 0 and 11, and feet must be 0 or greater.');
+      return;
+    }
+    const totalInches = feet * 12 + inches;
     try {
       const currentUser = auth.currentUser;
       if (!currentUser || currentUser.uid !== newUserId) {
@@ -71,7 +122,7 @@ const LoginScreen: React.FC = () => {
       await setDoc(doc(db, 'users', newUserId!), {
         name: name.trim(),
         email: email,
-        height: parseFloat(height),
+        height: totalInches,
         weightLb: parseFloat(weightLb),
         age: parseInt(age),
         gender: gender,
@@ -99,6 +150,8 @@ const LoginScreen: React.FC = () => {
       setConfirmPassword('');
       setName('');
       setHeight('');
+      setHeightFeet('');
+      setHeightInches('');
       setWeightLb('');
       setAge('');
       setGender('');
@@ -107,6 +160,7 @@ const LoginScreen: React.FC = () => {
       setTargetFats('');
       setTargetCarbs('');
       setNewUserId(null);
+      setProfileStep(0);
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to save profile');
       console.error('Firestore Error:', error); // Log for debugging
@@ -122,6 +176,7 @@ const LoginScreen: React.FC = () => {
     }
   };
 
+  /*
   if (busy) {
     return (
       <View style={[styles.container, { justifyContent: "center" }]}>
@@ -130,6 +185,7 @@ const LoginScreen: React.FC = () => {
       </View>
     );
   }
+  */
 
   return (
     <View style={styles.container}>
@@ -179,84 +235,130 @@ const LoginScreen: React.FC = () => {
 
       <Modal visible={showProfileModal} transparent animationType="slide">
         <View style={styles.modalContainer}>
-          <ScrollView contentContainerStyle={styles.modalContent}>
+          <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Complete Your Profile</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Name"
-              placeholderTextColor="#4B4B4B"
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Height (inches)"
-              placeholderTextColor="#4B4B4B"
-              value={height}
-              onChangeText={setHeight}
-              keyboardType="numeric"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Weight (pounds)"
-              placeholderTextColor="#4B4B4B"
-              value={weightLb}
-              onChangeText={setWeightLb}
-              keyboardType="numeric"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Age"
-              placeholderTextColor="#4B4B4B"
-              value={age}
-              onChangeText={setAge}
-              keyboardType="numeric"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Gender (e.g., Male/Female/Other)"
-              placeholderTextColor="#4B4B4B"
-              value={gender}
-              onChangeText={setGender}
-              autoCapitalize="words"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Target Calories (kcal)"
-              placeholderTextColor="#4B4B4B"
-              value={targetKcal}
-              onChangeText={setTargetKcal}
-              keyboardType="numeric"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Target Protein (grams)"
-              placeholderTextColor="#4B4B4B"
-              value={targetProtein}
-              onChangeText={setTargetProtein}
-              keyboardType="numeric"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Target Fats (grams)"
-              placeholderTextColor="#4B4B4B"
-              value={targetFats}
-              onChangeText={setTargetFats}
-              keyboardType="numeric"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Target Carbs (grams)"
-              placeholderTextColor="#4B4B4B"
-              value={targetCarbs}
-              onChangeText={setTargetCarbs}
-              keyboardType="numeric"
-            />
-            <TouchableOpacity style={styles.button} onPress={handleProfileSubmit}>
-              <Text style={styles.buttonText}>Submit</Text>
-            </TouchableOpacity>
-          </ScrollView>
+
+            {profileStep === 0 && (
+              <View style={{ width: '100%' }}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Name"
+                  placeholderTextColor="#4B4B4B"
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Age"
+                  placeholderTextColor="#4B4B4B"
+                  value={age}
+                  onChangeText={setAge}
+                  keyboardType="numeric"
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Gender (e.g., Male/Female/Other)"
+                  placeholderTextColor="#4B4B4B"
+                  value={gender}
+                  onChangeText={setGender}
+                  autoCapitalize="words"
+                />
+              </View>
+            )}
+
+            {profileStep === 1 && (
+              <View style={{ width: '100%' }}>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="Height (feet)"
+                    placeholderTextColor="#4B4B4B"
+                    value={heightFeet}
+                    onChangeText={setHeightFeet}
+                    keyboardType="numeric"
+                  />
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="Height (inches)"
+                    placeholderTextColor="#4B4B4B"
+                    value={heightInches}
+                    onChangeText={setHeightInches}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Weight (pounds)"
+                  placeholderTextColor="#4B4B4B"
+                  value={weightLb}
+                  onChangeText={setWeightLb}
+                  keyboardType="numeric"
+                />
+              </View>
+            )}
+
+            {profileStep === 2 && (
+              <View style={{ width: '100%' }}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Target Calories (kcal)"
+                  placeholderTextColor="#4B4B4B"
+                  value={targetKcal}
+                  onChangeText={setTargetKcal}
+                  keyboardType="numeric"
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Target Protein (grams)"
+                  placeholderTextColor="#4B4B4B"
+                  value={targetProtein}
+                  onChangeText={setTargetProtein}
+                  keyboardType="numeric"
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Target Fats (grams)"
+                  placeholderTextColor="#4B4B4B"
+                  value={targetFats}
+                  onChangeText={setTargetFats}
+                  keyboardType="numeric"
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Target Carbs (grams)"
+                  placeholderTextColor="#4B4B4B"
+                  value={targetCarbs}
+                  onChangeText={setTargetCarbs}
+                  keyboardType="numeric"
+                />
+              </View>
+            )}
+
+            <View style={styles.navRow}>
+              {profileStep > 0 ? (
+                <TouchableOpacity style={[styles.navBtn, styles.secondaryBtn]} onPress={() => setProfileStep((s) => s - 1)}>
+                  <Text style={styles.secondaryText}>Previous</Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={{ width: '48%' }} />
+              )}
+
+              {profileStep < 2 ? (
+                <TouchableOpacity
+                  onPress={() => setProfileStep((s) => s + 1)}
+                  disabled={!isStepValid(profileStep)}
+                  style={[styles.navBtn, !isStepValid(profileStep) && styles.disabledBtn]}
+                >
+                  <Text style={styles.navText}>Next</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={[styles.navBtn, { backgroundColor: '#22C55E' }]} onPress={handleProfileSubmit}>
+                  <Text style={styles.navText}>Submit</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
         </View>
       </Modal>
 
@@ -276,9 +378,9 @@ const LoginScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#FFFFFF", paddingHorizontal: 20 },
-  title: { fontSize: 30, fontWeight: "bold", marginBottom: 32, color: "#000000" },
-  inputContainer: { width: "80%" },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF', paddingHorizontal: 20 },
+  title: { fontSize: 30, fontWeight: 'bold', marginBottom: 32, color: '#000000' },
+  inputContainer: { width: '80%' },
   input: {
     borderWidth: 1,
     borderColor: '#000000',
@@ -292,79 +394,23 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  button: {
-    backgroundColor: '#F97316',
-    borderRadius: 8,
-    padding: 12,
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  toggleButton: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  toggleButtonText: {
-    color: '#F97316',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  skipButton: {
-    alignItems: 'center',
-  },
-  skipButtonText: {
-    color: '#F97316',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
-    width: '80%',
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
-    color: '#000000',
-  },
-  stepTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
-    color: '#000000',
-  },
-  description: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 24,
-    color: '#4B4B4B',
-  },
-  button: { backgroundColor: "#F97316", borderRadius: 8, padding: 12, width: "100%", alignItems: "center", marginBottom: 16 },
-  buttonText: { color: "#FFFFFF", fontSize: 18, fontWeight: "600" },
-  toggleButton: { alignItems: "center", marginBottom: 16 },
-  toggleButtonText: { color: "#F97316", fontSize: 14, fontWeight: "500" },
-  skipButton: { alignItems: "center" },
-  skipButtonText: { color: "#F97316", fontSize: 16, fontWeight: "500" },
-  modalContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0, 0, 0, 0.5)" },
-  modalContent: { backgroundColor: "#FFFFFF", borderRadius: 16, padding: 24, width: "80%", alignItems: "center" },
-  stepTitle: { fontSize: 24, fontWeight: "bold", marginBottom: 16, textAlign: "center", color: "#000000" },
-  description: { fontSize: 16, textAlign: "center", marginBottom: 24, color: "#4B4B4B" },
+  button: { backgroundColor: '#F97316', borderRadius: 8, padding: 12, width: '100%', alignItems: 'center', marginBottom: 16 },
+  buttonText: { color: '#FFFFFF', fontSize: 18, fontWeight: '600' },
+  toggleButton: { alignItems: 'center', marginBottom: 16 },
+  toggleButtonText: { color: '#F97316', fontSize: 14, fontWeight: '500' },
+  skipButton: { alignItems: 'center' },
+  skipButtonText: { color: '#F97316', fontSize: 16, fontWeight: '500' },
+  modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)', paddingHorizontal: 20 },
+  modalContent: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, width: '86%', maxWidth: 520, alignItems: 'center', justifyContent: 'center' },
+  modalTitle: { fontSize: 24, fontWeight: 'bold', marginBottom: 8, textAlign: 'center', color: '#000000' },
+  stepTitle: { fontSize: 24, fontWeight: 'bold', marginBottom: 16, textAlign: 'center', color: '#000000' },
+  description: { fontSize: 16, textAlign: 'center', marginBottom: 24, color: '#4B4B4B' },
+  navRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, width: '100%', marginTop: 8 },
+  navBtn: { flexGrow: 1, flexBasis: '48%', borderRadius: 8, padding: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F97316' },
+  navText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  secondaryBtn: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#F97316' },
+  secondaryText: { color: '#F97316', fontSize: 16, fontWeight: '600' },
+  disabledBtn: { opacity: 0.5 },
 });
 
 export default LoginScreen;

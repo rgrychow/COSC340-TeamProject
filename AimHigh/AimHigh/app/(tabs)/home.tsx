@@ -1,8 +1,7 @@
 import { Ionicons } from "@expo/vector-icons"; // For icons
-import Slider from "@react-native-community/slider";
-import { useNavigation } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { getAuth } from "firebase/auth"; // Import Firebase Auth
-import { doc, getDoc } from "firebase/firestore"; // Import Firestore
+import { collection, doc, getDoc, getDocs, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { useEffect, useRef, useState } from "react";
 import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"; // Import necessary components
 import { db } from "../../firebase"; // Import Firestore instance from your firebaseConfig.js
@@ -10,42 +9,311 @@ import SettingsModal from "../settings_modal"; // Import the Settings Modal
 
 const ORANGE = "#FF6A00";
 
-const images = [
-  require("../../assets/images/runningAthlete.jpg"),
-  require("../../assets/images/trainingAthlete.jpg"),
-  require("../../assets/images/healthyFoodWoman.jpg"),
+const carouselItems = [
+  {
+    image: require("../../assets/images/runningAthlete.jpg"),
+    label: "Start Run",
+    key: "run",
+  },
+  {
+    image: require("../../assets/images/trainingAthlete.jpg"),
+    label: "Start Workout",
+    key: "workout",
+  },
+  {
+    image: require("../../assets/images/healthyFoodWoman.jpg"),
+    label: "Track Nutrition",
+    key: "nutrition",
+  },
 ];
 
+const ITEM_WIDTH = 300; // must match styles.carouselItem147.width
+const ITEM_SPACING = 10; // marginHorizontal:5 on each side => 10 total
+const SNAP_INTERVAL = ITEM_WIDTH + ITEM_SPACING;
+
 export default function Home() {
-  const navigation = useNavigation();
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [workoutModalVisible, setWorkoutModalVisible] = useState(false);
-  const [macroModalVisible, setMacroModalVisible] = useState(false);
+  const router = useRouter();
+
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [searchModalVisible, setSearchModalVisible] = useState(false); // State for search modal
   const [searchInput, setSearchInput] = useState(""); // State for search input
   const [recentSearches, setRecentSearches] = useState<string[]>([]); // State for recent searches
-  const [completedWorkouts, setCompletedWorkouts] = useState(0); // Tracks completed workouts
-  const [workoutGoal, setWorkoutGoal] = useState(5); // Default workout goal set to 5
-  const [macros, setMacros] = useState({
-    calories: { completed: 1500, goal: 2000 },
-    protein: { completed: 100, goal: 150 },
-    fats: { completed: 50, goal: 70 },
-    carbs: { completed: 200, goal: 250 },
-  });
-  const [runModalVisible, setRunModalVisible] = useState(false);
-  const [mealModalVisible, setMealModalVisible] = useState(false);
-  const [goalTime, setGoalTime] = useState(""); // For the "Start Run" goal time input
-  const [countdown, setCountdown] = useState<number | null>(null); // For the countdown timer
-  const [meals, setMeals] = useState([]); // State for meals
-  const [mealNameModalVisible, setMealNameModalVisible] = useState(false); // State for showing the modal
-  const [newMealName, setNewMealName] = useState(""); // State for the new meal name
-  const [stepCount, setStepCount] = useState(5000); // Current step count
-  const [waterIntake, setWaterIntake] = useState(1.5); // Current water intake in liters
-  const [waterModalVisible, setWaterModalVisible] = useState(false); // State for water intake modal
-  const [waterGoal, setWaterGoal] = useState(3); // Water intake goal in liters
   const [userName, setUserName] = useState("User"); // Default to "User"
+  const [darkBg, setDarkBg] = useState<boolean>(true);
+
+  // --- Run modal + timer state ---
+  const [runModalVisible, setRunModalVisible] = useState(false);
+  const [runTimerSec, setRunTimerSec] = useState(0);
+  const [runTimerRunning, setRunTimerRunning] = useState(false);
+  const runIntervalRef = useRef<NodeJS.Timer | null>(null);
+  const [runDistanceMiles, setRunDistanceMiles] = useState<string>("");
+  const [runDurationMinInput, setRunDurationMinInput] = useState<string>("");
+
+  // --- Workout modal state ---
+  const [workoutModalVisible, setWorkoutModalVisible] = useState(false);
+  type WorkoutSet = { reps: number; weight: number };
+  type WorkoutExercise = { id: string; name: string; nameSaved: boolean; sets: WorkoutSet[]; newSetReps: string; newSetWeight: string };
+  const [exercises, setExercises] = useState<WorkoutExercise[]>([]);
+
+  // --- Nutrition modal state ---
+  const [nutritionModalVisible, setNutritionModalVisible] = useState(false);
+  type MealDraft = { id: string; name: string; calories: string; protein: string; carbs: string; fats: string };
+  const [meals, setMeals] = useState<MealDraft[]>([]);
+
+  // --- Workout helpers ---
+  // --- Nutrition helpers ---
+  const addMeal = () => {
+    setMeals((prev) => [
+      ...prev,
+      { id: Math.random().toString(36).slice(2), name: "", calories: "", protein: "", carbs: "", fats: "" },
+    ]);
+  };
+  const updateMealField = (id: string, field: keyof MealDraft, value: string) => {
+    setMeals((prev) => prev.map((m) => (m.id === id ? { ...m, [field]: value } : m)));
+  };
+  const removeMeal = (id: string) => {
+    setMeals((prev) => prev.filter((m) => m.id !== id));
+  };
+  const resetNutritionState = () => {
+    setMeals([]);
+    setNutritionModalVisible(false);
+  };
+  const saveMealsToDb = async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        alert("You must be signed in to save meals.");
+        return;
+      }
+      // Validate and map meals
+      const cleaned = meals
+        .map((m) => ({
+          mealName: m.name.trim(),
+          calories: parseFloat(m.calories),
+          protein: parseFloat(m.protein),
+          carbs: parseFloat(m.carbs),
+          fats: parseFloat(m.fats),
+        }))
+        .filter(
+          (m) =>
+            m.mealName.length > 0 &&
+            [m.calories, m.protein, m.carbs, m.fats].every((x) => Number.isFinite(x) && x >= 0)
+        );
+      if (cleaned.length === 0) {
+        alert("Add at least one valid meal with name and non-negative macros.");
+        return;
+      }
+      const dayId = toDayId(new Date());
+      for (const meal of cleaned) {
+        const mealsCol = collection(db, "users", user.uid, "mealDays", dayId, "meals");
+        const mealRef = doc(mealsCol);
+        await setDoc(mealRef, {
+          mealName: meal.mealName,
+          calories: meal.calories,
+          protein: meal.protein,
+          fats: meal.fats,
+          carbs: meal.carbs,
+          createdAt: serverTimestamp(),
+        });
+      }
+      // Refresh nutrition.current totals after saving meals
+      await refreshNutritionCurrentForDay(user.uid, dayId);
+      alert("Meals saved to your calendar day!");
+      resetNutritionState();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save meals. Check connection and rules.");
+    }
+  };
+
+  // Helper to recompute and update users/{uid}.nutrition.current for a given day
+  const refreshNutritionCurrentForDay = async (uid: string, dayId: string) => {
+    // Sum today's meals and push into users/{uid}.nutrition.current
+    const mealsCol = collection(db, "users", uid, "mealDays", dayId, "meals");
+    const snap = await getDocs(mealsCol);
+    let kcal = 0, protein = 0, carbs = 0, fats = 0;
+    snap.forEach((d) => {
+      const m: any = d.data();
+      // tolerate strings, coerce to number
+      kcal   += Number(m.calories) || 0;
+      protein+= Number(m.protein)  || 0;
+      carbs  += Number(m.carbs)    || 0;
+      fats   += Number(m.fats)     || 0;
+    });
+
+    const userRef = doc(db, "users", uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+      console.warn("User doc missing; cannot update nutrition.current");
+      return;
+    }
+
+    // Merge new totals into existing document while preserving all required fields
+    const existingData: any = userSnap.data() || {};
+    const existingNutrition = existingData.nutrition || {};
+    const updatedData = {
+      ...existingData,
+      nutrition: {
+        ...existingNutrition,
+        current: { kcal, protein, carbs, fats },
+        // preserve target exactly as-is (rules require it to exist with numeric fields)
+        ...(existingNutrition.target ? { target: existingNutrition.target } : {}),
+      },
+    };
+
+    // Write back the full user document so validUserData() passes on update
+    await setDoc(userRef, updatedData);
+  };
+
+  // Convenience function to update current nutrition for today for the signed-in user
+  const updateCurrentNutritionNow = async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        alert("You must be signed in to update nutrition.");
+        return;
+      }
+      const dayId = toDayId(new Date());
+      await refreshNutritionCurrentForDay(user.uid, dayId);
+      alert("Current nutrition updated for today.");
+    } catch (e) {
+      console.error(e);
+      alert("Failed to update current nutrition.");
+    }
+  };
+  const addExercise = () => {
+    setExercises((prev) => [
+      ...prev,
+      {
+        id: Math.random().toString(36).slice(2),
+        name: "",
+        nameSaved: false,
+        sets: [],
+        newSetReps: "",
+        newSetWeight: "",
+      },
+    ]);
+  };
+  const saveExerciseName = (id: string) => {
+    setExercises((prev) =>
+      prev.map((ex) =>
+        ex.id === id ? { ...ex, nameSaved: ex.name.trim() !== "" } : ex
+      )
+    );
+  };
+  const updateExerciseName = (id: string, name: string) => {
+    setExercises((prev) =>
+      prev.map((ex) => (ex.id === id ? { ...ex, name } : ex))
+    );
+  };
+  const updateNewSetField = (
+    id: string,
+    field: "newSetReps" | "newSetWeight",
+    value: string
+  ) => {
+    setExercises((prev) =>
+      prev.map((ex) =>
+        ex.id === id ? { ...ex, [field]: value } as WorkoutExercise : ex
+      )
+    );
+  };
+  const addSetToExercise = (id: string) => {
+    setExercises((prev) =>
+      prev.map((ex) => {
+        if (ex.id !== id) return ex;
+        const reps = parseInt(ex.newSetReps, 10);
+        const weight = parseFloat(ex.newSetWeight);
+        if (!(reps > 0) || !(weight >= 0)) return ex;
+        return {
+          ...ex,
+          sets: [...ex.sets, { reps, weight }],
+          newSetReps: "",
+          newSetWeight: "",
+        };
+      })
+    );
+  };
+  const removeSet = (exId: string, setIndex: number) => {
+    setExercises((prev) =>
+      prev.map((ex) =>
+        ex.id === exId
+          ? { ...ex, sets: ex.sets.filter((_, i) => i !== setIndex) }
+          : ex
+      )
+    );
+  };
+  const removeExercise = (id: string) => {
+    setExercises((prev) => prev.filter((ex) => ex.id !== id));
+  };
+  const resetWorkoutState = () => {
+    setExercises([]);
+    setWorkoutModalVisible(false);
+  };
+  const saveWorkoutToDb = async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        alert("You must be signed in to save a workout.");
+        return;
+      }
+
+      // Only keep exercises that have a saved name and at least one set
+      const cleaned = exercises
+        .filter((ex) => ex.nameSaved && ex.name.trim() !== "" && ex.sets.length > 0)
+        .map((ex) => ({ name: ex.name.trim(), sets: ex.sets }));
+
+      if (cleaned.length === 0) {
+        alert("Add at least one exercise with sets.");
+        return;
+      }
+
+      const dayId = toDayId(new Date());
+
+      // For EACH exercise, create a workout doc under /users/{uid}/workoutDays/{dayId}/workouts
+      // with fields: { workoutType: <exercise name>, createdAt },
+      // then create child docs in /sets with fields: { setNumber, reps, weightLb, createdAt }
+      for (const ex of cleaned) {
+        const workoutsCol = collection(db, "users", user.uid, "workoutDays", dayId, "workouts");
+        const workoutRef = doc(workoutsCol); // auto-id
+        await setDoc(workoutRef, {
+          workoutType: ex.name, // satisfies rules as string
+          createdAt: serverTimestamp(),
+        });
+
+        // Write each set into the sets subcollection
+        for (let i = 0; i < ex.sets.length; i++) {
+          const s = ex.sets[i];
+          const setsCol = collection(workoutRef, "sets");
+          const setRef = doc(setsCol); // auto-id
+          await setDoc(setRef, {
+            setNumber: i + 1,
+            reps: s.reps,
+            weightLb: s.weight, // map UI "weight" to rules-required "weightLb"
+            createdAt: serverTimestamp(),
+          });
+        }
+      }
+
+      alert("Workout saved to your calendar day!");
+      resetWorkoutState();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save workout. Check connection and rules.");
+    }
+  };
+
+  const handleStartRun = () => {
+    setRunModalVisible(true);
+  };
+  const handleStartWorkout = () => {
+    setWorkoutModalVisible(true);
+  };
+  const handleTrackNutrition = () => {
+    setNutritionModalVisible(true);
+  };
 
   const handleSearchSubmit = () => {
     if (searchInput.trim() !== "") {
@@ -57,253 +325,156 @@ export default function Home() {
     }
   };
 
-  const handleScroll = (event) => {
-    const contentOffsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(contentOffsetX / 300); // Assuming each image is 300px wide
-    setCurrentIndex(index);
+  const startRunTimer = () => {
+    if (runTimerRunning) return;
+    setRunTimerRunning(true);
+    runIntervalRef.current = setInterval(() => {
+      setRunTimerSec((s) => s + 1);
+    }, 1000);
   };
-
-  const updateMealMacro = (mealId, macro, value) => {
-    setMeals((prevMeals) =>
-      prevMeals.map((meal) =>
-        meal.id === mealId ? { ...meal, macros: { ...meal.macros, [macro]: value } } : meal
-      )
-    );
+  const pauseRunTimer = () => {
+    setRunTimerRunning(false);
+    if (runIntervalRef.current) {
+      clearInterval(runIntervalRef.current);
+      runIntervalRef.current = null;
+    }
+  };
+  const resetRunTimer = () => {
+    pauseRunTimer();
+    setRunTimerSec(0);
+  };
+  const formatHMS = (totalSec: number) => {
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const hh = h.toString().padStart(2, "0");
+    const mm = m.toString().padStart(2, "0");
+    const ss = s.toString().padStart(2, "0");
+    return `${hh}:${mm}:${ss}`;
+  };
+  const useTimerForDuration = () => {
+    setRunDurationMinInput(String(Math.round(runTimerSec / 60)));
+  };
+  const toDayId = (d: Date) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+  const saveRunToDb = async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        alert("You must be signed in to save a run.");
+        return;
+      }
+      const distance = parseFloat(runDistanceMiles);
+      // If duration input is blank, use timer minutes (rounded), else parse input as minutes
+      const durationMin = runDurationMinInput.trim() !== "" ? parseInt(runDurationMinInput, 10) : Math.round(runTimerSec / 60);
+      const durationSec = durationMin * 60;
+      if (!(distance >= 0) || !(durationSec >= 0)) {
+        alert("Enter a non-negative distance and duration.");
+        return;
+      }
+      const dayId = toDayId(new Date());
+      const runsCol = collection(db, "users", user.uid, "runDays", dayId, "runs");
+      const runRef = doc(runsCol); // auto-id
+      await setDoc(runRef, {
+        distanceMiles: distance,
+        durationSec: durationSec,
+        createdAt: serverTimestamp(),
+      });
+      alert("Run saved to your calendar day!");
+      setRunModalVisible(false);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save run. Check connection and rules.");
+    }
   };
 
   useEffect(() => {
-    const fetchUserName = async () => {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      if (user) {
-        try {
-          const userDocRef = doc(db, "users", user.uid);
-          const userDoc = await getDoc(userDocRef);
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            setUserName(userData.name || "User"); // Set name from Firestore or fallback to "User"
-          } else {
-            setUserName("User");
-          }
-        } catch (error) {
-          console.error("Error fetching user name:", error);
-          setUserName("User"); // Fallback on error
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+      setUserName("User");
+      setDarkBg(true);
+      return;
+    }
+    const userDocRef = doc(db, "users", user.uid);
+    const unsub = onSnapshot(
+      userDocRef,
+      (snap) => {
+        if (snap.exists()) {
+          const data: any = snap.data();
+          setUserName(data.name || "User");
+          // Prefer `darkTheme` if present (matches rules), else fall back to legacy `darkBackground`
+          const themeVal = (typeof data.darkTheme === 'boolean') ? data.darkTheme : Boolean(data.darkBackground);
+          setDarkBg(themeVal);
+        } else {
+          setUserName("User");
+          setDarkBg(true);
         }
-      } else {
-        setUserName("User");
+      },
+      (err) => {
+        console.error("onSnapshot user doc error:", err);
       }
-    };
-
-    fetchUserName();
+    );
+    return () => unsub();
   }, []);
 
   return (
-    <ScrollView style={styles.container987}>
-      <View style={styles.headerRow654}>
-        <Text style={styles.header321}>Welcome, {userName}</Text>
+    <ScrollView style={[styles.container987, darkBg ? styles.bgDark : styles.bgLight]}>
+      {runTimerRunning && (
+        <View style={styles.runTimerBar}>
+          <Text style={styles.runTimerBarText}>Run timer: {formatHMS(runTimerSec)}</Text>
+        </View>
+      )}
+      <View style={[styles.headerRow654, darkBg ? styles.headerDark : styles.headerLight]}>
+        <Text style={[styles.header321, darkBg ? styles.headerTextLight : styles.headerTextDark]}>
+          Welcome, {userName}
+        </Text>
         <View style={styles.headerButtons123}>
           <TouchableOpacity onPress={() => setSearchModalVisible(true)}>
-            <Ionicons name="search" size={24} color="#fff" />
+            <Ionicons name="search" size={24} color={darkBg ? "#fff" : "#000"} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setSettingsModalVisible(true)}>
-            <Ionicons name="settings-outline" size={24} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
-            <Ionicons name="person-circle" size={28} color="#fff" />
+            <Ionicons name="settings-outline" size={24} color={darkBg ? "#fff" : "#000"} />
           </TouchableOpacity>
         </View>
       </View>
       <ScrollView
         horizontal
-        pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onScroll={handleScroll}
-        ref={scrollViewRef}
+        scrollEventThrottle={16}
+        decelerationRate="fast"
+        snapToInterval={SNAP_INTERVAL}
+        snapToAlignment="start"
+        disableIntervalMomentum
         contentContainerStyle={styles.carouselContent456}
         style={styles.carousel789}
       >
-        {images.map((image, index) => (
-          <View key={index} style={styles.carouselItem147}>
-            <Image source={image} style={styles.carouselImage258} />
+        {carouselItems.map((item, index) => (
+          <View key={item.key} style={styles.carouselItem147}>
+            <Image source={item.image} style={styles.carouselImage258} />
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={item.label}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.carouselButton}
+              onPress={
+                index === 0
+                  ? handleStartRun
+                  : index === 1
+                  ? handleStartWorkout
+                  : handleTrackNutrition
+              }
+            >
+              <Text style={styles.carouselButtonText}>{item.label}</Text>
+            </TouchableOpacity>
           </View>
         ))}
       </ScrollView>
-      <View style={styles.carouselFooter}>
-        <TouchableOpacity
-          style={styles.carouselButton}
-          onPress={() => {
-            if (currentIndex === 0) {
-              setRunModalVisible(true); // Open Start Run modal
-            } else if (currentIndex === 1) {
-              setWorkoutModalVisible(true); // Open Start Workout modal
-            } else {
-              setMealModalVisible(true); // Open Track Meals modal
-            }
-          }}
-        >
-          <Text style={styles.carouselButtonText}>
-            {currentIndex === 0
-              ? "Start Run"
-              : currentIndex === 1
-              ? "Start Workout"
-              : "Track Meals"}
-          </Text>
-        </TouchableOpacity>
-        <View style={styles.dotsContainer}>
-          {images.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.dot,
-                currentIndex === index ? styles.activeDot : null,
-              ]}
-            />
-          ))}
-        </View>
-      </View>
-      <View style={styles.dailyTracker}>
-        <Text style={styles.sectionTitle}>Fitness Preview</Text>
-
-        {/* Workout Tracker */}
-        <View style={styles.workoutTracker}>
-          <View style={styles.trackerHeader}>
-            <Text style={styles.trackerTitle}>Workout Tracker</Text>
-            <TouchableOpacity onPress={() => setWorkoutModalVisible(true)}>
-              <Ionicons name="create-outline" size={20} color="#fff" />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.progressBarContainer}>
-            <TouchableOpacity
-              style={styles.logWorkoutButton}
-              onPress={() => {
-                // For now, pressing the button does nothing
-              }}
-            >
-              <Text style={styles.logWorkoutButtonText}>Log Workout</Text>
-            </TouchableOpacity>
-            <View style={styles.progressBar}>
-              {[...Array(workoutGoal)].map((_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.progressSegment,
-                    { backgroundColor: index < completedWorkouts ? "#FF6A00" : "#333" }, // Gray when empty
-                  ]}
-                />
-              ))}
-            </View>
-          </View>
-          <Text style={styles.progressText}>
-            {completedWorkouts}/{workoutGoal}
-          </Text>
-        </View>
-
-        {/* Macro Tracker */}
-        <View style={styles.macroTracker}>
-          <View style={styles.trackerHeader}>
-            <Text style={styles.trackerTitle}>Macros</Text>
-            <TouchableOpacity onPress={() => setMacroModalVisible(true)}>
-              <Ionicons name="create-outline" size={20} color="#fff" />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.macroCircles}>
-            {Object.keys(macros).map((key) => (
-              <View style={styles.macroItem} key={key}>
-                <View style={styles.circularProgress}>
-                  <Text style={styles.macroValue}>
-                    {macros[key].completed}/{macros[key].goal}
-                  </Text>
-                </View>
-                <Text style={styles.macroLabel}>{key.charAt(0).toUpperCase() + key.slice(1)}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      </View>
-
-      {/* Workout Tracker Modal */}
-      <Modal
-        visible={workoutModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setWorkoutModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Set Workout Goal</Text>
-            <Slider
-              style={styles.slider}
-              minimumValue={1}
-              maximumValue={5}
-              step={1}
-              value={workoutGoal}
-              onValueChange={(value) => setWorkoutGoal(value)}
-            />
-            <Text style={styles.sliderValue}>Goal: {workoutGoal} Workouts</Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setWorkoutModalVisible(false)}
-            >
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Macro Tracker Modal */}
-      <Modal
-        visible={macroModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setMacroModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Macros</Text>
-            <View style={styles.macroTableHeader}>
-              <Text style={[styles.macroTableHeaderText, styles.macroNameColumn]}>Macro</Text>
-              <Text style={[styles.macroTableHeaderText, styles.macroColumn]}>Completed</Text>
-              <Text style={[styles.macroTableHeaderText, styles.macroColumn]}>Goal</Text>
-            </View>
-            {Object.keys(macros).map((key) => (
-              <View key={key} style={styles.macroRow}>
-                <Text style={[styles.macroLabel, styles.macroNameColumn]}>
-                  {key.charAt(0).toUpperCase() + key.slice(1)}
-                </Text>
-                <TextInput
-                  style={[styles.macroInput, styles.macroColumn]}
-                  keyboardType="numeric"
-                  value={String(macros[key].completed)}
-                  onChangeText={(value) =>
-                    setMacros((prev) => ({
-                      ...prev,
-                      [key]: { ...prev[key], completed: parseInt(value) || 0 },
-                    }))
-                  }
-                />
-                <TextInput
-                  style={[styles.macroInput, styles.macroColumn]}
-                  keyboardType="numeric"
-                  value={String(macros[key].goal)}
-                  onChangeText={(value) =>
-                    setMacros((prev) => ({
-                      ...prev,
-                      [key]: { ...prev[key], goal: parseInt(value) || 0 },
-                    }))
-                  }
-                />
-              </View>
-            ))}
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setMacroModalVisible(false)}
-            >
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
       {/* Search Modal */}
       <Modal
         visible={searchModalVisible}
@@ -345,263 +516,240 @@ export default function Home() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-
-      {/* Start Run Modal */}
+      {/* Run Modal */}
       <Modal
         visible={runModalVisible}
         transparent={true}
         animationType="slide"
         onRequestClose={() => setRunModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.halfModalContent}>
-            {/* Modal Header */}
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Start Run</Text>
-              <TouchableOpacity onPress={() => setRunModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#fff" />
+        <KeyboardAvoidingView
+          style={styles.modalContainer}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={styles.runModalContent}>
+            <Text style={styles.sectionTitle}>Track Run</Text>
+            <View style={styles.timerRow}>
+              <Text style={styles.timerDisplay}>{formatHMS(runTimerSec)}</Text>
+              {!runTimerRunning ? (
+                <TouchableOpacity style={[styles.smallBtn, { backgroundColor: ORANGE }]} onPress={startRunTimer}>
+                  <Text style={styles.smallBtnText}>Start</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={[styles.smallBtn, { backgroundColor: "#555" }]} onPress={pauseRunTimer}>
+                  <Text style={styles.smallBtnText}>Pause</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity style={[styles.smallBtn, { backgroundColor: "#333" }]} onPress={resetRunTimer}>
+                <Text style={styles.smallBtnText}>Reset</Text>
               </TouchableOpacity>
             </View>
-            {/* Goal Time Input */}
-            <View style={styles.goalTimeContainer}>
-              <Text style={styles.modalSubtitle}>Set a goal run time</Text>
-              <View style={styles.goalTimeInputContainer}>
-                <TextInput
-                  style={styles.smallInput}
-                  placeholder="0"
-                  placeholderTextColor="#888"
-                  keyboardType="numeric"
-                  value={goalTime}
-                  onChangeText={setGoalTime}
-                />
-                <Text style={styles.goalTimeUnit}>min</Text>
-              </View>
-            </View>
-            {/* Countdown or Start Button */}
-            {countdown === null ? (
-              <TouchableOpacity
-                style={styles.startButton}
-                onPress={() => {
-                  if (!goalTime || isNaN(Number(goalTime)) || Number(goalTime) <= 0) {
-                    alert("Please enter a valid goal time.");
-                    return;
-                  }
-                  let count = 3;
-                  setCountdown(count);
-                  const interval = setInterval(() => {
-                    count -= 1;
-                    if (count === 0) {
-                      clearInterval(interval);
-                      setCountdown(Number(goalTime) * 60); // Convert minutes to seconds
-                      const goalInterval = setInterval(() => {
-                        setCountdown((prev) => {
-                          if (prev === 1) {
-                            clearInterval(goalInterval);
-                            setCountdown(null);
-                            console.log("Run completed!");
-                            return null;
-                          }
-                          return prev - 1;
-                        });
-                      }, 1000);
-                    } else {
-                      setCountdown(count);
-                    }
-                  }, 1000);
-                }}
-              >
-                <Text style={styles.startButtonText}>Start Run</Text>
-              </TouchableOpacity>
-            ) : (
-              <Text style={styles.countdownText}>
-                {countdown > 3
-                  ? `${Math.floor(countdown / 60)}:${String(countdown % 60).padStart(2, "0")}`
-                  : countdown === 1
-                  ? "Start"
-                  : countdown}
-              </Text>
-            )}
+            <View style={{ height: 20 }} />
+            <Text style={styles.inputLabel}>Distance (miles)</Text>
+            <TextInput
+              style={styles.searchInput}
+              keyboardType="decimal-pad"
+              placeholder="e.g., 3.10"
+              placeholderTextColor="#888"
+              value={runDistanceMiles}
+              onChangeText={setRunDistanceMiles}
+            />
+            <Text style={styles.inputLabel}>Duration (minutes)</Text>
+            <TextInput
+              style={styles.searchInput}
+              keyboardType="number-pad"
+              placeholder="e.g., 31"
+              placeholderTextColor="#888"
+              value={runDurationMinInput}
+              onChangeText={setRunDurationMinInput}
+            />
+            <TouchableOpacity style={styles.closeButton} onPress={saveRunToDb}>
+              <Text style={styles.closeButtonText}>Save Run to Day</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.closeButton, { backgroundColor: "#333", marginTop: 8 }]} onPress={() => setRunModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
-
-      {/* Start Workout Modal */}
+      {/* Workout Modal */}
       <Modal
         visible={workoutModalVisible}
         transparent={true}
         animationType="slide"
         onRequestClose={() => setWorkoutModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Start Workout</Text>
-            <TouchableOpacity onPress={() => setWorkoutModalVisible(false)}>
-              <Ionicons name="close" size={24} color="#fff" />
+        <KeyboardAvoidingView
+          style={styles.modalContainer}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={styles.runModalContent}>
+            <Text style={styles.sectionTitle}>Start Workout</Text>
+            <TouchableOpacity style={[styles.closeButton, { marginBottom: 12 }]} onPress={addExercise}>
+              <Text style={styles.closeButtonText}>Add Exercise</Text>
             </TouchableOpacity>
-            <Text style={styles.text}>Workout details will go here.</Text>
-            <TouchableOpacity
-              style={styles.startButton}
-              onPress={() => {
-                console.log("Workout started");
-                setWorkoutModalVisible(false);
-              }}
-            >
-              <Text style={styles.startButtonText}>Start Workout</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Track Meals Modal */}
-      <Modal
-        visible={mealModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setMealModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.halfModalContent}>
-            {/* Modal Header */}
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Track Meals</Text>
-              <TouchableOpacity onPress={() => setMealModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#fff" />
-              </TouchableOpacity>
-            </View>
-            {/* Add Meal Button */}
-            <TouchableOpacity
-              style={styles.addMealButton}
-              onPress={() => {
-                setMeals((prevMeals) => [
-                  ...prevMeals,
-                  {
-                    id: Date.now(),
-                    name: "",
-                    macros: { calories: 0, protein: 0, carbs: 0, fats: 0 },
-                  },
-                ]);
-              }}
-            >
-              <Text style={styles.addMealButtonText}>Add Meal</Text>
-            </TouchableOpacity>
-            {/* Meal List */}
-            <ScrollView style={styles.mealList}>
-              {meals.map((meal) => (
-                <View key={meal.id} style={styles.mealItem}>
-                  {/* Input for Meal Name */}
-                  <TextInput
-                    style={styles.mealNameInput}
-                    placeholder="Enter meal name"
-                    placeholderTextColor="#888"
-                    value={meal.name}
-                    onChangeText={(value) =>
-                      setMeals((prevMeals) =>
-                        prevMeals.map((m) =>
-                          m.id === meal.id ? { ...m, name: value } : m
-                        )
-                      )
-                    }
-                  />
-                  {/* Macros */}
-                  <View style={styles.macroRow}>
-                    <Text style={styles.macroLabel}>Calories:</Text>
-                    <TextInput
-                      style={styles.macroInput}
-                      keyboardType="numeric"
-                      value={String(meal.macros.calories)}
-                      onChangeText={(value) =>
-                        updateMealMacro(meal.id, "calories", parseInt(value) || 0)
-                      }
-                    />
+            <ScrollView style={{ maxHeight: 350 }}>
+              {exercises.length === 0 ? (
+                <Text style={{ color: "#888" }}>No exercises yet. Tap "Add Exercise".</Text>
+              ) : (
+                exercises.map((ex, idx) => (
+                  <View key={ex.id} style={{ borderColor: "#333", borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                    <Text style={styles.inputLabel}>Exercise {idx + 1}</Text>
+                    {!ex.nameSaved ? (
+                      <>
+                        <TextInput
+                          style={styles.searchInput}
+                          placeholder="Exercise name (e.g., Bench Press)"
+                          placeholderTextColor="#888"
+                          value={ex.name}
+                          onChangeText={(t) => updateExerciseName(ex.id, t)}
+                        />
+                        <View style={{ flexDirection: "row", gap: 8 }}>
+                          <TouchableOpacity style={[styles.smallBtn, { backgroundColor: ORANGE }]} onPress={() => saveExerciseName(ex.id)}>
+                            <Text style={styles.smallBtnText}>Save Name</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity style={[styles.smallBtn, { backgroundColor: "#333" }]} onPress={() => removeExercise(ex.id)}>
+                            <Text style={styles.smallBtnText}>Remove</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={{ color: "#fff", fontSize: 16, fontWeight: "bold", marginBottom: 8 }}>{ex.name}</Text>
+                        <View style={{ flexDirection: "row", gap: 8 }}>
+                          <TextInput
+                            style={[styles.searchInput, { flex: 1 }]}
+                            placeholder="Reps"
+                            placeholderTextColor="#888"
+                            keyboardType="number-pad"
+                            value={ex.newSetReps}
+                            onChangeText={(t) => updateNewSetField(ex.id, "newSetReps", t)}
+                          />
+                          <TextInput
+                            style={[styles.searchInput, { flex: 1 }]}
+                            placeholder="Weight"
+                            placeholderTextColor="#888"
+                            keyboardType="decimal-pad"
+                            value={ex.newSetWeight}
+                            onChangeText={(t) => updateNewSetField(ex.id, "newSetWeight", t)}
+                          />
+                        </View>
+                        <TouchableOpacity style={[styles.smallBtn, { backgroundColor: ORANGE, alignSelf: "flex-start" }]} onPress={() => addSetToExercise(ex.id)}>
+                          <Text style={styles.smallBtnText}>Add Set</Text>
+                        </TouchableOpacity>
+                        {ex.sets.length > 0 && (
+                          <View style={{ marginTop: 12 }}>
+                            <Text style={styles.inputLabel}>Sets</Text>
+                            {ex.sets.map((s, i) => (
+                              <View key={i} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#1a1a1a", padding: 10, borderRadius: 6, marginBottom: 8 }}>
+                                <Text style={{ color: "#fff" }}>Set {i + 1}: {s.reps} reps @ {s.weight}</Text>
+                                <TouchableOpacity style={[styles.smallBtn, { backgroundColor: "#333" }]} onPress={() => removeSet(ex.id, i)}>
+                                  <Text style={styles.smallBtnText}>Remove</Text>
+                                </TouchableOpacity>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+                        <TouchableOpacity style={[styles.smallBtn, { backgroundColor: "#333", marginTop: 8 }]} onPress={() => removeExercise(ex.id)}>
+                          <Text style={styles.smallBtnText}>Remove Exercise</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
                   </View>
-                  <View style={styles.macroRow}>
-                    <Text style={styles.macroLabel}>Protein:</Text>
-                    <TextInput
-                      style={styles.macroInput}
-                      keyboardType="numeric"
-                      value={String(meal.macros.protein)}
-                      onChangeText={(value) =>
-                        updateMealMacro(meal.id, "protein", parseInt(value) || 0)
-                      }
-                    />
-                  </View>
-                  <View style={styles.macroRow}>
-                    <Text style={styles.macroLabel}>Carbs:</Text>
-                    <TextInput
-                      style={styles.macroInput}
-                      keyboardType="numeric"
-                      value={String(meal.macros.carbs)}
-                      onChangeText={(value) =>
-                        updateMealMacro(meal.id, "carbs", parseInt(value) || 0)
-                      }
-                    />
-                  </View>
-                  <View style={styles.macroRow}>
-                    <Text style={styles.macroLabel}>Fats:</Text>
-                    <TextInput
-                      style={styles.macroInput}
-                      keyboardType="numeric"
-                      value={String(meal.macros.fats)}
-                      onChangeText={(value) =>
-                        updateMealMacro(meal.id, "fats", parseInt(value) || 0)
-                      }
-                    />
-                  </View>
-                </View>
-              ))}
+                ))
+              )}
             </ScrollView>
+            <TouchableOpacity style={styles.closeButton} onPress={saveWorkoutToDb}>
+              <Text style={styles.closeButtonText}>Save Workout to Day</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.closeButton, { backgroundColor: "#333", marginTop: 8 }]} onPress={() => setWorkoutModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
-
-      {/* Meal Name Input Modal */}
+      {/* Nutrition Modal */}
       <Modal
-        visible={mealNameModalVisible}
+        visible={nutritionModalVisible}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setMealNameModalVisible(false)} // Close the modal
+        onRequestClose={() => setNutritionModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Enter Meal Name</Text>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Meal Name"
-              placeholderTextColor="#888"
-              value={newMealName}
-              onChangeText={setNewMealName} // Update the meal name
-            />
-            <TouchableOpacity
-              style={styles.addMealButton}
-              onPress={() => {
-                if (newMealName.trim() !== "") {
-                  setMeals((prevMeals) => [
-                    ...prevMeals,
-                    {
-                      id: Date.now(),
-                      name: newMealName.trim(),
-                      macros: { calories: 0, protein: 0, carbs: 0, fats: 0 },
-                    },
-                  ]);
-                  setNewMealName(""); // Clear the input
-                  setMealNameModalVisible(false); // Close the modal
-                } else {
-                  alert("Please enter a valid meal name.");
-                }
-              }}
-            >
-              <Text style={styles.addMealButtonText}>Add</Text>
+        <KeyboardAvoidingView
+          style={styles.modalContainer}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={styles.runModalContent}>
+            <Text style={styles.sectionTitle}>Track Nutrition</Text>
+            <TouchableOpacity style={[styles.closeButton, { marginBottom: 12 }]} onPress={addMeal}>
+              <Text style={styles.closeButtonText}>Add Meal</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setMealNameModalVisible(false)} // Close the modal
-            >
-              <Text style={styles.closeButtonText}>Cancel</Text>
+            <ScrollView style={{ maxHeight: 350 }}>
+              {meals.length === 0 ? (
+                <Text style={{ color: "#888" }}>No meals yet. Tap "Add Meal".</Text>
+              ) : (
+                meals.map((m, idx) => (
+                  <View key={m.id} style={{ borderColor: "#333", borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                    <Text style={styles.inputLabel}>Meal {idx + 1}</Text>
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder="Meal name (e.g., Grilled Chicken Bowl)"
+                      placeholderTextColor="#888"
+                      value={m.name}
+                      onChangeText={(t) => updateMealField(m.id, "name", t)}
+                    />
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      <TextInput
+                        style={[styles.searchInput, { flex: 1 }]}
+                        placeholder="Calories"
+                        placeholderTextColor="#888"
+                        keyboardType="decimal-pad"
+                        value={m.calories}
+                        onChangeText={(t) => updateMealField(m.id, "calories", t)}
+                      />
+                      <TextInput
+                        style={[styles.searchInput, { flex: 1 }]}
+                        placeholder="Protein (g)"
+                        placeholderTextColor="#888"
+                        keyboardType="decimal-pad"
+                        value={m.protein}
+                        onChangeText={(t) => updateMealField(m.id, "protein", t)}
+                      />
+                    </View>
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      <TextInput
+                        style={[styles.searchInput, { flex: 1 }]}
+                        placeholder="Carbs (g)"
+                        placeholderTextColor="#888"
+                        keyboardType="decimal-pad"
+                        value={m.carbs}
+                        onChangeText={(t) => updateMealField(m.id, "carbs", t)}
+                      />
+                      <TextInput
+                        style={[styles.searchInput, { flex: 1 }]}
+                        placeholder="Fats (g)"
+                        placeholderTextColor="#888"
+                        keyboardType="decimal-pad"
+                        value={m.fats}
+                        onChangeText={(t) => updateMealField(m.id, "fats", t)}
+                      />
+                    </View>
+                    <TouchableOpacity style={[styles.smallBtn, { backgroundColor: "#333", alignSelf: "flex-start" }]} onPress={() => removeMeal(m.id)}>
+                      <Text style={styles.smallBtnText}>Remove Meal</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )} 
+            </ScrollView>
+            <TouchableOpacity style={styles.closeButton} onPress={saveMealsToDb}>
+              <Text style={styles.closeButtonText}>Save & Update Nutrition</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.closeButton, { backgroundColor: "#333", marginTop: 8 }]} onPress={() => setNutritionModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
-
       {/* Settings Modal */}
       <SettingsModal
         visible={settingsModalVisible}
@@ -612,7 +760,6 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000", padding: 20 },
   container987: {
     flex: 1,
     backgroundColor: "#000",
@@ -625,8 +772,20 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     backgroundColor: "#1C2526",
   },
+  runTimerBar: {
+    width: "100%",
+    backgroundColor: ORANGE,
+    paddingVertical: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  runTimerBarText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
   header321: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#fff",
   },
@@ -642,207 +801,101 @@ const styles = StyleSheet.create({
   },
   carouselItem147: {
     width: 300,
-    height: 200,
+    height: 220, // image + button
     borderRadius: 10,
     overflow: "hidden",
     marginHorizontal: 5,
+    backgroundColor: "#111",
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
   },
   carouselImage258: {
     width: "100%",
-    height: "100%",
+    height: 180,
     resizeMode: "cover",
   },
-  // Add other styles as needed for the rest of your components
-
-
-
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  header: { color: "#fff", fontSize: 28, fontWeight: "800" },
-  headerButtons: {
-    flexDirection: "row",
-    gap: 16,
-  },
-  carousel: {
-    marginTop: 8,
-    width: 365,
-    height: 240, // Matches the height of the carousel
-    overflow: "hidden",
-  },
-  carouselItem: {
-    width: 365,
-    height: 250, // Matches the height of the image
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  carouselImage: {
-    width: 350,
-    height: 250, // Matches the height of the image
-    borderRadius: 14,
-  },
-  carouselFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 8,
-    paddingHorizontal: 20, // Adds spacing on both sides
-  },
+  // New styles for carousel buttons
   carouselButton: {
-    borderRadius: 14,
-    backgroundColor: "#fff",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    backgroundColor: ORANGE,
+    width: 70,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 6,
+    marginLeft: 8,
+    borderRadius: 4,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4, // For Android shadow
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 2,
   },
   carouselButtonText: {
-    color: ORANGE,
-    fontWeight: "bold",
-  },
-  dotsContainer: {
-    flexDirection: "row",
-    gap: 4,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#ccc",
-  },
-  activeDot: {
-    backgroundColor: ORANGE,
-  },
-  dailyTracker: {
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: "#111",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#1f1f1f",
-  },
-  sectionTitle: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  workoutTracker: {
-    marginBottom: 16,
-  },
-  trackerTitle: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  trackerHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  progressBarContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  progressBar: {
-    flex: 1, // Ensures the progress bar takes up remaining space
-    height: 10, // Gray background for the progress bar
-    backgroundColor: "#333",
-    borderRadius: 5,
-    overflow: "hidden",
-    flexDirection: "row",
-  },
-  progressSegment: {
-    height: "100%",
-    flex: 1, // Each segment takes equal space
-  },
-  logWorkoutButton: {
-    backgroundColor: ORANGE,
-    paddingVertical: 6, // Smaller height
-    paddingHorizontal: 12, // Smaller width
-    borderRadius: 6,
-    marginRight: 12, // Adds spacing between the button and the progress bar
-  },
-  logWorkoutButtonText: {
     color: "#fff",
     fontWeight: "bold",
-    fontSize: 12, // Smaller font size
+    fontSize: 10,
     textAlign: "center",
   },
-  progressText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "bold",
-    textAlign: "right",
-    marginTop: 4,
-    alignSelf: "flex-end", // Aligns the text to the right
-  },
-  macroTracker: {
-    marginTop: 16,
-  },
-  macroCircles: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-  },
-  macroItem: {
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  macroLabel: {
-    color: "#fff",
-    fontSize: 14,
-    marginTop: 8, // Adds spacing between the circle and the label
-    textAlign: "left",
-  },
-  circularProgress: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 6,
-    borderColor: "#FF6A00",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000",
-  },
-  macroValue: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
+  // Modal + search styles used by Search Modal
   modalContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent background
   },
-  modalContent: {
+  threeQuarterModalContent: {
+    height: "75%", // Takes up 3/4 of the screen height
+    backgroundColor: "#111", // Modal background color
+    padding: 20,
+    borderTopLeftRadius: 20, // Rounded top corners
+    borderTopRightRadius: 20,
+  },
+  runModalContent: {
+    width: "90%",
     backgroundColor: "#111",
     padding: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    width: "100%",
+    borderRadius: 12,
   },
-  modalTitle: {
+  timerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  timerDisplay: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: 24,
+    fontWeight: "bold",
+    flex: 1,
+  },
+  smallBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  smallBtnText: {
+    color: "#fff",
     fontWeight: "bold",
   },
-  slider: {
-    width: "100%",
-    marginBottom: 16,
+  miniLinkBtn: {
+    marginTop: 6,
   },
-  sliderValue: {
+  miniLinkText: {
+    color: "#ccc",
+    fontSize: 12,
+    textDecorationLine: "underline",
+  },
+  inputLabel: {
+    color: "#fff",
+    fontSize: 14,
+    marginBottom: 6,
+    marginTop: 8,
+  },
+  searchInput: {
+    backgroundColor: "#222",
     color: "#fff",
     fontSize: 16,
+    padding: 12,
+    borderRadius: 8,
     marginBottom: 16,
   },
   closeButton: {
@@ -857,54 +910,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
-  macroRow: {
-    flexDirection: "row", // Align items in a row
-    justifyContent: "space-between", // Space between labels and inputs
-    alignItems: "center", // Vertically align items
-    marginBottom: 12, // Add spacing between rows
-  },
-  macroInputContainer: {
-    flexDirection: "row", // Align inputs in a row
-    justifyContent: "space-between", // Space between inputs
-  },
-  macroInput: {
-    backgroundColor: "#222", // Dark background for input
-    color: "#fff", // White text
-    fontSize: 14, // Font size for input text
-    padding: 8, // Padding inside the input
-    borderRadius: 8, // Rounded corners
-    textAlign: "center", // Center text
-    width: 80, // Fixed width for input
-  },
-  macroTableHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center", // Aligns headers vertically with text boxes
-    marginBottom: 12,
-    paddingHorizontal: 8,
-  },
-  macroTableHeaderText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  macroNameColumn: {
-    width: "30%", // Fixed width for the macro name column
-  },
-  macroColumn: {
-    width: "35%", // Fixed width for the completed and goal columns
-  },
-  searchInput: {
-    backgroundColor: "#222",
-    color: "#fff",
-    fontSize: 16,
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
   recentSearchesContainer: {
     marginTop: 16,
+  },
+  sectionTitle: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 12,
   },
   recentSearchItem: {
     color: "#fff",
@@ -916,149 +929,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontStyle: "italic",
   },
-  fullScreenModalContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.9)", // Dark background with slight transparency
-  },
-  fullScreenModalContent: {
-    flex: 1,
-    backgroundColor: "#111", // Full-screen modal background
-    padding: 20,
-    borderTopLeftRadius: 0, // No rounded corners for full-screen
-    borderTopRightRadius: 0,
-  },
-  threeQuarterModalContent: {
-    height: "75%", // Takes up 3/4 of the screen height
-    backgroundColor: "#111", // Modal background color
-    padding: 20,
-    borderTopLeftRadius: 20, // Rounded top corners
-    borderTopRightRadius: 20,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  goalTimeContainer: {
-    width: "100%",
-    marginBottom: 16,
-  },
-  goalTimeInputContainer: {
-    flexDirection: "row", // Align input and "min" text in a row
-    alignItems: "center",
-  },
-  smallInput: {
-    backgroundColor: "#222",
-    color: "#fff",
-    fontSize: 16,
-    padding: 8,
-    borderRadius: 8,
-    textAlign: "center",
-    width: 80, // Fixed width for the input box
-    marginRight: 8,
-  },
-  goalTimeUnit: {
-    color: "#fff",
-    fontSize: 16,
-  },
-  startButton: {
-    backgroundColor: ORANGE,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 16,
-  },
-  startButtonText: {
-    color: "#000", // Black text for the button
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  countdownText: {
-    color: "#fff",
-    fontSize: 48,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginTop: 16,
-  },
-  halfModalContent: {
-    height: "50%", // Takes up half the screen height
-    backgroundColor: "#111", // Modal background color
-    padding: 20,
-    borderTopLeftRadius: 20, // Rounded top corners
-    borderTopRightRadius: 20,
-  },
-  modalSubtitle: {
-    color: "#fff", // White text for "Set a goal run time"
-    fontSize: 16,
-    marginBottom: 16,
-  },
-  addMealButton: {
-    backgroundColor: ORANGE,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  addMealButtonText: {
-    color: "#000",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  mealList: {
-    flex: 1,
-    marginTop: 8,
-  },
-  mealNameInput: {
-    backgroundColor: "#222",
-    color: "#fff",
-    fontSize: 16,
-    padding: 8,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  mealItem: {
-    backgroundColor: "#333",
-    color: "#fff",
-    fontSize: 16,
-    padding: 8,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  circularProgressContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  circularProgressItem: {
-    alignItems: "center",
-    justifyContent: "center",
-    height: 80,
-    width: 80,
-  },
-  circularProgressText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#fff",
-    marginTop: 8,
-  },
-  circularProgressLabel: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 8,
-  },
-  editButton: {
-    backgroundColor: ORANGE,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  editButtonText: {
-    color: "#000",
-    fontWeight: "bold",
-    fontSize: 12,
-  },
+  // Theme styles
+  bgDark: { backgroundColor: "#000" },
+  bgLight: { backgroundColor: "#fff" },
+  headerDark: { backgroundColor: "#1C2526" },
+  headerLight: { backgroundColor: "#f2f2f2" },
+  headerTextLight: { color: "#fff" },
+  headerTextDark: { color: "#000" },
 });
