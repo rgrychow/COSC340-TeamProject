@@ -1,3 +1,4 @@
+I did not have much code submitted this sprint since the fitness tab was pretty much already done I just adjusted some of the button utility this sprint.
 
 246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 108)           ex.sets.map((s) => {
   
