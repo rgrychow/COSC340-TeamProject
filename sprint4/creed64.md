@@ -15,7 +15,7 @@
 - Clearing up database format and confusion
 
 ## Issues you worked on
-- [Fi](https://github.com/rgrychow/COSC340-TeamProject/issues/34)
+- [Fix delete button(sprint 4)](https://github.com/rgrychow/COSC340-TeamProject/issues/46)
 
   
 # Files you worked on
