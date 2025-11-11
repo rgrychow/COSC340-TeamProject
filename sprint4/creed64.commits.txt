@@ -1,0 +1,81 @@
+
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 108)           ex.sets.map((s) => {
+  
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 131)       {/* Delete workout (make it always tappable + above everything) */}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 132)       <TouchableOpacity
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 133)         style={styles.deletePillTopRight}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 134)         onPress={() => onDeleteWorkout(workoutId)}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 135)         hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 136)         accessibilityRole="button"
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 137)         accessibilityLabel="Delete workout"
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 138)         testID={`delete-workout-${workoutId}`}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 139)       >
+
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 149)         accessibilityRole="button"
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 150)         accessibilityLabel={showExerciseForm ? "Cancel add exercise" : "Add exercise"}
+
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 172)             accessibilityRole="button"
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 173)             accessibilityLabel="Save exercise"
+
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 172)             accessibilityRole="button"
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 173)             accessibilityLabel="Save exercise"
+
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 196)
+
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 203)           accessibilityRole="button"
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 204)           accessibilityLabel="Save workout to calendar day"
+
+
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 235)           <TouchableOpacity
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 236)             style={styles.smallOutlineBtn}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 237)             onPress={() => setShowSetForm((s) => !s)}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 238)             hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 239)             accessibilityRole="button"
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 240)             accessibilityLabel={showSetForm ? "Cancel add set" : "Add set"}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 241)           >
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 244)
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 245)           {/* Exercise delete: bigger hit area for reliability */}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 246)           <TouchableOpacity
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 247)             style={styles.smallDeleteBtn}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 248)             onPress={() => onDeleteExercise(workoutId, exerciseId)}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 249)             hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 250)             accessibilityRole="button"
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 251)             accessibilityLabel={`Delete exercise ${name}`}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 252)             testID={`delete-exercise-${exerciseId}`}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 253)           >
+
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 269)               <TouchableOpacity
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 270)                 style={styles.smallDeleteBtn}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 271)                 onPress={() => onDeleteSet(workoutId, exerciseId, s.id)}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 272)                 hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 273)                 accessibilityRole="button"
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 274)                 accessibilityLabel={`Delete set ${idx + 1}`}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 275)                 testID={`delete-set-${s.id}`}
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 276)               >
+
+
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 318)             accessibilityRole="button"
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 319)             accessibilityLabel="Save set"
+
+
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 353)     zIndex: 1000,   // <-- keep on top (iOS)
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 354)     elevation: 8,   // <-- keep on top (Android)
+
+
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 399)   primaryBtn: {
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 400)     backgroundColor: ORANGE,
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 401)     paddingVertical: 12,
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 402)     paddingHorizontal: 18,
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 403)     borderRadius: 14,
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 404)     alignSelf: "flex-start",
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 405)     marginTop: 6
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 406)   },
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 411)   smallDeleteBtn: {
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 412)     borderWidth: 1,
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 413)     borderColor: ORANGE,
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 414)     paddingVertical: 6,
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 415)     paddingHorizontal: 10,
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 416)     borderRadius: 10,
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 417)     marginLeft: 8,
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 418)   },
+246f95823 AimHigh/AimHigh/app/(tabs)/fitness.tsx (clumzycodes     2025-11-10 18:07:36 -0500 421)
