@@ -1,14 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import { getAuth, updateEmail, updateProfile } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
 import {
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  Alert,
 } from 'react-native';
+import { db } from '../firebase';
 import NutritionCalculator from './nutrition_calculator';
 
 const ORANGE = "#FF6A00";
@@ -25,37 +29,111 @@ interface NutritionGoals {
   carbs: number;
 }
 
+interface UserProfile {
+  name: string;
+  email: string;
+  phone: string;
+  age: string;
+  weight: string;
+  height: string;
+  nutritionGoals?: NutritionGoals | null;
+}
+
 export default function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
-  const [name, setName] = useState('Jackson');
-  const [email, setEmail] = useState('jackson@aimhigh.com');
-  const [phone, setPhone] = useState('(555) 123-4567');
-  const [age, setAge] = useState('25');
-  const [weight, setWeight] = useState('180');
-  const [height, setHeight] = useState('5\'10"');
-  const [goal, setGoal] = useState('Build Muscle');
-  
-  // Nutrition goals state
+  const [profile, setProfile] = useState<UserProfile>({
+    name: '',
+    email: '',
+    phone: '',
+    age: '',
+    weight: '',
+    height: '',
+  });
   const [nutritionGoals, setNutritionGoals] = useState<NutritionGoals | null>(null);
   const [showNutritionCalculator, setShowNutritionCalculator] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    // Here you would typically save to your backend/database
-    console.log('Profile saved:', { 
-      name, 
-      email, 
-      phone, 
-      age, 
-      weight, 
-      height, 
-      goal,
-      nutritionGoals 
-    });
-    onClose();
+  const auth = getAuth();
+  const uid = auth.currentUser?.uid;
+
+  // Load profile from Firestore
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!visible || !uid) return;
+
+      try {
+        const snap = await getDoc(doc(db, 'users', uid));
+        if (snap.exists()) {
+          const data = snap.data() as UserProfile;
+          setProfile({
+            name: data.name ?? '',
+            email: data.email ?? auth.currentUser?.email ?? '',
+            phone: data.phone ?? '',
+            age: data.age ?? '',
+            weight: data.weight ?? '',
+            height: data.height ?? '',
+          });
+          setNutritionGoals(data.nutritionGoals ?? null);
+        } else {
+          const user = auth.currentUser!;
+          setProfile((p) => ({
+            ...p,
+            name: user.displayName ?? '',
+            email: user.email ?? '',
+          }));
+        }
+      } catch (e) {
+        console.error('Failed to load profile:', e);
+      }
+    };
+
+    loadProfile();
+  }, [visible, uid, auth]);
+
+  // Save handler
+  const handleSave = async () => {
+    if (!uid) {
+      Alert.alert('Error', 'You must be signed in to save a profile.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const user = auth.currentUser!;
+
+      if (user.displayName !== profile.name || user.email !== profile.email) {
+        await updateProfile(user, { displayName: profile.name });
+        if (user.email !== profile.email) {
+          await updateEmail(user, profile.email);
+        }
+      }
+
+      await setDoc(
+        doc(db, 'users', uid),
+        {
+          name: profile.name,
+          email: profile.email,
+          phone: profile.phone,
+          age: profile.age,
+          weight: profile.weight,
+          height: profile.height,
+          nutritionGoals: nutritionGoals ?? null,
+        },
+        { merge: true }
+      );
+
+      Alert.alert('Success', 'Profile saved successfully!');
+      onClose();
+    } catch (err: any) {
+      console.error('Save error:', err);
+      Alert.alert('Save failed', err.message ?? 'Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleNutritionCalculated = (goals: NutritionGoals) => {
     setNutritionGoals(goals);
-    console.log('Nutrition goals set:', goals);
+    setShowNutritionCalculator(false);
   };
 
   return (
@@ -73,35 +151,28 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Edit Profile</Text>
-            <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-              <Text style={styles.saveButtonText}>Save</Text>
+            <TouchableOpacity
+              onPress={handleSave}
+              disabled={saving}
+              style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+            >
+              <Text style={styles.saveButtonText}>
+                {saving ? 'Saving…' : 'Save'}
+              </Text>
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.scrollView}>
-            {/* Profile Photo Section */}
-            <View style={styles.photoSection}>
-              <View style={styles.photoContainer}>
-                <Ionicons name="person-circle" size={100} color="#666" />
-                <TouchableOpacity style={styles.photoEditButton}>
-                  <Ionicons name="camera" size={20} color="#fff" />
-                </TouchableOpacity>
-              </View>
-              <TouchableOpacity>
-                <Text style={styles.changePhotoText}>Change Photo</Text>
-              </TouchableOpacity>
-            </View>
-
             {/* Personal Information */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Personal Information</Text>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Full Name</Text>
                 <TextInput
                   style={styles.input}
-                  value={name}
-                  onChangeText={setName}
+                  value={profile.name}
+                  onChangeText={(t) => setProfile((p) => ({ ...p, name: t }))}
                   placeholder="Enter your name"
                   placeholderTextColor="#666"
                 />
@@ -111,8 +182,8 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
                 <Text style={styles.label}>Email</Text>
                 <TextInput
                   style={styles.input}
-                  value={email}
-                  onChangeText={setEmail}
+                  value={profile.email}
+                  onChangeText={(t) => setProfile((p) => ({ ...p, email: t }))}
                   placeholder="Enter your email"
                   placeholderTextColor="#666"
                   keyboardType="email-address"
@@ -124,8 +195,8 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
                 <Text style={styles.label}>Phone Number</Text>
                 <TextInput
                   style={styles.input}
-                  value={phone}
-                  onChangeText={setPhone}
+                  value={profile.phone}
+                  onChangeText={(t) => setProfile((p) => ({ ...p, phone: t }))}
                   placeholder="Enter your phone"
                   placeholderTextColor="#666"
                   keyboardType="phone-pad"
@@ -136,8 +207,8 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
                 <Text style={styles.label}>Age</Text>
                 <TextInput
                   style={styles.input}
-                  value={age}
-                  onChangeText={setAge}
+                  value={profile.age}
+                  onChangeText={(t) => setProfile((p) => ({ ...p, age: t }))}
                   placeholder="Enter your age"
                   placeholderTextColor="#666"
                   keyboardType="numeric"
@@ -148,13 +219,13 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
             {/* Fitness Information */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Fitness Information</Text>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Weight (lbs)</Text>
                 <TextInput
                   style={styles.input}
-                  value={weight}
-                  onChangeText={setWeight}
+                  value={profile.weight}
+                  onChangeText={(t) => setProfile((p) => ({ ...p, weight: t }))}
                   placeholder="Enter your weight"
                   placeholderTextColor="#666"
                   keyboardType="numeric"
@@ -165,45 +236,11 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
                 <Text style={styles.label}>Height</Text>
                 <TextInput
                   style={styles.input}
-                  value={height}
-                  onChangeText={setHeight}
+                  value={profile.height}
+                  onChangeText={(t) => setProfile((p) => ({ ...p, height: t }))}
                   placeholder="Enter your height"
                   placeholderTextColor="#666"
                 />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Fitness Goal</Text>
-                <TouchableOpacity style={styles.selectInput}>
-                  <Text style={styles.selectInputText}>{goal}</Text>
-                  <Ionicons name="chevron-down" size={20} color="#999" />
-                </TouchableOpacity>
-                <View style={styles.goalOptions}>
-                  <TouchableOpacity 
-                    style={styles.goalOption}
-                    onPress={() => setGoal('Lose Weight')}
-                  >
-                    <Text style={styles.goalOptionText}>Lose Weight</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.goalOption}
-                    onPress={() => setGoal('Build Muscle')}
-                  >
-                    <Text style={styles.goalOptionText}>Build Muscle</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.goalOption}
-                    onPress={() => setGoal('Stay Fit')}
-                  >
-                    <Text style={styles.goalOptionText}>Stay Fit</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.goalOption}
-                    onPress={() => setGoal('Improve Endurance')}
-                  >
-                    <Text style={styles.goalOptionText}>Improve Endurance</Text>
-                  </TouchableOpacity>
-                </View>
               </View>
             </View>
 
@@ -211,7 +248,7 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Nutrition Goals</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.calculateButton}
                   onPress={() => setShowNutritionCalculator(true)}
                 >
@@ -261,12 +298,9 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
 
             {/* Sign Out Section */}
             <View style={styles.section}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.deleteButton}
                 onPress={() => {
-                  // Navigate back to index.tsx (login screen)
-                  // You'll need to use your navigation method here
-                  // Example: navigation.navigate('Index') or navigation.reset()
                   console.log('Signing out...');
                 }}
               >
@@ -283,9 +317,9 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
         visible={showNutritionCalculator}
         onClose={() => setShowNutritionCalculator(false)}
         onComplete={handleNutritionCalculated}
-        initialAge={age}
-        initialWeight={weight}
-        initialHeight={height}
+        initialAge={profile.age}
+        initialWeight={profile.weight}
+        initialHeight={profile.height}
       />
     </Modal>
   );
@@ -312,72 +346,25 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#222',
   },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
+  backButton: { padding: 4 },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
   saveButton: {
     backgroundColor: ORANGE,
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 8,
   },
-  saveButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  photoSection: {
-    alignItems: 'center',
-    paddingVertical: 30,
-    borderBottomWidth: 1,
-    borderBottomColor: '#222',
-  },
-  photoContainer: {
-    position: 'relative',
-    marginBottom: 12,
-  },
-  photoEditButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: ORANGE,
-    borderRadius: 20,
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#000',
-  },
-  changePhotoText: {
-    color: ORANGE,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  section: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 16,
-  },
+  saveButtonDisabled: { opacity: 0.6 },
+  saveButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  scrollView: { flex: 1 },
+  section: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 16 },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
   calculateButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -387,20 +374,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 6,
   },
-  calculateButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#999',
-    marginBottom: 8,
-  },
+  calculateButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  inputGroup: { marginBottom: 20 },
+  label: { fontSize: 14, fontWeight: '600', color: '#999', marginBottom: 8 },
   input: {
     backgroundColor: '#111',
     borderWidth: 1,
@@ -411,42 +387,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
   },
-  selectInput: {
-    backgroundColor: '#111',
-    borderWidth: 1,
-    borderColor: '#333',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  selectInputText: {
-    fontSize: 16,
-    color: '#fff',
-  },
-  goalOptions: {
-    marginTop: 8,
-  },
-  goalOption: {
-    backgroundColor: '#111',
-    borderWidth: 1,
-    borderColor: '#333',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  goalOptionText: {
-    fontSize: 15,
-    color: '#fff',
-  },
-  nutritionGoalsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
+  nutritionGoalsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   nutritionGoalCard: {
     flex: 1,
     minWidth: '47%',
@@ -457,17 +398,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333',
   },
-  nutritionGoalValue: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginTop: 8,
-  },
-  nutritionGoalLabel: {
-    fontSize: 11,
-    color: '#999',
-    marginTop: 4,
-  },
+  nutritionGoalValue: { fontSize: 22, fontWeight: 'bold', color: '#fff', marginTop: 8 },
+  nutritionGoalLabel: { fontSize: 11, color: '#999', marginTop: 4 },
   noGoalsContainer: {
     alignItems: 'center',
     paddingVertical: 32,
@@ -477,12 +409,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333',
   },
-  noGoalsText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginTop: 12,
-  },
+  noGoalsText: { fontSize: 16, fontWeight: '600', color: '#fff', marginTop: 12 },
   noGoalsSubtext: {
     fontSize: 13,
     color: '#666',
@@ -501,10 +428,5 @@ const styles = StyleSheet.create({
     borderColor: '#ef4444',
     marginTop: 8,
   },
-  deleteButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ef4444',
-    marginLeft: 8,
-  },
+  deleteButtonText: { fontSize: 16, fontWeight: '600', color: '#ef4444', marginLeft: 8 },
 });

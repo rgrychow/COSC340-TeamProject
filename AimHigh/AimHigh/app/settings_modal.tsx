@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { getAuth } from 'firebase/auth';
+import { getAuth, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import {
@@ -10,11 +10,13 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';   // <-- Expo Router
 import { db } from '../firebase';
 import EditProfileModal from './edit_profile_modal';
 
-const ORANGE = "#FF6A00";
+const ORANGE = '#FF6A00';
 
 interface SettingsModalProps {
   visible: boolean;
@@ -22,25 +24,27 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ visible, onClose }: SettingsModalProps) {
+  const router = useRouter(); // <-- Expo Router
+
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const [editProfileVisible, setEditProfileVisible] = useState(false);
 
+  // ──────────────────────────────────────────────────────────────
+  // Dark Mode sync with Firestore
+  // ──────────────────────────────────────────────────────────────
   const handleToggleDarkMode = async (value: boolean) => {
     setDarkModeEnabled(value);
     try {
       const uid = getAuth().currentUser?.uid;
       if (!uid) return;
-      const ref = doc(db, 'users', uid);
-      await setDoc(ref, { darkBackground: value }, { merge: true });
+      await setDoc(doc(db, 'users', uid), { darkBackground: value }, { merge: true });
     } catch (e) {
-      console.error('Failed to update dark mode in Firestore:', e);
-      setDarkModeEnabled((prev) => !value); // revert UI on failure
+      console.error('Failed to update dark mode:', e);
+      setDarkModeEnabled((prev) => !prev); // revert
     }
   };
 
-  // Load dark mode from Firestore when the modal becomes visible
   useEffect(() => {
     const load = async () => {
       try {
@@ -52,11 +56,24 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
           setDarkModeEnabled(Boolean(data.darkBackground));
         }
       } catch (e) {
-        console.error('Failed to load dark mode from Firestore:', e);
+        console.error('Failed to load dark mode:', e);
       }
     };
     if (visible) load();
   }, [visible]);
+
+  // ──────────────────────────────────────────────────────────────
+  // LOG OUT → Go back to index.tsx (login screen)
+  // ──────────────────────────────────────────────────────────────
+  const handleLogout = async () => {
+    try {
+      await signOut(getAuth());
+      onClose(); // close modal
+      router.replace('/'); // <-- Navigate to app/index.tsx (login screen)
+    } catch (error: any) {
+      Alert.alert('Logout failed', error.message ?? 'Please try again.');
+    }
+  };
 
   return (
     <Modal
@@ -79,8 +96,8 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
             {/* Account Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Account</Text>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.settingItem}
                 onPress={() => setEditProfileVisible(true)}
               >
@@ -88,18 +105,12 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
                 <Text style={styles.settingText}>Edit Profile</Text>
                 <Ionicons name="chevron-forward" size={20} color="#999" />
               </TouchableOpacity>
-
-              <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="lock-closed-outline" size={24} color="#fff" />
-                <Text style={styles.settingText}>Change Password</Text>
-                <Ionicons name="chevron-forward" size={20} color="#999" />
-              </TouchableOpacity>
             </View>
 
             {/* Preferences Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Preferences</Text>
-              
+
               <View style={styles.settingItem}>
                 <Ionicons name="notifications-outline" size={24} color="#fff" />
                 <Text style={styles.settingText}>Notifications</Text>
@@ -122,17 +133,6 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
                 />
               </View>
 
-              <View style={styles.settingItem}>
-                <Ionicons name="volume-high-outline" size={24} color="#fff" />
-                <Text style={styles.settingText}>Sound Effects</Text>
-                <Switch
-                  value={soundEnabled}
-                  onValueChange={setSoundEnabled}
-                  trackColor={{ false: '#333', true: ORANGE }}
-                  thumbColor="#fff"
-                />
-              </View>
-
               <TouchableOpacity style={styles.settingItem}>
                 <Ionicons name="language-outline" size={24} color="#fff" />
                 <Text style={styles.settingText}>Language</Text>
@@ -141,29 +141,10 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
               </TouchableOpacity>
             </View>
 
-            {/* Fitness Settings */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Fitness</Text>
-              
-              <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="fitness-outline" size={24} color="#fff" />
-                <Text style={styles.settingText}>Units</Text>
-                <Text style={styles.settingValue}>Metric</Text>
-                <Ionicons name="chevron-forward" size={20} color="#999" />
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="calendar-outline" size={24} color="#fff" />
-                <Text style={styles.settingText}>Weekly Goal</Text>
-                <Text style={styles.settingValue}>5 days</Text>
-                <Ionicons name="chevron-forward" size={20} color="#999" />
-              </TouchableOpacity>
-            </View>
-
             {/* About Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>About</Text>
-              
+
               <TouchableOpacity style={styles.settingItem}>
                 <Ionicons name="information-circle-outline" size={24} color="#fff" />
                 <Text style={styles.settingText}>App Version</Text>
@@ -183,8 +164,8 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
               </TouchableOpacity>
             </View>
 
-            {/* Logout Button */}
-            <TouchableOpacity style={styles.logoutButton}>
+            {/* LOG OUT BUTTON */}
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={24} color="#ef4444" />
               <Text style={styles.logoutText}>Log Out</Text>
             </TouchableOpacity>
@@ -193,9 +174,9 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
       </View>
 
       {/* Edit Profile Modal */}
-      <EditProfileModal 
-        visible={editProfileVisible} 
-        onClose={() => setEditProfileVisible(false)} 
+      <EditProfileModal
+        visible={editProfileVisible}
+        onClose={() => setEditProfileVisible(false)}
       />
     </Modal>
   );

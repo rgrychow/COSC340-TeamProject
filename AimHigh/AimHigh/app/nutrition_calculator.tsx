@@ -1,5 +1,6 @@
+// NutritionCalculator.tsx
 import { Ionicons } from '@expo/vector-icons';
-import { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Modal,
   ScrollView,
@@ -10,7 +11,7 @@ import {
   View,
 } from 'react-native';
 
-const ORANGE = "#FF6A00";
+const ORANGE = '#FF6A00';
 
 interface NutritionCalculatorProps {
   visible: boolean;
@@ -18,10 +19,10 @@ interface NutritionCalculatorProps {
   onComplete?: (goals: NutritionGoals) => void;
   initialAge?: string;
   initialWeight?: string;
-  initialHeight?: string;
+  initialHeight?: string; // e.g. "5'10"
 }
 
-interface NutritionGoals {
+export interface NutritionGoals {
   calories: number;
   protein: number;
   fats: number;
@@ -32,45 +33,59 @@ type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_activ
 type Goal = 'cut' | 'maintain' | 'bulk';
 type Gender = 'male' | 'female';
 
-export default function NutritionCalculator({ 
-  visible, 
-  onClose, 
+export default function NutritionCalculator({
+  visible,
+  onClose,
   onComplete,
   initialAge = '',
   initialWeight = '',
-  initialHeight = ''
+  initialHeight = '',
 }: NutritionCalculatorProps) {
+  /* --------------------------------------------------------------- */
+  /*  State                                                          */
+  /* --------------------------------------------------------------- */
   const [step, setStep] = useState(1);
   const [gender, setGender] = useState<Gender>('male');
-  const [age, setAge] = useState('');
-  const [weight, setWeight] = useState('');
+  const [age, setAge] = useState(initialAge);
+  const [weight, setWeight] = useState(initialWeight);
   const [heightFeet, setHeightFeet] = useState('');
   const [heightInches, setHeightInches] = useState('');
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>('moderate');
   const [goal, setGoal] = useState<Goal>('maintain');
   const [results, setResults] = useState<NutritionGoals | null>(null);
 
-  // Parse initial height string like "5'10"" into feet and inches
+  /* --------------------------------------------------------------- */
+  /*  Height parsing helper                                          */
+  /* --------------------------------------------------------------- */
   const parseHeight = (heightStr: string): { feet: string; inches: string } => {
     const match = heightStr.match(/(\d+)['\s]+(\d+)/);
-    if (match) {
-      return { feet: match[1], inches: match[2] };
-    }
+    if (match) return { feet: match[1], inches: match[2] };
     return { feet: '', inches: '' };
   };
 
-  // Pre-fill values when modal opens
+  /* --------------------------------------------------------------- */
+  /*  Pre‑fill when modal opens                                      */
+  /* --------------------------------------------------------------- */
   useEffect(() => {
     if (visible) {
       setAge(initialAge);
       setWeight(initialWeight);
-      const parsed = parseHeight(initialHeight);
-      setHeightFeet(parsed.feet);
-      setHeightInches(parsed.inches);
+      const { feet, inches } = parseHeight(initialHeight);
+      setHeightFeet(feet);
+      setHeightInches(inches);
+      // reset everything else
+      setStep(1);
+      setGender('male');
+      setActivityLevel('moderate');
+      setGoal('maintain');
+      setResults(null);
     }
   }, [visible, initialAge, initialWeight, initialHeight]);
 
-  const activityMultipliers = {
+  /* --------------------------------------------------------------- */
+  /*  Activity multipliers & labels                                   */
+  /* --------------------------------------------------------------- */
+  const activityMultipliers: Record<ActivityLevel, number> = {
     sedentary: 1.2,
     light: 1.375,
     moderate: 1.55,
@@ -78,106 +93,106 @@ export default function NutritionCalculator({
     very_active: 1.9,
   };
 
-  const activityLabels = {
+  const activityLabels: Record<ActivityLevel, string> = {
     sedentary: 'Sedentary (little to no exercise)',
-    light: 'Light (1-3 days/week)',
-    moderate: 'Moderate (3-5 days/week)',
-    active: 'Active (6-7 days/week)',
-    very_active: 'Very Active (athlete/physical job)',
+    light: 'Light (1‑3 days/week)',
+    moderate: 'Moderate (3‑5 days/week)',
+    active: 'Active (6‑7 days/week)',
+    very_active: 'Very Active (athlete / physical job)',
   };
 
+  /* --------------------------------------------------------------- */
+  /*  Core calculation                                                */
+  /* --------------------------------------------------------------- */
   const calculateNutrition = () => {
-    // Convert pounds to kg
-    const weightLbs = parseFloat(weight);
+    const weightLbs = parseFloat(weight) || 0;
     const weightKg = weightLbs * 0.453592;
 
-    // Convert feet/inches to cm
-    const feet = parseInt(heightFeet);
-    const inches = parseInt(heightInches);
+    const feet = parseInt(heightFeet) || 0;
+    const inches = parseInt(heightInches) || 0;
     const totalInches = feet * 12 + inches;
     const heightCm = totalInches * 2.54;
 
-    const ageNum = parseInt(age);
+    const ageNum = parseInt(age) || 0;
 
-    // Calculate BMR using Mifflin-St Jeor Equation (uses kg and cm)
-    let bmr: number;
-    if (gender === 'male') {
-      bmr = 10 * weightKg + 6.25 * heightCm - 5 * ageNum + 5;
-    } else {
-      bmr = 10 * weightKg + 6.25 * heightCm - 5 * ageNum - 161;
-    }
+    // Mifflin‑St Jeor BMR
+    const bmr =
+      gender === 'male'
+        ? 10 * weightKg + 6.25 * heightCm - 5 * ageNum + 5
+        : 10 * weightKg + 6.25 * heightCm - 5 * ageNum - 161;
 
-    // Calculate TDEE
     const tdee = bmr * activityMultipliers[activityLevel];
 
-    // Adjust calories based on goal
-    let calories: number;
-    if (goal === 'cut') {
-      calories = tdee - 500;
-    } else if (goal === 'bulk') {
-      calories = tdee + 300;
-    } else {
-      calories = tdee;
-    }
+    // Goal adjustment
+    let calories = tdee;
+    if (goal === 'cut') calories -= 500;
+    if (goal === 'bulk') calories += 300;
 
-    // Calculate macros (protein based on lbs for easier understanding)
-    let proteinPerLb: number;
-    if (goal === 'cut') {
-      proteinPerLb = 1.0; // ~2.2g per kg
-    } else if (goal === 'bulk') {
-      proteinPerLb = 1.0; // ~2.2g per kg
-    } else {
-      proteinPerLb = 0.8; // ~1.8g per kg
-    }
+    // Macros
+    const proteinPerLb = goal === 'cut' || goal === 'bulk' ? 1.0 : 0.8;
     const protein = Math.round(weightLbs * proteinPerLb);
 
-    const fatPercentage = 0.28;
-    const fatCalories = calories * fatPercentage;
-    const fats = Math.round(fatCalories / 9);
+    const fatPct = 0.28;
+    const fatCals = calories * fatPct;
+    const fats = Math.round(fatCals / 9);
 
-    const proteinCalories = protein * 4;
-    const remainingCalories = calories - proteinCalories - fatCalories;
-    const carbs = Math.round(remainingCalories / 4);
+    const proteinCals = protein * 4;
+    const remainingCals = calories - proteinCals - fatCals;
+    const carbs = Math.round(remainingCals / 4);
 
-    const nutritionGoals: NutritionGoals = {
+    const goals: NutritionGoals = {
       calories: Math.round(calories),
       protein,
       fats,
       carbs,
     };
 
-    setResults(nutritionGoals);
+    setResults(goals);
     setStep(5);
   };
 
+  /* --------------------------------------------------------------- */
+  /*  Reset helper                                                    */
+  /* --------------------------------------------------------------- */
   const resetCalculator = () => {
     setStep(1);
     setGender('male');
-    setAge('');
-    setWeight('');
-    setHeightFeet('');
-    setHeightInches('');
+    setAge(initialAge);
+    setWeight(initialWeight);
+    const { feet, inches } = parseHeight(initialHeight);
+    setHeightFeet(feet);
+    setHeightInches(inches);
     setActivityLevel('moderate');
     setGoal('maintain');
     setResults(null);
   };
 
   const handleComplete = () => {
-    if (results && onComplete) {
-      onComplete(results);
-    }
+    if (results && onComplete) onComplete(results);
     onClose();
     resetCalculator();
   };
 
+  /* --------------------------------------------------------------- */
+  /*  Step validation helpers                                         */
+  /* --------------------------------------------------------------- */
+  const canGoToStep2 = Boolean(age && weight && heightFeet && heightInches);
+  const canCalculate = Boolean(activityLevel && goal);
+
+  /* --------------------------------------------------------------- */
+  /*  Render each step                                                */
+  /* --------------------------------------------------------------- */
   const renderStep = () => {
     switch (step) {
+      /* ---------- STEP 1 – Gender ---------- */
       case 1:
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>What's your gender?</Text>
-            <Text style={styles.stepSubtitle}>This helps us calculate your baseline metabolism</Text>
-            
+            <Text style={styles.stepSubtitle}>
+              This helps us calculate your baseline metabolism
+            </Text>
+
             <TouchableOpacity
               style={[styles.optionButton, gender === 'male' && styles.optionButtonSelected]}
               onPress={() => setGender('male')}
@@ -198,21 +213,19 @@ export default function NutritionCalculator({
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.nextButton}
-              onPress={() => setStep(2)}
-            >
+            <TouchableOpacity style={styles.nextButton} onPress={() => setStep(2)}>
               <Text style={styles.nextButtonText}>Next</Text>
             </TouchableOpacity>
           </View>
         );
 
+      /* ---------- STEP 2 – Age / Weight / Height ---------- */
       case 2:
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>Tell us about yourself</Text>
             <Text style={styles.stepSubtitle}>We need these details to calculate your metabolism</Text>
-            
+
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Age (years)</Text>
               <TextInput
@@ -268,17 +281,14 @@ export default function NutritionCalculator({
             </View>
 
             <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => setStep(1)}
-              >
+              <TouchableOpacity style={styles.backButton} onPress={() => setStep(1)}>
                 <Text style={styles.backButtonText}>Back</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.nextButton, styles.nextButtonFlex]}
                 onPress={() => setStep(3)}
-                disabled={!age || !weight || !heightFeet || !heightInches}
+                disabled={!canGoToStep2}
               >
                 <Text style={styles.nextButtonText}>Next</Text>
               </TouchableOpacity>
@@ -286,29 +296,27 @@ export default function NutritionCalculator({
           </View>
         );
 
+      /* ---------- STEP 3 – Activity Level ---------- */
       case 3:
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>What's your activity level?</Text>
             <Text style={styles.stepSubtitle}>Be honest to get accurate results</Text>
-            
-            {(Object.keys(activityLabels) as ActivityLevel[]).map((level) => (
+
+            {(Object.keys(activityLabels) as ActivityLevel[]).map((lvl) => (
               <TouchableOpacity
-                key={level}
-                style={[styles.optionButton, activityLevel === level && styles.optionButtonSelected]}
-                onPress={() => setActivityLevel(level)}
+                key={lvl}
+                style={[styles.optionButton, activityLevel === lvl && styles.optionButtonSelected]}
+                onPress={() => setActivityLevel(lvl)}
               >
-                <Text style={[styles.optionText, activityLevel === level && styles.optionTextSelected]}>
-                  {activityLabels[level]}
+                <Text style={[styles.optionText, activityLevel === lvl && styles.optionTextSelected]}>
+                  {activityLabels[lvl]}
                 </Text>
               </TouchableOpacity>
             ))}
 
             <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => setStep(2)}
-              >
+              <TouchableOpacity style={styles.backButton} onPress={() => setStep(2)}>
                 <Text style={styles.backButtonText}>Back</Text>
               </TouchableOpacity>
 
@@ -322,12 +330,13 @@ export default function NutritionCalculator({
           </View>
         );
 
+      /* ---------- STEP 4 – Goal ---------- */
       case 4:
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>What's your goal?</Text>
             <Text style={styles.stepSubtitle}>This determines your calorie target</Text>
-            
+
             <TouchableOpacity
               style={[styles.optionButton, goal === 'cut' && styles.optionButtonSelected]}
               onPress={() => setGoal('cut')}
@@ -337,7 +346,7 @@ export default function NutritionCalculator({
                 <Text style={[styles.optionText, goal === 'cut' && styles.optionTextSelected]}>
                   Cut (Lose Fat)
                 </Text>
-                <Text style={styles.optionDescription}>500 calorie deficit</Text>
+                <Text style={styles.optionDescription}>500 calorie deficit</Text>
               </View>
             </TouchableOpacity>
 
@@ -363,21 +372,19 @@ export default function NutritionCalculator({
                 <Text style={[styles.optionText, goal === 'bulk' && styles.optionTextSelected]}>
                   Bulk (Build Muscle)
                 </Text>
-                <Text style={styles.optionDescription}>300 calorie surplus</Text>
+                <Text style={styles.optionDescription}>300 calorie surplus</Text>
               </View>
             </TouchableOpacity>
 
             <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => setStep(3)}
-              >
+              <TouchableOpacity style={styles.backButton} onPress={() => setStep(3)}>
                 <Text style={styles.backButtonText}>Back</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.nextButton, styles.nextButtonFlex]}
                 onPress={calculateNutrition}
+                disabled={!canCalculate}
               >
                 <Text style={styles.nextButtonText}>Calculate</Text>
               </TouchableOpacity>
@@ -385,6 +392,7 @@ export default function NutritionCalculator({
           </View>
         );
 
+      /* ---------- STEP 5 – Results ---------- */
       case 5:
         return (
           <View style={styles.stepContainer}>
@@ -430,17 +438,11 @@ export default function NutritionCalculator({
             </View>
 
             <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={resetCalculator}
-              >
+              <TouchableOpacity style={styles.backButton} onPress={resetCalculator}>
                 <Text style={styles.backButtonText}>Recalculate</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.nextButton, styles.nextButtonFlex]}
-                onPress={handleComplete}
-              >
+              <TouchableOpacity style={[styles.nextButton, styles.nextButtonFlex]} onPress={handleComplete}>
                 <Text style={styles.nextButtonText}>Done</Text>
               </TouchableOpacity>
             </View>
@@ -452,15 +454,14 @@ export default function NutritionCalculator({
     }
   };
 
+  /* --------------------------------------------------------------- */
+  /*  Render modal                                                    */
+  /* --------------------------------------------------------------- */
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
+          {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Nutrition Calculator</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -468,18 +469,17 @@ export default function NutritionCalculator({
             </TouchableOpacity>
           </View>
 
+          {/* Progress dots */}
           <View style={styles.progressContainer}>
             {[1, 2, 3, 4, 5].map((s) => (
               <View
                 key={s}
-                style={[
-                  styles.progressDot,
-                  step >= s && styles.progressDotActive,
-                ]}
+                style={[styles.progressDot, step >= s && styles.progressDotActive]}
               />
             ))}
           </View>
 
+          {/* Content */}
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
             {renderStep()}
           </ScrollView>
@@ -489,10 +489,13 @@ export default function NutritionCalculator({
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Styles (unchanged – only minor tweaks for disabled buttons)       */
+/* ------------------------------------------------------------------ */
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    backgroundColor: 'rgba(0,0,0,0.9)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -512,50 +515,25 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#333',
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  closeButton: {
-    padding: 4,
-  },
+  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
+  closeButton: { padding: 4 },
+
   progressContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 20,
     gap: 8,
+    paddingVertical: 20,
   },
-  progressDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#333',
-  },
-  progressDotActive: {
-    backgroundColor: ORANGE,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  stepContainer: {
-    padding: 20,
-    backgroundColor: '#000', // Added for visibility
-  },
-  stepTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
-    fontFamily: 'System',
-  },
-  stepSubtitle: {
-    fontSize: 14,
-    color: '#999',
-    marginBottom: 24,
-    fontFamily: 'System',
-  },
+  progressDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#333' },
+  progressDotActive: { backgroundColor: ORANGE },
+
+  scrollView: { flex: 1 },
+
+  stepContainer: { padding: 20 },
+
+  stepTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginBottom: 8 },
+  stepSubtitle: { fontSize: 14, color: '#999', marginBottom: 24 },
+
   optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -566,38 +544,16 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#333',
   },
-  optionButtonSelected: {
-    backgroundColor: '#2a2a2a',
-    borderColor: ORANGE,
-  },
-  optionText: {
-    fontSize: 16,
-    color: '#999',
-    marginLeft: 12,
-    flex: 1,
-  },
-  optionTextSelected: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  optionTextContainer: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  optionDescription: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 8,
-  },
+  optionButtonSelected: { backgroundColor: '#2a2a2a', borderColor: ORANGE },
+
+  optionText: { fontSize: 16, color: '#999', marginLeft: 12, flex: 1 },
+  optionTextSelected: { color: '#fff', fontWeight: '600' },
+
+  optionTextContainer: { flex: 1, marginLeft: 12 },
+  optionDescription: { fontSize: 12, color: '#666', marginTop: 2 },
+
+  inputGroup: { marginBottom: 20 },
+  inputLabel: { fontSize: 14, fontWeight: '600', color: '#fff', marginBottom: 8 },
   input: {
     backgroundColor: '#1a1a1a',
     borderWidth: 1,
@@ -607,10 +563,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
   },
-  heightInputRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
+
+  heightInputRow: { flexDirection: 'row', gap: 12 },
   heightInputContainer: {
     flex: 1,
     flexDirection: 'row',
@@ -621,22 +575,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
   },
-  heightInput: {
-    flex: 1,
-    padding: 16,
-    fontSize: 16,
-    color: '#fff',
-  },
-  heightUnit: {
-    fontSize: 14,
-    color: '#999',
-    fontWeight: '600',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-  },
+  heightInput: { flex: 1, padding: 16, fontSize: 16, color: '#fff' },
+  heightUnit: { fontSize: 14, color: '#999', fontWeight: '600' },
+
+  buttonRow: { flexDirection: 'row', gap: 12, marginTop: 20 },
   backButton: {
     flex: 1,
     padding: 16,
@@ -646,11 +588,8 @@ const styles = StyleSheet.create({
     borderColor: '#333',
     alignItems: 'center',
   },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-  },
+  backButtonText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+
   nextButton: {
     padding: 16,
     backgroundColor: ORANGE,
@@ -658,36 +597,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
   },
-  nextButtonFlex: {
-    flex: 2,
-    marginTop: 0,
-  },
-  nextButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  resultsHeader: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  resultsTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginTop: 12,
-  },
-  resultsSubtitle: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 4,
-  },
-  resultsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 20,
-  },
+  nextButtonFlex: { flex: 2, marginTop: 0 },
+  nextButtonText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+
+  resultsHeader: { alignItems: 'center', marginBottom: 24 },
+  resultsTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginTop: 12 },
+  resultsSubtitle: { fontSize: 14, color: '#999', marginTop: 4 },
+
+  resultsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
   resultCard: {
     flex: 1,
     minWidth: '45%',
@@ -698,17 +615,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333',
   },
-  resultValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginTop: 8,
-  },
-  resultLabel: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 4,
-  },
+  resultValue: { fontSize: 28, fontWeight: 'bold', color: '#fff', marginTop: 8 },
+  resultLabel: { fontSize: 12, color: '#999', marginTop: 4 },
+
   infoBox: {
     flexDirection: 'row',
     backgroundColor: '#1a0f00',
@@ -718,11 +627,5 @@ const styles = StyleSheet.create({
     borderColor: ORANGE + '40',
     marginBottom: 12,
   },
-  infoText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#999',
-    marginLeft: 8,
-    lineHeight: 18,
-  },
+  infoText: { flex: 1, fontSize: 12, color: '#999', marginLeft: 8, lineHeight: 18 },
 });
