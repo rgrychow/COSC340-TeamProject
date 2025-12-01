@@ -1,3 +1,74 @@
+function MealsForDay({ dayISO }: { dayISO: string }) {
+  const user = auth.currentUser;
+  const [meals, setMeals] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (!user || !dayISO) return;
+
+    const colRef = collection(db, "users", user.uid, "mealDays", dayISO, "meals");
+    const unsub = onSnapshot(colRef, snap => {
+      const arr: any[] = [];
+      snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+      setMeals(arr);
+    });
+
+    return () => unsub();
+  }, [dayISO]);
+
+  if (meals.length === 0)
+    return <Text style={styles.muted}>No meals logged.</Text>;
+
+  return (
+    <View>
+      {meals.map(m => (
+        <View key={m.id} style={styles.planRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.planTitle}>{m.mealName}</Text>
+            <Text style={styles.planMeta}>
+              {m.calories} kcal — P:{m.protein} C:{m.carbs} F:{m.fats}
+            </Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function RunsForDay({ dayISO }: { dayISO: string }) {
+  const user = auth.currentUser;
+  const [runs, setRuns] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (!user || !dayISO) return;
+
+    const colRef = collection(db, "users", user.uid, "runDays", dayISO, "runs");
+    const unsub = onSnapshot(colRef, snap => {
+      const arr: any[] = [];
+      snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+      setRuns(arr);
+    });
+
+    return () => unsub();
+  }, [dayISO]);
+
+  if (runs.length === 0)
+    return <Text style={styles.muted}>No runs logged.</Text>;
+
+  return (
+    <View>
+      {runs.map(r => (
+        <View key={r.id} style={styles.planRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.planTitle}>Run</Text>
+            <Text style={styles.planMeta}>
+              {r.distanceMiles} miles — {Math.round(r.durationSec / 60)} min
+            </Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
 // app/(tabs)/progress.tsx
 import {
   collection,
@@ -109,10 +180,13 @@ export default function Progress() {
     );
 
     const unsubCompleted = onSnapshot(
-      collection(db, "users", user.uid, "workoutDays"),
+      collection(db, "users", user.uid, "workouts"),
       (snap) => {
         const days: string[] = [];
-        snap.forEach((d) => days.push(d.id));
+        snap.forEach((d) => {
+          const data = d.data();
+          if (data.dateISO) days.push(data.dateISO);
+        });
         setCompletedDays(days.sort(compareISO));
       }
     );
@@ -623,6 +697,47 @@ const chartData = useMemo(() => {
             </View>
           ))
         )}
+      </View>
+
+      {/* Actual Logged Workouts */}
+      <View style={{ marginTop: 16 }}>
+        <Text style={styles.sectionTitle}>Logged Workouts ({selectedDayISO})</Text>
+
+        {workouts.length === 0 ? (
+          <Text style={styles.muted}>No logged workouts.</Text>
+        ) : (
+          workouts.map(w => (
+            <View key={w.id} style={styles.planRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.planTitle}>{w.workoutType}</Text>
+                {w.exercises.map((ex, i) => (
+                  <View key={i} style={{ marginTop: 4 }}>
+                    <Text style={{ color: "#bbb" }}>{ex.name}</Text>
+                    {ex.sets.map((s, j) => (
+                      <Text key={j} style={styles.planMeta}>
+                        Set {j + 1}: {s.reps} reps @ {s.weight} lb
+                      </Text>
+                    ))}
+                  </View>
+                ))}
+              </View>
+            </View>
+          ))
+        )}
+      </View>
+
+      {/* Logged Meals */}
+      <View style={{ marginTop: 16 }}>
+        <Text style={styles.sectionTitle}>Logged Meals ({selectedDayISO})</Text>
+
+        <MealsForDay dayISO={selectedDayISO} />
+      </View>
+
+      {/* Logged Runs */}
+      <View style={{ marginTop: 16 }}>
+        <Text style={styles.sectionTitle}>Logged Runs ({selectedDayISO})</Text>
+
+        <RunsForDay dayISO={selectedDayISO} />
       </View>
     </View>
   );
