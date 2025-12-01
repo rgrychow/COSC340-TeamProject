@@ -1,13 +1,4 @@
 // hooks/useWorkouts.ts
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  ReactNode,
-} from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   addDoc,
@@ -22,6 +13,15 @@ import {
   Timestamp,
   where,
 } from "firebase/firestore";
+import React, {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 // IMPORTANT: This file is in /hooks (project root), so use this import:
 import { auth, db } from "../firebase";
