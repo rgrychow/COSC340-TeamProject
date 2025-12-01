@@ -55,32 +55,47 @@ export default function NutritionCalculator({
   const [results, setResults] = useState<NutritionGoals | null>(null);
 
   /* --------------------------------------------------------------- */
-  /*  Height parsing helper                                          */
-  /* --------------------------------------------------------------- */
-  const parseHeight = (heightStr: string): { feet: string; inches: string } => {
-    const match = heightStr.match(/(\d+)['\s]+(\d+)/);
-    if (match) return { feet: match[1], inches: match[2] };
+/*  Safe Height parsing helper (handles undefined/empty)          */
+/* --------------------------------------------------------------- */
+const parseHeight = (heightStr?: string): { feet: string; inches: string } => {
+  if (!heightStr || typeof heightStr !== 'string') {
     return { feet: '', inches: '' };
-  };
+  }
+
+  const match = heightStr.match(/(\d+)['\s]+(\d+)/);
+  if (match) {
+    return { feet: match[1], inches: match[2] };
+  }
+
+  // Fallback: maybe it's stored as "5 10" or "5ft10in" – optional extra parsing
+  const spaceMatch = heightStr.match(/(\d+)\s*['"]?\s*(\d+)/);
+  if (spaceMatch) {
+    return { feet: spaceMatch[1], inches: spaceMatch[2] };
+  }
+
+  return { feet: '', inches: '' };
+};
 
   /* --------------------------------------------------------------- */
   /*  Pre‑fill when modal opens                                      */
   /* --------------------------------------------------------------- */
   useEffect(() => {
-    if (visible) {
-      setAge(initialAge);
-      setWeight(initialWeight);
-      const { feet, inches } = parseHeight(initialHeight);
-      setHeightFeet(feet);
-      setHeightInches(inches);
-      // reset everything else
-      setStep(1);
-      setGender('male');
-      setActivityLevel('moderate');
-      setGoal('maintain');
-      setResults(null);
-    }
-  }, [visible, initialAge, initialWeight, initialHeight]);
+  if (visible) {
+    setAge(initialAge ?? '');
+    setWeight(initialWeight ?? '');
+
+    const { feet, inches } = parseHeight(initialHeight);
+    setHeightFeet(feet);
+    setHeightInches(inches);
+
+    // Reset the rest
+    setStep(1);
+    setGender('male');
+    setActivityLevel('moderate');
+    setGoal('maintain');
+    setResults(null);
+  }
+}, [visible, initialAge, initialWeight, initialHeight]);
 
   /* --------------------------------------------------------------- */
   /*  Activity multipliers & labels                                   */
@@ -500,12 +515,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#111',
-    borderRadius: 20,
-    width: '90%',
-    maxHeight: '85%',
-    paddingTop: 20,
-  },
+  backgroundColor: '#111',
+  borderRadius: 20,
+  width: '90%',
+  maxHeight: '85%',
+  paddingTop: 20,
+  // ↓↓↓ ADD THESE TWO LINES ↓↓↓
+  flex: 1,                    // <-- crucial
+  overflow: 'hidden',         // <-- prevents weird overflow on Android
+},
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
