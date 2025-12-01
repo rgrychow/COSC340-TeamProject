@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons"; // For icons
 import { useRouter } from "expo-router";
 import { getAuth } from "firebase/auth"; // Import Firebase Auth
-import { collection, doc, getDoc, getDocs, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
-import { useEffect, useRef, useState } from "react";
+import { collection, doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
+import { useEffect, useEffect as useEffectWeather, useRef, useState, useState as useStateWeather } from "react";
 import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"; // Import necessary components
 import { db } from "../../firebase"; // Import Firestore instance from your firebaseConfig.js
 import SettingsModal from "../settings_modal"; // Import the Settings Modal
@@ -40,6 +40,15 @@ export default function Home() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]); // State for recent searches
   const [userName, setUserName] = useState("User"); // Default to "User"
   const [darkBg, setDarkBg] = useState<boolean>(true);
+  // --- Weather state ---
+  const [weather, setWeather] = useStateWeather<{ temp: number | null; desc: string | null }>({
+    temp: null,
+    desc: null,
+  });
+  const [weekly, setWeekly] = useStateWeather<
+    { date: string; max: number; min: number; code: number }[]
+  >([]);
+  const [location, setLocation] = useStateWeather("Knoxville, TN");
 
   // --- Run modal + timer state ---
   const [runModalVisible, setRunModalVisible] = useState(false);
@@ -105,20 +114,18 @@ export default function Home() {
         return;
       }
       const dayId = toDayId(new Date());
+      const mealsCol = collection(db, "users", user.uid, "mealDays", dayId, "meals");
       for (const meal of cleaned) {
-        const mealsCol = collection(db, "users", user.uid, "mealDays", dayId, "meals");
         const mealRef = doc(mealsCol);
         await setDoc(mealRef, {
           mealName: meal.mealName,
           calories: meal.calories,
           protein: meal.protein,
-          fats: meal.fats,
           carbs: meal.carbs,
+          fats: meal.fats,
           createdAt: serverTimestamp(),
         });
       }
-      // Refresh nutrition.current totals after saving meals
-      await refreshNutritionCurrentForDay(user.uid, dayId);
       alert("Meals saved to your calendar day!");
       resetNutritionState();
     } catch (e) {
@@ -129,41 +136,9 @@ export default function Home() {
 
   // Helper to recompute and update users/{uid}.nutrition.current for a given day
   const refreshNutritionCurrentForDay = async (uid: string, dayId: string) => {
-    // Sum today's meals and push into users/{uid}.nutrition.current
-    const mealsCol = collection(db, "users", uid, "mealDays", dayId, "meals");
-    const snap = await getDocs(mealsCol);
-    let kcal = 0, protein = 0, carbs = 0, fats = 0;
-    snap.forEach((d) => {
-      const m: any = d.data();
-      // tolerate strings, coerce to number
-      kcal   += Number(m.calories) || 0;
-      protein+= Number(m.protein)  || 0;
-      carbs  += Number(m.carbs)    || 0;
-      fats   += Number(m.fats)     || 0;
-    });
-
-    const userRef = doc(db, "users", uid);
-    const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) {
-      console.warn("User doc missing; cannot update nutrition.current");
-      return;
+    {
+      console.warn("refreshNutritionCurrentForDay disabled — using new meals structure.");
     }
-
-    // Merge new totals into existing document while preserving all required fields
-    const existingData: any = userSnap.data() || {};
-    const existingNutrition = existingData.nutrition || {};
-    const updatedData = {
-      ...existingData,
-      nutrition: {
-        ...existingNutrition,
-        current: { kcal, protein, carbs, fats },
-        // preserve target exactly as-is (rules require it to exist with numeric fields)
-        ...(existingNutrition.target ? { target: existingNutrition.target } : {}),
-      },
-    };
-
-    // Write back the full user document so validUserData() passes on update
-    await setDoc(userRef, updatedData);
   };
 
   // Convenience function to update current nutrition for today for the signed-in user
@@ -271,31 +246,22 @@ export default function Home() {
       }
 
       const dayId = toDayId(new Date());
+      const workoutsCol = collection(db, "users", user.uid, "workoutDays", dayId, "workouts");
 
-      // For EACH exercise, create a workout doc under /users/{uid}/workoutDays/{dayId}/workouts
-      // with fields: { workoutType: <exercise name>, createdAt },
-      // then create child docs in /sets with fields: { setNumber, reps, weightLb, createdAt }
-      for (const ex of cleaned) {
-        const workoutsCol = collection(db, "users", user.uid, "workoutDays", dayId, "workouts");
-        const workoutRef = doc(workoutsCol); // auto-id
-        await setDoc(workoutRef, {
-          workoutType: ex.name, // satisfies rules as string
-          createdAt: serverTimestamp(),
-        });
+      // Each workout is stored as ONE document containing ALL exercises
+      const workoutRef = doc(workoutsCol);
 
-        // Write each set into the sets subcollection
-        for (let i = 0; i < ex.sets.length; i++) {
-          const s = ex.sets[i];
-          const setsCol = collection(workoutRef, "sets");
-          const setRef = doc(setsCol); // auto-id
-          await setDoc(setRef, {
-            setNumber: i + 1,
+      await setDoc(workoutRef, {
+        workoutType: cleaned[0].name,
+        createdAt: serverTimestamp(),
+        exercises: cleaned.map((ex) => ({
+          name: ex.name,
+          sets: ex.sets.map((s) => ({
             reps: s.reps,
-            weightLb: s.weight, // map UI "weight" to rules-required "weightLb"
-            createdAt: serverTimestamp(),
-          });
-        }
-      }
+            weight: s.weight
+          }))
+        })),
+      });
 
       alert("Workout saved to your calendar day!");
       resetWorkoutState();
@@ -379,7 +345,7 @@ export default function Home() {
       }
       const dayId = toDayId(new Date());
       const runsCol = collection(db, "users", user.uid, "runDays", dayId, "runs");
-      const runRef = doc(runsCol); // auto-id
+      const runRef = doc(runsCol);
       await setDoc(runRef, {
         distanceMiles: distance,
         durationSec: durationSec,
@@ -423,23 +389,77 @@ export default function Home() {
     return () => unsub();
   }, []);
 
+  // Location lookup map and dynamic lat/lon for weather API
+  const coords: any = {
+    "Knoxville, TN": { lat: 35.9606, lon: -83.9207 },
+    "Atlanta, GA": { lat: 33.7490, lon: -84.3880 },
+    "New York, NY": { lat: 40.7128, lon: -74.0060 }
+  };
+  const { lat, lon } = coords[location];
+
+  const weatherIcon = (code: number) => {
+    if (code === 0) return "sunny-outline";
+    if ([1,2].includes(code)) return "partly-sunny-outline";
+    if ([3].includes(code)) return "cloudy-outline";
+    if ([45,48].includes(code)) return "cloud-outline";
+    if ([51,53,55,56,57].includes(code)) return "rainy-outline";
+    if ([61,63,65,66,67].includes(code)) return "rainy-outline";
+    if ([71,73,75,77].includes(code)) return "snow-outline";
+    if ([80,81,82].includes(code)) return "rainy-outline";
+    if ([95,96,99].includes(code)) return "thunderstorm-outline";
+    return "help-circle-outline";
+  };
+
+  useEffectWeather(() => {
+    async function fetchWeather() {
+      try {
+        const url =
+          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+          `&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data && data.current_weather) {
+          setWeather({
+            temp: data.current_weather.temperature ? (data.current_weather.temperature * 9/5 + 32) : null,
+            desc: "Current Conditions",
+          });
+        }
+        if (data && data.daily) {
+          const days: any[] = [];
+          for (let i = 0; i < data.daily.time.length; i++) {
+            days.push({
+              date: data.daily.time[i],
+              max: data.daily.temperature_2m_max[i] * 9/5 + 32,
+              min: data.daily.temperature_2m_min[i] * 9/5 + 32,
+              code: data.daily.weathercode[i]
+            });
+          }
+          setWeekly(days);
+        }
+      } catch (e) {
+        console.error("Weather fetch error:", e);
+      }
+    }
+    fetchWeather();
+  }, [lat, lon]);
+
   return (
-    <ScrollView style={[styles.container987, darkBg ? styles.bgDark : styles.bgLight]}>
+    <ScrollView style={[styles.container987, styles.bgDark]}>
       {runTimerRunning && (
         <View style={styles.runTimerBar}>
           <Text style={styles.runTimerBarText}>Run timer: {formatHMS(runTimerSec)}</Text>
         </View>
       )}
-      <View style={[styles.headerRow654, darkBg ? styles.headerDark : styles.headerLight]}>
-        <Text style={[styles.header321, darkBg ? styles.headerTextLight : styles.headerTextDark]}>
+      <View style={[styles.headerRow654, styles.headerDark]}>
+        <Text style={[styles.header321, styles.headerTextLight]}>
           Welcome, {userName}
         </Text>
         <View style={styles.headerButtons123}>
           <TouchableOpacity onPress={() => setSearchModalVisible(true)}>
-            <Ionicons name="search" size={24} color={darkBg ? "#fff" : "#000"} />
+            <Ionicons name="search" size={24} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setSettingsModalVisible(true)}>
-            <Ionicons name="settings-outline" size={24} color={darkBg ? "#fff" : "#000"} />
+            <Ionicons name="settings-outline" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
       </View>
@@ -475,6 +495,177 @@ export default function Home() {
           </View>
         ))}
       </ScrollView>
+      {/* Weather + Weekly Forecast Combined */}
+      <View
+        style={{
+          paddingHorizontal: 20,
+          paddingVertical: 20,
+          backgroundColor: "#111",
+          borderRadius: 16,
+          marginHorizontal: 16,
+          marginTop: 10,
+          borderWidth: 1,
+          borderColor: "#222",
+        }}
+      >
+        {/* Header */}
+        <Text
+          style={{
+            color: "#fff",
+            fontSize: 22,
+            fontWeight: "bold",
+            marginBottom: 14,
+            paddingLeft: 4,
+          }}
+        >
+          Weather
+        </Text>
+
+        {/* Location Picker */}
+        <View style={{ marginBottom: 14 }}>
+          <Text style={{ color: "#fff", marginBottom: 6, paddingLeft: 4 }}>Location</Text>
+          <View style={{ backgroundColor: "#222", padding: 10, borderRadius: 8 }}>
+            <TouchableOpacity
+              onPress={() =>
+                setLocation(location === "Knoxville, TN" ? "Atlanta, GA" : "Knoxville, TN")
+              }
+            >
+              <Text style={{ color: "#fff", fontSize: 16 }}>{location}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Today’s Weather */}
+        {weather.temp === null ? (
+          <Text style={{ color: "#aaa", paddingLeft: 4 }}>Loading weather...</Text>
+        ) : (
+          <View style={{ marginBottom: 20, paddingLeft: 4 }}>
+            <Ionicons
+              name="partly-sunny-outline"
+              size={46}
+              color="#FFA500"
+              style={{ marginBottom: 12 }}
+            />
+            <Text style={{ color: "#fff", fontSize: 26, fontWeight: "bold" }}>
+              {weather.temp}°F
+            </Text>
+            <Text style={{ color: "#bbb", fontSize: 16 }}>{weather.desc}</Text>
+          </View>
+        )}
+
+        {/* Weekly Forecast */}
+        <Text
+          style={{
+            color: "#fff",
+            fontSize: 20,
+            fontWeight: "bold",
+            marginBottom: 10,
+            paddingLeft: 4,
+            marginTop: 10,
+          }}
+        >
+          Weekly Forecast
+        </Text>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {weekly.length === 0 ? (
+            <Text style={{ color: "#888", paddingLeft: 4 }}>Loading...</Text>
+          ) : (
+            weekly.map((d, idx) => (
+              <View
+                key={idx}
+                style={{
+                  width: 100,
+                  backgroundColor: "#1A1A1A",
+                  padding: 14,
+                  marginRight: 12,
+                  borderRadius: 12,
+                  alignItems: "center",
+                  borderColor: "#333",
+                  borderWidth: 1,
+                  shadowColor: "#000",
+                  shadowOpacity: 0.3,
+                  shadowOffset: { width: 0, height: 3 },
+                  shadowRadius: 4,
+                  elevation: 4,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#fff",
+                    fontWeight: "bold",
+                    marginBottom: 6,
+                  }}
+                >
+                  {new Date(d.date).toLocaleDateString("en-US", { weekday: "short" })}
+                </Text>
+                <Ionicons
+                  name={weatherIcon(d.code)}
+                  size={28}
+                  color="#fff"
+                  style={{ marginBottom: 6 }}
+                />
+                <Text style={{ color: "#fff" }}>
+                  {Math.round(d.max)}° / {Math.round(d.min)}°
+                </Text>
+              </View>
+            ))
+          )}
+        </ScrollView>
+      </View>
+      {/* Run Trails Section */}
+      <View
+        style={{
+          paddingHorizontal: 20,
+          paddingBottom: 40,
+          backgroundColor: "#111",
+          borderRadius: 12,
+          marginHorizontal: 16,
+          marginTop: 10,
+          borderWidth: 1,
+          borderColor: "#222",
+        }}
+      >
+        <Text
+          style={{
+            color: "#fff",
+            fontSize: 20,
+            fontWeight: "bold",
+            marginBottom: 12,
+            paddingLeft: 4,
+            padding: 16
+          }}
+        >
+          Nearby Run / Trail Suggestions
+        </Text>
+
+        {[
+          { name: "Ijams River Trail Loop", descr: "Scenic nature‑center trail with lake views and easy loops." },
+          { name: "Sharps Ridge Memorial Park", descr: "Ridgeline trails with skyline and mountain views." },
+          { name: "Will Skelton Greenway", descr: "Paved greenway beside the river — great for easy runs." },
+          { name: "Urban Wilderness Trail Network", descr: "Extensive natural-surface trail system for trail‑running." },
+        ].map((t, i) => (
+          <TouchableOpacity
+            key={i}
+            style={{
+              backgroundColor: "#1A1A1A",
+              padding: 16,
+              marginBottom: 12,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: "#333",
+              shadowColor: "#000",
+              shadowOpacity: 0.3,
+              shadowOffset: { width: 0, height: 3 },
+              shadowRadius: 4,
+              elevation: 4,
+            }}
+          >
+            <Text style={{ color: "#fff", fontSize: 16, fontWeight: "bold" }}>{t.name}</Text>
+            <Text style={{ color: "#ccc", fontSize: 14, marginTop: 4 }}>{t.descr}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
       {/* Search Modal */}
       <Modal
         visible={searchModalVisible}
