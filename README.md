@@ -87,7 +87,7 @@ With Expo Go:
 
 ## License
 
-[**License**](LICENSE.txt)
+[**LICENSE.txt**](LICENSE.txt)
 
 
 
