@@ -25,7 +25,7 @@ export type Targets = { kcal: number; protein_g: number; carbs_g: number; fat_g:
 export type Totals = Targets;
 
 export type NutritionEntry = {
-	//id: string;
+	id: string;
 	name: string;
 	brand: string | null;
 	kcal: number; protein_g: number; carbs_g: number; fat_g: number;
@@ -42,7 +42,12 @@ export type DayTargets = {
   target_water_oz: number;
 };
 
-
+// Edit 12/1
+export async function ensureDayDoc(db: any, uid: string, dayId: string){
+  const dayRef = doc(db, "users", uid, "days", dayId);
+  await setDoc(dayRef, { uid, dayId }, { merge: true });
+  return dayRef;
+}
 
 export const ensureSummary = async (uid: string, dayId: string) => {
 	const ref = doc(db, "users", uid, "days", dayId);
@@ -64,6 +69,10 @@ function dayDoc(uid: string, dayId: string) {
 }
 function rid() {
   return (Math.random().toString(36) + Math.random().toString(36)).replace(/[^a-z0-9]/g, "").slice(0,20);
+}
+function toNum(v: unknown): number {
+  const n = typeof v === "string" ? parseFloat(v) : Number(v);
+  return Number.isFinite(n) ? n : 0;
 }
 export const dayKey = (d: Date = new Date()) => d.toISOString().slice(0,10);
 
@@ -192,13 +201,16 @@ export async function addEntryToDay(opts: {
   });
 }
 
+/*
 export async function getDayLog(db: Firestore, uid: string, dayId: string): Promise<MealEntry[]> {
   const colRef = collection(db, "users", uid, "days", dayId, "entries");
   const qref = query(colRef, orderBy("createdAt", "desc"));
   const snap = await getDocs(qref);
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as MealEntry[];
 }
+*/
 
+/* Edit 12/1
 export function subscribeDayLog(db: Firestore, uid: string, dayId: string, cb: (items: MealEntry[]) => void) {
   const colRef = collection(db, "users", uid, "days", dayId, "entries");
   const qref = query(colRef, orderBy("createdAt", "desc"));
@@ -206,4 +218,139 @@ export function subscribeDayLog(db: Firestore, uid: string, dayId: string, cb: (
     const list = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as MealEntry[];
     cb(list);
   });
+}
+*/
+
+// Edit 12/1
+export async function addMealToDay(db: any, uid: string, dayId: string, entry: Omit<NutritionEntry, "id">) {
+  const { collection, addDoc, serverTimestamp } = require("firebase/firestore");
+  const entriesRef = collection(db, "users", uid, "days", dayId, "entries");
+  await addDoc(entriesRef, { ...entry, createdAt: serverTimestamp() });
+}
+
+/*
+export async function addMealToDay(db: any, uid: string, dayId: string, entry: NutritionEntry){
+  const dayRef = await ensureDayDoc(db, uid, dayId);
+
+  const num = (v: any) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const clean: NutritionEntry = {
+    name: String(entry.name ?? ""),
+    brand: entry.brand ?? null,
+    kcal: num(entry.kcal),
+    protein_g: num(entry.protein_g),
+    carbs_g: num(entry.carbs_g),
+    fat_g: num(entry.fat_g),
+    grams: num(entry.grams),
+    servings: num(entry.servings),
+    createdAt: serverTimestamp(),
+  };
+
+  const entriesCol = collection(dayRef, "entries");
+  await addDoc(entriesCol, clean);
+}
+*/
+/*
+export function subscribeDayLog(db: any, uid: string, dayId: string, onChange: (rows: any[]) => void) {
+  const dayRef = doc(db, "users", uid, "days", dayId);
+  const qy = query(collection(dayRef, "entries"), orderBy("createdAt", "desc"));
+  return onSnapshot(qy, (snap) => {
+    const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    onChange(rows);
+  });
+}
+*/
+
+// Live stream a single day’s entries
+export function subscribeDayLog(
+  db: any,
+  uid: string | undefined,
+  dayId: string | undefined,
+  //onChange: (entries: MealEntry[]) => void
+  onItems: (items: any[]) => void
+) {
+  if (!uid){
+    console.warn("[subscribeDayLog] no uid yet; skipping subscription");
+    return () => {};
+  }
+  // IMPORTANT: bind to the selected dayId (no fallback to “today” here)
+  const safeDayId = dayId ?? dayKey();
+  const entriesRef = collection(db, "users", uid, "days", safeDayId, "entries");
+  const q = query(entriesRef, orderBy("createdAt", "asc"));
+
+  return onSnapshot(q, (snap) => {
+    /*
+    const items: MealEntry[] = [];
+    snap.forEach((d) => items.push(d.data() as MealEntry));
+    onChange(items);
+    */
+    const items = snap.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    }));
+    onItems(items);
+  });
+}
+
+// One-shot read (used on initial load or pull-to-refresh)
+export async function getDayLog(db: any, uid?: string, dayId?: string) {
+  if(!uid) return [];
+  const safeDayId = dayId ?? dayKey();
+  const dayDoc = doc(db, "users", uid, "days", safeDayId);
+  const snap = await getDoc(dayDoc);
+  if (!snap.exists()) return [];
+  // Prefer a collection read so ordering is consistent:
+  /*
+  return new Promise<MealEntry[]>((resolve) => {
+    const off = subscribeDayLog(db, uid, dayId, (items) => {
+      off(); resolve(items);
+    });
+  });
+  */
+  const entriesRef = collection(db, "users", uid, "days", safeDayId, "entries");
+  const q = query(entriesRef, orderBy("createdAt", "asc"));
+  const qs = await getDocs(q);
+  return qs.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+// --- Macros targets types & helpers ---
+export function subscribeMacroTargets(
+  db: any,
+  uid: string,
+  onChange: (t: Targets) => void,
+) {
+  const userRef = doc(db, "users", uid);
+  return onSnapshot(userRef, (snap) => {
+    const d = snap.data() || {};
+    const t: Targets = d?.macros?.target ?? { kcal: 0, protein: 0, carbs: 0, fats: 0 };
+    onChange(t);
+  });
+}
+/*
+export async function updateMacroTargets(db: any, uid: string, t: Targets) {
+  const userRef = doc(db, "users", uid);
+  // merge into users/{uid}.macros.target
+  await setDoc(
+    userRef,
+    { macros: { target: { kcal: Number(t.kcal)||0, protein: Number(t.protein)||0, carbs: Number(t.carbs)||0, fats: Number(t.fats)||0 } } },
+    { merge: true },
+  );
+}
+*/
+export async function updateTargets(db: any, uid: string, next: Targets) {
+  if (!uid) throw new Error("updateTargets: missing uid");
+
+  // normalize to numbers to avoid NaN in the rings
+  const clean: Targets = {
+    kcal: toNum(next.kcal),
+    protein_g: toNum(next.protein_g),
+    carbs_g: toNum(next.carbs_g),
+    fat_g: toNum(next.fat_g),
+  };
+
+  const userRef = doc(db, "users", uid);
+  await setDoc(userRef, { targets: clean }, { merge: true });
 }

@@ -18,10 +18,11 @@ import {
   subscribeDayLog,
 } from "../lib/nutrition-store";
 
-
+export type Summary = { kcal: number; protein_g: number; carbs_g: number; fat_g: number };
 type NutritionContextValue = {
   targets: Targets;
-  summary: { kcal: number; protein_g: number; carbs_g: number; fat_g: number; };
+  summary: Summary;
+  setSummary: React.Dispatch<React.SetStateAction<Summary>>;
   entries: LogEntry[];
   loading: boolean;
   addEntry: (e: Omit<LogEntry, "id" | "createdAt">) => void;
@@ -43,7 +44,7 @@ export function NutritionProvider({ children }: { children: React.ReactNode }) {
   const [targets, setTargets] = useState<Targets | null>(null);
   const [loading, setLoading] = useState(true);
   const [entries, setEntries] = useState<Array<{ id: string; kcal: number; protein_g: number; carbs_g: number; fat_g: number}>>([]);
-  const [summary, setSummary] = useState({ kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 });
+  const [summary, setSummary] = useState<Summary>({ kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 });
   const [_summary, _setSummary] = useState<Totals>(ZERO);
   const [selectedDayId, setSelectedDayId] = useState<string>(dayKey(new Date()));
 
@@ -185,6 +186,24 @@ export function NutritionProvider({ children }: { children: React.ReactNode }) {
     return off;
   }, [uid, selectedDayId]);
 
+  useEffect(() => {
+    if (!db || !uid) return;
+    const ref = doc(db, "users", uid);
+    const off = onSnapshot(ref, (snap) => {
+      const t = snap.data()?.targets;
+      if (t && typeof t === "object") {
+        setTargets({
+          kcal: Number(t.kcal) || 0,
+          protein_g: Number(t.protein_g) || 0,
+          carbs_g: Number(t.carbs_g) || 0,
+          fat_g: Number(t.fat_g) || 0,
+        });
+      }
+    });
+    return off;
+  }, [db, uid]);
+
+  /*
   const updateTargets = useCallback(
     async (patch: Partial<Targets>) => {
       if (!uid) return;
@@ -196,6 +215,22 @@ export function NutritionProvider({ children }: { children: React.ReactNode }) {
     },
     [uid]
   );
+  */
+  // EDit 12/1
+  const updateTargets = useCallback(async (patch: Partial<Targets>) => {
+    if (!uid) return;
+
+    setTargets((prev) => ({ ...(prev ?? DEFAULTS), ...(pathc ?? {}) }));
+
+    const reef = doc(db, "users", uid);
+    const next = { ...(targets ?? DEFAULTS), ...patch };
+
+    await setDoc(
+      ref,
+      { nutrition: { target: next } },
+      { merge: true }
+    );
+  }, [uid, db, targets]);
 
   const addEntry = useCallback(
     async (e: Omit<Entry, "id" | "createdAt">) => {
@@ -209,6 +244,7 @@ export function NutritionProvider({ children }: { children: React.ReactNode }) {
   const ctxValue: NutritionContextValue = {
     targets: (targets ?? DEFAULTS),
     summary,
+    setSummary,
     entries,
     loading,
     addEntry,
@@ -231,7 +267,41 @@ export function NutritionProvider({ children }: { children: React.ReactNode }) {
 // Hook for screens
 export function useNutrition() {
   const ctx = useContext(NutritionCtx);
+  const uid = getAuth().currentUser?.uid;
   if (!ctx) throw new Error("useNutrition must be used within NutritionProvider");
-  return ctx;
+
+  const [targets, setTargets] = useState<{kcal:number; protein_g:number; carbs_g:number; fat_g:number}>({
+    kcal: 2500, protein_g: 180, carbs_g: 250, fat_g: 60,
+  });
+
+  useEffect(() => {
+    if (!db || !uid) return;
+    const ref = doc(db, "users", uid);
+    const off = onSnapshot(ref, (snap) => {
+      const t = snap.data()?.targets;
+      if (t && typeof t === "object") {
+        setTargets({
+          kcal: Number(t.kcal) || 0,
+          protein_g: Number(t.protein_g) || 0,
+          carbs_g: Number(t.carbs_g) || 0,
+          fat_g: Number(t.fat_g) || 0,
+        });
+      }
+    });
+    return off;
+  }, [db, uid]);
+
+  const updateTargets = async (db: any, uid: string, next: typeof targets) => {
+    await setDoc(doc(db, "users", uid), { targets: next}, { merge: true });
+    setTargets(next);
+  };
+
+  return useMemo(() =>({ 
+    db,
+    uid,
+    targets,
+    setTargets,
+    ctx,
+  }), [db, uid, targets, setTargets, ctx]);
 }
 
