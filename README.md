@@ -35,16 +35,6 @@ Built with **React Native (Expo)** and **Firebase**, AimHigh provides a modern, 
 
 ---
 
-## Table of Contents
-1. [Team Members](#-team-members)
-2. [Product Snapshot](#-product-snapshot)
-3. [Description of the Product](#-description-of-the-product)
-4. [Installation](#-installation)
-5. [Usage Instructions](#-usage-instructions)
-6. [License](#-license)
-
----
-
 ## Installation
 
 ### Prerequisites
