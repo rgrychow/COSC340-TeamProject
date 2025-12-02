@@ -5,11 +5,11 @@
 ## Team Members
 
 
-Ryan Grychowski -- [@rgrychow](https://github.com/rgrychow) 
-Cameron Reed 
-Matthew  
-Om Patel 
-Hogan 
+- Ryan Grychowski -- [@rgrychow](https://github.com/rgrychow) 
+- Camden Reed --[@clumzycodes](https://github.com/clumzycodes) 
+- Matthew Ward-- [@mwar79](https://github.com/mward79) 
+- Om Patel -- [@ompatel-2347](https://github.com/ompatel-2347) 
+- Hogan OHara-- [@hohara29](https://github.com/hohara29) 
 
 ---
 
