@@ -55,8 +55,13 @@ Before installing AimHigh, ensure that you have the following installed:
 - A **Firebase project** (for authentication and database)
 
 ### Clone the Repository
-```bash
-git clone https://github.com/AimHigh-Fitness/App.git
-cd App
+
+``git clone https://github.com/AimHigh-Fitness/App.git
+cd App``
+
+### Install Dependencies
+
+Make sure Node.js and npm is installed
+
 
 
