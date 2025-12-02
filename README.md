@@ -29,9 +29,8 @@ The app allows users to:
 - Track progress over time with clean graphs and trend visualizations.
 - Sync data to Firebase for safe cloud storage and cross-device access.
 - Edit and maintain personal profiles with nutrition targets and activity logs.
-- Ensure data privacy through secure authentication and database access.
 
-Built with **React Native (Expo)** and **Firebase**, AimHigh provides a modern, simple, and intuitive platform for users to visualize their growth and stay consistent in their fitness goals.
+Built with React Native (Expo) and Firebase, AimHigh provides a modern, simple, and intuitive platform for users to visualize their growth and stay consistent in their fitness goals.
 
 ---
 
