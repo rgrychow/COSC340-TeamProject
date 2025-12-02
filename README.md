@@ -53,11 +53,12 @@ Before installing AimHigh, ensure that you have the following installed:
 - **npm** or **yarn**
 - **Expo CLI** (installed globally)
 - A **Firebase project** (for authentication and database)
+https://github.com/rgrychow/COSC340-TeamProject.git
 
 ### Clone the Repository
 
-``git clone https://github.com/AimHigh-Fitness/App.git
-cd App``
+``git clone https://github.com/COSC340-TeamProject.git
+cd AimHigh/AimHigh``
 
 ### Install Dependencies
 
