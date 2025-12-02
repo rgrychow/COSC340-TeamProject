@@ -1,4 +1,4 @@
-// hooks/useWorkouts.ts
+// hooks/useWorkouts.tsx
 import { onAuthStateChanged } from "firebase/auth";
 import {
   addDoc,
@@ -23,9 +23,8 @@ import React, {
   useState,
 } from "react";
 
-// IMPORTANT: This file is in /hooks (project root), so use this import:
+// This file lives in /hooks (project root)
 import { auth, db } from "../firebase";
-// If you move this file into app/(tabs)/hooks, change to:  import { auth, db } from "../../firebase";
 
 export type SetItem = { id: string; reps: number; weight: number; ts: number };
 export type Exercise = { id: string; name: string; sets: SetItem[] };
@@ -37,15 +36,23 @@ type WorkoutsContextValue = {
   deleteWorkout: (workoutId: string) => void;
   addExercise: (workoutId: string, name: string) => void;
   deleteExercise: (workoutId: string, exerciseId: string) => void;
-  addSet: (workoutId: string, exerciseId: string, reps: number, weight: number) => void;
+  addSet: (
+    workoutId: string,
+    exerciseId: string,
+    reps: number,
+    weight: number
+  ) => void;
   deleteSet: (workoutId: string, exerciseId: string, setId: string) => void;
 };
 
-const WorkoutsContext = createContext<WorkoutsContextValue | undefined>(undefined);
+const WorkoutsContext = createContext<WorkoutsContextValue | undefined>(
+  undefined
+);
 
-// ----------------- helpers -----------------
+// ---------- helpers ----------
 const nowISO = () => new Date().toISOString();
 const dayIdFromISO = (iso: string) => iso.slice(0, 10); // YYYY-MM-DD
+
 const lastNDays = (n: number) => {
   const days: string[] = [];
   const d = new Date();
@@ -57,18 +64,16 @@ const lastNDays = (n: number) => {
   return days;
 };
 
-// We map your UI "Workout card" (a session) to one or more Firestore workout docs
-// by a shared createdAt timestamp (sessionISO).
 type SessionKey = string;
 
 type LocalMaps = {
-  // cardId -> sessionISO
+  // workout card id -> session ISO string
   cardToSession: Map<string, SessionKey>;
-  // exerciseId -> Firestore workout docId
+  // exercise id -> Firestore doc location
   exerciseToDoc: Map<string, { dayId: string; workoutDocId: string }>;
 };
 
-// -------------- Provider --------------------
+// ---------- provider ----------
 export function WorkoutsProvider({ children }: { children: ReactNode }) {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const uidRef = useRef<string | null>(null);
@@ -78,7 +83,7 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
   });
   const unsubscribersRef = useRef<(() => void)[]>([]);
 
-  // subscribe whenever auth changes
+  // resubscribe whenever auth changes
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (user) => {
       uidRef.current = user?.uid ?? null;
@@ -88,9 +93,8 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Clear old listeners and resubscribe to last 14 days
   const resubscribe = () => {
-    // clear listeners
+    // clear listeners & maps & local state
     unsubscribersRef.current.forEach((u) => u());
     unsubscribersRef.current = [];
     mapsRef.current.cardToSession.clear();
@@ -98,40 +102,60 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
     setWorkouts([]);
 
     const uid = uidRef.current;
-    if (!uid) return; // not signed in => UI still works but won't persist
+    if (!uid) return;
 
     const days = lastNDays(14);
 
-    // build one listener per day; merge into one array for UI
     days.forEach((dayId) => {
-      const workoutsCol = collection(db, "users", uid, "workoutDays", dayId, "workouts");
+      const workoutsCol = collection(
+        db,
+        "users",
+        uid,
+        "workoutDays",
+        dayId,
+        "workouts"
+      );
       const qWorkouts = query(workoutsCol, orderBy("createdAt", "asc"));
+
       const unsub = onSnapshot(
         qWorkouts,
         async (snap) => {
-          // Build session groups for just this day
           const bySession = new Map<string, Exercise[]>();
+          const exDocs: { exId: string; createdAtISO: string }[] = [];
 
-          // Pass 1: make exercise shells and group by createdAt
-          const exDocs = snap.docs.map((d) => {
-            const data = d.data() as { workoutType?: string; createdAt?: Timestamp };
+          // PASS 1: build exercise shells & group by createdAt
+          snap.docs.forEach((d) => {
+            const data = d.data() as {
+              workoutType?: string;
+              createdAt?: Timestamp;
+              isSummary?: boolean;
+            };
+
+            // Ignore summary docs (from the Save button)
+            if (data.isSummary) return;
+
             const createdAtISO =
-              data.createdAt?.toDate?.().toISOString?.() ?? new Date(`${dayId}T00:00:00`).toISOString();
+              data.createdAt?.toDate?.().toISOString?.() ??
+              new Date(`${dayId}T00:00:00`).toISOString();
+
             const exercise: Exercise = {
               id: d.id,
               name: data.workoutType || "Exercise",
               sets: [],
             };
+
             const list = bySession.get(createdAtISO) || [];
             list.push(exercise);
             bySession.set(createdAtISO, list);
 
-            mapsRef.current.exerciseToDoc.set(d.id, { dayId, workoutDocId: d.id });
-
-            return { exId: d.id, createdAtISO };
+            mapsRef.current.exerciseToDoc.set(d.id, {
+              dayId,
+              workoutDocId: d.id,
+            });
+            exDocs.push({ exId: d.id, createdAtISO });
           });
 
-          // Pass 2: fetch sets for each exercise doc
+          // PASS 2: fetch sets for each exercise
           await Promise.all(
             exDocs.map(async ({ exId, createdAtISO }) => {
               const setsCol = collection(
@@ -146,9 +170,9 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
               );
               const qSets = query(setsCol, orderBy("setNumber", "asc"));
               const sSnap = await getDocs(qSets);
+
               const sets: SetItem[] = sSnap.docs.map((sd) => {
                 const sdata = sd.data() as {
-                  setNumber?: number;
                   reps?: number;
                   weightLb?: number;
                   createdAt?: Timestamp;
@@ -157,7 +181,9 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
                   id: sd.id,
                   reps: sdata.reps ?? 0,
                   weight: sdata.weightLb ?? 0,
-                  ts: sdata.createdAt ? sdata.createdAt.toMillis() : Date.now(),
+                  ts: sdata.createdAt
+                    ? sdata.createdAt.toMillis()
+                    : Date.now(),
                 };
               });
 
@@ -167,17 +193,22 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
             })
           );
 
-          // Convert sessions (for this day) to Workout cards
-          const dayCards: Workout[] = Array.from(bySession.entries()).map(([sessionISO, exercises]) => {
-            mapsRef.current.cardToSession.set(sessionISO, sessionISO);
-            return { id: sessionISO, dateISO: sessionISO, exercises };
-          });
+          // build Workout cards for this day
+          const dayCards: Workout[] = Array.from(bySession.entries()).map(
+            ([sessionISO, exercises]) => {
+              mapsRef.current.cardToSession.set(sessionISO, sessionISO);
+              return { id: sessionISO, dateISO: sessionISO, exercises };
+            }
+          );
 
-          // Merge into the global workouts list (across multiple days)
+          // merge into global list, wiping old cards for this day
           setWorkouts((prev) => {
-            // remove any cards that belong to this dayId (by dateISO prefix)
-            const keep = prev.filter((w) => dayIdFromISO(w.dateISO) !== dayId);
-            return [...keep, ...dayCards].sort((a, b) => b.dateISO.localeCompare(a.dateISO));
+            const keep = prev.filter(
+              (w) => dayIdFromISO(w.dateISO) !== dayId
+            );
+            return [...keep, ...dayCards].sort((a, b) =>
+              b.dateISO.localeCompare(a.dateISO)
+            );
           });
         },
         (err) => {
@@ -189,16 +220,16 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  // -------------- Mutations (persisted) ----------------
+  // ---------- mutations ----------
 
-  // Creates a new session locally. The first exercise you add stamps it in Firestore.
+  // New empty workout card (not yet persisted)
   const addWorkout = () => {
     const iso = nowISO();
     setWorkouts((prev) => [{ id: iso, dateISO: iso, exercises: [] }, ...prev]);
     mapsRef.current.cardToSession.set(iso, iso);
   };
 
-  // Deletes the whole session (all workout docs with same createdAt)
+  // Delete all exercises in the same session (createdAt)
   const deleteWorkout = async (workoutId: string) => {
     const uid = uidRef.current;
     if (!uid) {
@@ -208,15 +239,26 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
 
     const sessionISO = mapsRef.current.cardToSession.get(workoutId) || workoutId;
     const dayId = dayIdFromISO(sessionISO);
-    const workoutsCol = collection(db, "users", uid, "workoutDays", dayId, "workouts");
+
+    const workoutsCol = collection(
+      db,
+      "users",
+      uid,
+      "workoutDays",
+      dayId,
+      "workouts"
+    );
     const qSameSession = query(
       workoutsCol,
       where("createdAt", "==", Timestamp.fromDate(new Date(sessionISO)))
     );
     const toDelete = await getDocs(qSameSession);
+
     await Promise.all(
       toDelete.docs.map((d) =>
-        deleteDoc(doc(db, "users", uid, "workoutDays", dayId, "workouts", d.id))
+        deleteDoc(
+          doc(db, "users", uid, "workoutDays", dayId, "workouts", d.id)
+        )
       )
     );
 
@@ -224,7 +266,7 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
     mapsRef.current.cardToSession.delete(workoutId);
   };
 
-  // Adds an exercise: create a workouts doc with workoutType + createdAt (the session time)
+  // Add an exercise => create a workout doc with workoutType & createdAt
   const addExercise = async (workoutId: string, name: string) => {
     const uid = uidRef.current;
     const sessionISO =
@@ -233,11 +275,21 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
       nowISO();
 
     if (!uid) {
-      // offline local fallback
+      // purely local fallback if not signed in
       setWorkouts((prev) =>
         prev.map((w) =>
           w.id === workoutId
-            ? { ...w, exercises: [...w.exercises, { id: `${workoutId}-${Date.now()}`, name, sets: [] }] }
+            ? {
+                ...w,
+                exercises: [
+                  ...w.exercises,
+                  {
+                    id: `${workoutId}-${Date.now()}`,
+                    name,
+                    sets: [],
+                  },
+                ],
+              }
             : w
         )
       );
@@ -245,32 +297,41 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
     }
 
     const dayId = dayIdFromISO(sessionISO);
-    const workoutsCol = collection(db, "users", uid, "workoutDays", dayId, "workouts");
+    const workoutsCol = collection(
+      db,
+      "users",
+      uid,
+      "workoutDays",
+      dayId,
+      "workouts"
+    );
+
     const added = await addDoc(workoutsCol, {
       workoutType: String(name || "Exercise"),
       createdAt: Timestamp.fromDate(new Date(sessionISO)),
+      isSummary: false,
     });
 
-    // reflect locally immediately (listener will catch up too)
-    setWorkouts((prev) =>
-      prev.map((w) =>
-        w.id === workoutId
-          ? { ...w, exercises: [...w.exercises, { id: added.id, name: name || "Exercise", sets: [] }] }
-          : w
-      )
-    );
-    mapsRef.current.exerciseToDoc.set(added.id, { dayId, workoutDocId: added.id });
+    mapsRef.current.exerciseToDoc.set(added.id, {
+      dayId,
+      workoutDocId: added.id,
+    });
     mapsRef.current.cardToSession.set(workoutId, sessionISO);
+    // no local setWorkouts: snapshot will pull it in
   };
 
-  // Deletes a single exercise (workout doc)
   const deleteExercise = async (workoutId: string, exerciseId: string) => {
     const uid = uidRef.current;
 
     if (!uid) {
       setWorkouts((prev) =>
         prev.map((w) =>
-          w.id === workoutId ? { ...w, exercises: w.exercises.filter((e) => e.id !== exerciseId) } : w
+          w.id === workoutId
+            ? {
+                ...w,
+                exercises: w.exercises.filter((e) => e.id !== exerciseId),
+              }
+            : w
         )
       );
       return;
@@ -284,20 +345,34 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
     const dayId = mapping?.dayId || dayIdFromISO(sessionISO);
     const workoutDocId = mapping?.workoutDocId || exerciseId;
 
-    await deleteDoc(doc(db, "users", uid, "workoutDays", dayId, "workouts", workoutDocId));
+    await deleteDoc(
+      doc(db, "users", uid, "workoutDays", dayId, "workouts", workoutDocId)
+    );
 
+    // local update for snappier UI
     setWorkouts((prev) =>
       prev.map((w) =>
-        w.id === workoutId ? { ...w, exercises: w.exercises.filter((e) => e.id !== exerciseId) } : w
+        w.id === workoutId
+          ? {
+              ...w,
+              exercises: w.exercises.filter((e) => e.id !== exerciseId),
+            }
+          : w
       )
     );
     mapsRef.current.exerciseToDoc.delete(exerciseId);
   };
 
-  // Adds a set under the workout doc's /sets subcollection
-  const addSet = async (workoutId: string, exerciseId: string, reps: number, weight: number) => {
+  // Add a set under the exercise's /sets subcollection
+  const addSet = async (
+    workoutId: string,
+    exerciseId: string,
+    reps: number,
+    weight: number
+  ) => {
     const uid = uidRef.current;
 
+    // not signed in -> only update local state
     if (!uid) {
       const ts = Date.now();
       setWorkouts((prev) =>
@@ -307,7 +382,93 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
                 ...w,
                 exercises: w.exercises.map((e) =>
                   e.id === exerciseId
-                    ? { ...e, sets: [...e.sets, { id: `${exerciseId}-${ts}`, reps, weight, ts }] }
+                    ? {
+                        ...e,
+                        sets: [
+                          ...e.sets,
+                          { id: `${exerciseId}-${ts}`, reps, weight, ts },
+                        ],
+                      }
+                    : e
+                ),
+              }
+            : w
+        )
+      );
+      return;
+    }
+
+    // signed in -> write to Firestore + optimistic local update
+    const mapping = mapsRef.current.exerciseToDoc.get(exerciseId);
+    const sessionISO =
+      mapsRef.current.cardToSession.get(workoutId) ||
+      workouts.find((w) => w.id === workoutId)?.dateISO ||
+      nowISO();
+    const dayId = mapping?.dayId || dayIdFromISO(sessionISO);
+    const workoutDocId = mapping?.workoutDocId || exerciseId;
+
+    const current = workouts
+      .find((w) => w.id === workoutId)
+      ?.exercises.find((e) => e.id === exerciseId);
+    const nextNumber = (current?.sets?.length ?? 0) + 1;
+
+    const setsCol = collection(
+      db,
+      "users",
+      uid,
+      "workoutDays",
+      dayId,
+      "workouts",
+      workoutDocId,
+      "sets"
+    );
+
+    const added = await addDoc(setsCol, {
+      setNumber: nextNumber,
+      reps: Number.isFinite(reps) ? reps : 0,
+      weightLb: Number.isFinite(weight) ? weight : 0,
+      createdAt: serverTimestamp(),
+    });
+
+    const ts = Date.now();
+    setWorkouts((prev) =>
+      prev.map((w) =>
+        w.id === workoutId
+          ? {
+              ...w,
+              exercises: w.exercises.map((e) =>
+                e.id === exerciseId
+                  ? {
+                      ...e,
+                      sets: [...e.sets, { id: added.id, reps, weight, ts }],
+                    }
+                  : e
+              ),
+            }
+          : w
+      )
+    );
+  };
+
+  const deleteSet = async (
+    workoutId: string,
+    exerciseId: string,
+    setId: string
+  ) => {
+    const uid = uidRef.current;
+
+    if (!uid) {
+      setWorkouts((prev) =>
+        prev.map((w) =>
+          w.id === workoutId
+            ? {
+                ...w,
+                exercises: w.exercises.map((e) =>
+                  e.id === exerciseId
+                    ? {
+                        ...e,
+                        sets: e.sets.filter((s) => s.id !== setId),
+                      }
                     : e
                 ),
               }
@@ -325,29 +486,20 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
     const dayId = mapping?.dayId || dayIdFromISO(sessionISO);
     const workoutDocId = mapping?.workoutDocId || exerciseId;
 
-    // next set number (client side)
-    const current = workouts.find((w) => w.id === workoutId)?.exercises.find((e) => e.id === exerciseId);
-    const nextNumber = (current?.sets?.length ?? 0) + 1;
-
-    const setsCol = collection(
-      db,
-      "users",
-      uid,
-      "workoutDays",
-      dayId,
-      "workouts",
-      workoutDocId,
-      "sets"
+    await deleteDoc(
+      doc(
+        db,
+        "users",
+        uid,
+        "workoutDays",
+        dayId,
+        "workouts",
+        workoutDocId,
+        "sets",
+        setId
+      )
     );
-    const added = await addDoc(setsCol, {
-      setNumber: nextNumber,
-      reps: Number.isFinite(reps) ? reps : 0,
-      weightLb: Number.isFinite(weight) ? weight : 0,
-      createdAt: serverTimestamp(),
-    });
 
-    // optimistic local
-    const ts = Date.now();
     setWorkouts((prev) =>
       prev.map((w) =>
         w.id === workoutId
@@ -355,54 +507,11 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
               ...w,
               exercises: w.exercises.map((e) =>
                 e.id === exerciseId
-                  ? { ...e, sets: [...e.sets, { id: added.id, reps, weight, ts }] }
+                  ? {
+                      ...e,
+                      sets: e.sets.filter((s) => s.id !== setId),
+                    }
                   : e
-              ),
-            }
-          : w
-      )
-    );
-  };
-
-  // Deletes a set doc
-  const deleteSet = async (workoutId: string, exerciseId: string, setId: string) => {
-    const uid = uidRef.current;
-
-    if (!uid) {
-      setWorkouts((prev) =>
-        prev.map((w) =>
-          w.id === workoutId
-            ? {
-                ...w,
-                exercises: w.exercises.map((e) =>
-                  e.id === exerciseId ? { ...e, sets: e.sets.filter((s) => s.id !== setId) } : e
-                ),
-              }
-            : w
-        )
-      );
-      return;
-    }
-
-    const mapping = mapsRef.current.exerciseToDoc.get(exerciseId);
-    const sessionISO =
-      mapsRef.current.cardToSession.get(workoutId) ||
-      workouts.find((w) => w.id === workoutId)?.dateISO ||
-      nowISO();
-    const dayId = mapping?.dayId || dayIdFromISO(sessionISO);
-    const workoutDocId = mapping?.workoutDocId || exerciseId;
-
-    await deleteDoc(
-      doc(db, "users", uid, "workoutDays", dayId, "workouts", workoutDocId, "sets", setId)
-    );
-
-    setWorkouts((prev) =>
-      prev.map((w) =>
-        w.id === workoutId
-          ? {
-              ...w,
-              exercises: w.exercises.map((e) =>
-                e.id === exerciseId ? { ...e, sets: e.sets.filter((s) => s.id !== setId) } : e
               ),
             }
           : w
@@ -423,13 +532,22 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
     [workouts]
   );
 
-  return <WorkoutsContext.Provider value={value}>{children}</WorkoutsContext.Provider>;
+  return (
+    <WorkoutsContext.Provider value={value}>
+      {children}
+    </WorkoutsContext.Provider>
+  );
 }
 
 export function useWorkouts(): WorkoutsContextValue {
   const ctx = useContext(WorkoutsContext);
-  if (!ctx) throw new Error("useWorkouts must be used within WorkoutsProvider");
+  if (!ctx) {
+    throw new Error("useWorkouts must be used within WorkoutsProvider");
+  }
   return ctx;
 }
+
+
+
 
 

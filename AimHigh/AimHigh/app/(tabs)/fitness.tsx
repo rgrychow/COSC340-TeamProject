@@ -1,16 +1,27 @@
 // app/(tabs)/fitness.tsx
-import { collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { useState } from "react";
-import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { auth, db } from "../../firebase";
+import React, { useState } from "react";
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
 import { useWorkouts } from "../../hooks/useWorkouts";
 
 const ORANGE = "#FF6A00";
 
 export default function Fitness() {
   const {
-    workouts, addWorkout, deleteWorkout,
-    addExercise, deleteExercise, addSet, deleteSet,
+    workouts,
+    addWorkout,
+    deleteWorkout,
+    addExercise,
+    deleteExercise,
+    addSet,
+    deleteSet,
   } = useWorkouts();
 
   return (
@@ -23,7 +34,8 @@ export default function Fitness() {
 
       {workouts.length === 0 ? (
         <Text style={styles.muted}>
-          No workouts yet. Tap <Text style={styles.orange}>+ New Workout</Text> to start.
+          No workouts yet. Tap <Text style={styles.orange}>+ New Workout</Text> to
+          start.
         </Text>
       ) : (
         <FlatList
@@ -48,87 +60,73 @@ export default function Fitness() {
   );
 }
 
-function WorkoutCard({
-  workoutId, dateISO, exercises,
-  onAddExercise, onDeleteWorkout, onDeleteExercise, onAddSet, onDeleteSet,
-}: {
+type SetType = { id: string; reps: number; weight: number };
+type ExerciseType = { id: string; name: string; sets: SetType[] };
+
+type WorkoutCardProps = {
   workoutId: string;
   dateISO: string;
-  exercises: { id: string; name: string; sets: { id: string; reps: number; weight: number }[] }[];
+  exercises: ExerciseType[];
   onAddExercise: (workoutId: string, name: string) => void;
   onDeleteWorkout: (workoutId: string) => void;
   onDeleteExercise: (workoutId: string, exerciseId: string) => void;
-  onAddSet: (workoutId: string, exerciseId: string, reps: number, weight: number) => void;
-  onDeleteSet: (workoutId: string, exerciseId: string, setId: string) => void;
-}) {
+  onAddSet: (
+    workoutId: string,
+    exerciseId: string,
+    reps: number,
+    weight: number
+  ) => void;
+  onDeleteSet: (
+    workoutId: string,
+    exerciseId: string,
+    setId: string
+  ) => void;
+};
+
+function WorkoutCard({
+  workoutId,
+  dateISO,
+  exercises,
+  onAddExercise,
+  onDeleteWorkout,
+  onDeleteExercise,
+  onAddSet,
+  onDeleteSet,
+}: WorkoutCardProps) {
   const [showExerciseForm, setShowExerciseForm] = useState(false);
   const [exerciseName, setExerciseName] = useState("Push Ups");
-  const [isSaving, setIsSaving] = useState(false);
 
   const dt = new Date(dateISO);
-  const dateLabel = `${dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}  ${dt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+  const dateLabel = `${dt.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })}  ${dt.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  })}`;
 
-  const toDayId = (iso: string) => {
-    // Convert ISO date string to YYYY-MM-DD (local date) for rules' isValidDay
-    const d = new Date(iso);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
-  };
+  const handleAddExercise = () => {
+    const trimmed = (exerciseName || "").trim() || "Exercise";
 
-  const handleSaveWorkoutToDb = async () => {
-    try {
-      if (!auth?.currentUser?.uid) {
-        alert("You must be signed in to save.");
-        return;
-      }
-      if (!exercises || exercises.length === 0) {
-        alert("Add at least one exercise before saving.");
-        return;
-      }
-      setIsSaving(true);
-      const uid = auth.currentUser.uid;
-      const dayId = toDayId(dateISO);
-      // Create a SINGLE workout for this card/day and write ALL sets under it.
-      const workoutsCol = collection(db, "users", uid, "workoutDays", dayId, "workouts");
-      const workoutRef = doc(workoutsCol); // auto-id
-      const workoutTypeLabel =
-        exercises.length === 1
-          ? exercises[0].name
-          : exercises.map((e) => e.name).join(", ").slice(0, 60); // brief label
-      await setDoc(workoutRef, {
-        workoutType: workoutTypeLabel,  // per rules: string
-        createdAt: serverTimestamp(),   // per rules: timestamp
-      });
-      const setsColPath = collection(db, "users", uid, "workoutDays", dayId, "workouts", workoutRef.id, "sets");
-      let runningSetNumber = 0;
-      await Promise.all(
-        exercises.flatMap((ex) =>
-          ex.sets.map((s) => {
-            runningSetNumber += 1;
-            return setDoc(doc(setsColPath), {
-              setNumber: runningSetNumber,             // per rules: number
-              reps: Number(s.reps) || 0,               // per rules: number
-              weightLb: Number(s.weight) || 0,         // per rules: number
-              createdAt: serverTimestamp(),            // per rules: timestamp
-              exerciseName: ex.name,                   // extra field allowed by rules (keys().hasAll)
-            });
-          })
-        )
-      );
-      alert("Workout saved to your calendar day!");
-    } catch (e: any) {
-      console.error(e);
-      alert("Failed to save. Check your connection and rules.");
-    } finally {
-      setIsSaving(false);
+    // avoid duplicate names on the same card
+    const exists = exercises.some(
+      (ex) => ex.name.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (exists) {
+      alert("That exercise is already in this workout.");
+      setShowExerciseForm(false);
+      return;
     }
+
+    onAddExercise(workoutId, trimmed);
+    setExerciseName("Push Ups");
+    setShowExerciseForm(false);
   };
 
   return (
     <View style={styles.card}>
-      {/* Delete workout (make it always tappable + above everything) */}
+      {/* delete whole workout card */}
       <TouchableOpacity
         style={styles.deletePillTopRight}
         onPress={() => onDeleteWorkout(workoutId)}
@@ -147,9 +145,13 @@ function WorkoutCard({
         style={[styles.outlineBtn, { alignSelf: "flex-start", marginTop: 6 }]}
         onPress={() => setShowExerciseForm((s) => !s)}
         accessibilityRole="button"
-        accessibilityLabel={showExerciseForm ? "Cancel add exercise" : "Add exercise"}
+        accessibilityLabel={
+          showExerciseForm ? "Cancel add exercise" : "Add exercise"
+        }
       >
-        <Text style={styles.outlineBtnText}>{showExerciseForm ? "Cancel" : "Add Exercise"}</Text>
+        <Text style={styles.outlineBtnText}>
+          {showExerciseForm ? "Cancel" : "Add Exercise"}
+        </Text>
       </TouchableOpacity>
 
       {showExerciseForm && (
@@ -164,11 +166,7 @@ function WorkoutCard({
           />
           <TouchableOpacity
             style={styles.primaryBtn}
-            onPress={() => {
-              onAddExercise(workoutId, exerciseName.trim() || "Exercise");
-              setExerciseName("Push Ups");
-              setShowExerciseForm(false);
-            }}
+            onPress={handleAddExercise}
             accessibilityRole="button"
             accessibilityLabel="Save exercise"
           >
@@ -193,35 +191,38 @@ function WorkoutCard({
           />
         ))
       )}
-
-      {/* Save to DB button */}
-      {exercises.length > 0 && (
-        <TouchableOpacity
-          style={[styles.primaryBtn, { alignSelf: "flex-end", marginTop: 12, opacity: isSaving ? 0.7 : 1 }]}
-          onPress={handleSaveWorkoutToDb}
-          disabled={isSaving}
-          accessibilityRole="button"
-          accessibilityLabel="Save workout to calendar day"
-        >
-          <Text style={styles.primaryBtnText}>{isSaving ? "Saving..." : "Save"}</Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
 
-function ExerciseBlock({
-  workoutId, exerciseId, name, sets,
-  onAddSet, onDeleteExercise, onDeleteSet,
-}: {
+type ExerciseBlockProps = {
   workoutId: string;
   exerciseId: string;
   name: string;
-  sets: { id: string; reps: number; weight: number }[];
-  onAddSet: (workoutId: string, exerciseId: string, reps: number, weight: number) => void;
+  sets: SetType[];
+  onAddSet: (
+    workoutId: string,
+    exerciseId: string,
+    reps: number,
+    weight: number
+  ) => void;
   onDeleteExercise: (workoutId: string, exerciseId: string) => void;
-  onDeleteSet: (workoutId: string, exerciseId: string, setId: string) => void;
-}) {
+  onDeleteSet: (
+    workoutId: string,
+    exerciseId: string,
+    setId: string
+  ) => void;
+};
+
+function ExerciseBlock({
+  workoutId,
+  exerciseId,
+  name,
+  sets,
+  onAddSet,
+  onDeleteExercise,
+  onDeleteSet,
+}: ExerciseBlockProps) {
   const [showSetForm, setShowSetForm] = useState(false);
   const [reps, setReps] = useState("12");
   const [weight, setWeight] = useState("45");
@@ -239,10 +240,11 @@ function ExerciseBlock({
             accessibilityRole="button"
             accessibilityLabel={showSetForm ? "Cancel add set" : "Add set"}
           >
-            <Text style={styles.outlineBtnText}>{showSetForm ? "Cancel" : "Add Set"}</Text>
+            <Text style={styles.outlineBtnText}>
+              {showSetForm ? "Cancel" : "Add Set"}
+            </Text>
           </TouchableOpacity>
 
-          {/* Exercise delete: bigger hit area for reliability */}
           <TouchableOpacity
             style={styles.smallDeleteBtn}
             onPress={() => onDeleteExercise(workoutId, exerciseId)}
@@ -264,7 +266,8 @@ function ExerciseBlock({
             <Text style={styles.setText}>Set {idx + 1}</Text>
             <View style={styles.setRightRow}>
               <Text style={styles.setText}>
-                Reps: <Text style={styles.white}>{s.reps}</Text> • Wt: <Text style={styles.white}>{s.weight}</Text> lb
+                Reps: <Text style={styles.white}>{s.reps}</Text> • Wt:{" "}
+                <Text style={styles.white}>{s.weight}</Text> lb
               </Text>
               <TouchableOpacity
                 style={styles.smallDeleteBtn}
@@ -310,7 +313,12 @@ function ExerciseBlock({
             onPress={() => {
               const r = parseInt(reps, 10);
               const w = parseFloat(weight);
-              onAddSet(workoutId, exerciseId, isNaN(r) ? 0 : r, isNaN(w) ? 0 : w);
+              onAddSet(
+                workoutId,
+                exerciseId,
+                Number.isNaN(r) ? 0 : r,
+                Number.isNaN(w) ? 0 : w
+              );
               setShowSetForm(false);
               setReps("12");
               setWeight("45");
@@ -350,8 +358,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: ORANGE,
     borderRadius: 10,
-    zIndex: 1000,   // <-- keep on top (iOS)
-    elevation: 8,   // <-- keep on top (Android)
+    zIndex: 1000,
+    elevation: 8,
   },
   deletePillText: { color: ORANGE, fontWeight: "700" },
 
@@ -366,7 +374,12 @@ const styles = StyleSheet.create({
     borderColor: "#1f1f1f",
     marginTop: 12,
   },
-  exerciseHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+  exerciseHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
   actionsRow: { flexDirection: "row", alignItems: "center" },
 
   exerciseName: { color: "#fff", fontWeight: "700", fontSize: 16 },
@@ -402,12 +415,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     borderRadius: 14,
     alignSelf: "flex-start",
-    marginTop: 6
+    marginTop: 6,
   },
   primaryBtnText: { color: "#000", fontWeight: "800", fontSize: 16 },
 
-  outlineBtn: { borderWidth: 1, borderColor: ORANGE, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10 },
-  smallOutlineBtn: { borderWidth: 1, borderColor: ORANGE, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10 },
+  outlineBtn: {
+    borderWidth: 1,
+    borderColor: ORANGE,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  smallOutlineBtn: {
+    borderWidth: 1,
+    borderColor: ORANGE,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+  },
   smallDeleteBtn: {
     borderWidth: 1,
     borderColor: ORANGE,
@@ -418,4 +443,3 @@ const styles = StyleSheet.create({
   },
   outlineBtnText: { color: ORANGE, fontWeight: "700" },
 });
-
