@@ -63,5 +63,31 @@ cd App``
 
 Make sure Node.js and npm is installed
 
+``npm install``
+
+### Configure Firebase
+1. Create a Firebase project at https://firebase.google.com
+2. Copy the Firebase config into /firebase.js
+3. Enable Authentication (Email/Password) and Firestore Database
+
+## Running the App
+
+With Expo Go:
+``npx expo start``
+- Scan the QR code with the Expo Go app on your phone
+- Or press 'i' (IOS Sim) or 'a' (Android Sim) in the terminal
+
+## Using the App
+1. Sign In / Create Acount!
+2. Input Nutrition!
+3. Track Workouts!
+4. View Progress!
+
+## License
+
+[**License**](LICENSE.txt)
+
+
+
 
 
