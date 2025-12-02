@@ -57,8 +57,9 @@ https://github.com/rgrychow/COSC340-TeamProject.git
 
 ### Clone the Repository
 
-``git clone https://github.com/COSC340-TeamProject.git
-cd AimHigh/AimHigh``
+``git clone https://github.com/COSC340-TeamProject.git``
+
+``cd AimHigh/AimHigh``
 
 ### Install Dependencies
 
