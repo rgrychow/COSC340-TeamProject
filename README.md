@@ -40,7 +40,7 @@ Built with **React Native (Expo)** and **Firebase**, AimHigh provides a modern, 
 ### Prerequisites
 Before installing AimHigh, ensure that you have the following installed:
 - **Node.js** (v18 or later)
-- **npm** or **yarn**
+- **npm** 
 - **Expo CLI** (installed globally)
 - A **Firebase project** (for authentication and database)
 https://github.com/rgrychow/COSC340-TeamProject.git
