@@ -15,7 +15,7 @@ Hogan
 
 ## Product Snapshot
 <p align="center">
-  <img src="assets/images/app_preview.png" alt="AimHigh App Screenshot" width="350">
+  <img src="./AimHighDashboard.png" alt="AimHigh App Screenshot" width="350">
 </p>
 
 ---
