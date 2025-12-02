@@ -1,2 +1,62 @@
-# COSC340-TeamProject
-Fitness App
+# AimHigh – Fitness Tracking & Progress Visualization App
+
+---
+
+## Team Members
+
+
+Ryan Grychowski -- [@rgrychow](https://github.com/rgrychow) 
+Cameron Reed 
+Matthew  
+Om Patel 
+Hogan 
+
+---
+
+## Product Snapshot
+<p align="center">
+  <img src="assets/images/app_preview.png" alt="AimHigh App Screenshot" width="350">
+</p>
+
+---
+
+## Description of the Product
+
+**AimHigh** is a mobile fitness application designed to help users take control of their workouts, nutrition, and overall health through interactive progress tracking and cloud-based data storage.
+
+The app allows users to:
+- Log workouts, exercises, sets, reps, and weights.
+- Track progress over time with clean graphs and trend visualizations.
+- Sync data to Firebase for safe cloud storage and cross-device access.
+- Edit and maintain personal profiles with nutrition targets and activity logs.
+- Ensure data privacy through secure authentication and database access.
+
+Built with **React Native (Expo)** and **Firebase**, AimHigh provides a modern, simple, and intuitive platform for users to visualize their growth and stay consistent in their fitness goals.
+
+---
+
+## Table of Contents
+1. [Team Members](#-team-members)
+2. [Product Snapshot](#-product-snapshot)
+3. [Description of the Product](#-description-of-the-product)
+4. [Installation](#-installation)
+5. [Usage Instructions](#-usage-instructions)
+6. [License](#-license)
+
+---
+
+## Installation
+
+### Prerequisites
+Before installing AimHigh, ensure that you have the following installed:
+- **Node.js** (v18 or later)
+- **npm** or **yarn**
+- **Expo CLI** (installed globally)
+- A **Firebase project** (for authentication and database)
+
+### Clone the Repository
+```bash
+git clone https://github.com/AimHigh-Fitness/App.git
+cd App
+
+
